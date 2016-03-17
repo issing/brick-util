@@ -1,0 +1,168 @@
+package net.isger.util.load;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import net.isger.util.Asserts;
+import net.isger.util.Reflects;
+import net.isger.util.Strings;
+import net.isger.util.anno.Ignore;
+import net.isger.util.reflect.Converter;
+
+/**
+ * 基础加载器
+ * 
+ * @author issing
+ * 
+ */
+@Ignore
+public class BaseLoader implements Loader {
+
+    public static final String PARAM_CLASS = "class";
+
+    /** 目标类型 */
+    private Class<?> targetClass;
+
+    public BaseLoader() {
+    }
+
+    public BaseLoader(Class<?> targetClass) {
+        this.targetClass = targetClass;
+    }
+
+    /**
+     * 目标类型
+     * 
+     * @return
+     */
+    public Class<?> getTargetClass() {
+        return this.targetClass;
+    }
+
+    /**
+     * 目标类型
+     * 
+     * @param res
+     * @return
+     */
+    public Class<?> getTargetClass(Map<String, Object> res) {
+        Class<?> clazz;
+        Class<?> targetClass = this.getTargetClass();
+        String className = (String) res.get(PARAM_CLASS);
+        if (Strings.isNotEmpty(className)) {
+            /* 使用配置实现类 */
+            try {
+                clazz = Class.forName(className);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException("Not found class "
+                        + className);
+            }
+        } else {
+            clazz = getImplementClass();
+        }
+        // 指定目标类型约束检测
+        Asserts.isAssignable(targetClass, clazz);
+        return clazz;
+    }
+
+    /**
+     * 实现类型
+     * 
+     * @return
+     */
+    public Class<?> getImplementClass() {
+        return getTargetClass();
+    }
+
+    /**
+     * 加载资源
+     * 
+     */
+    @SuppressWarnings("unchecked")
+    public final Object load(Object res) {
+        Object result;
+        if (res instanceof String) {
+            /* 字符串资源方式加载 */
+            result = load((String) res);
+        } else if (res instanceof Collection) {
+            /* 集合资源方式加载 */
+            result = load((Collection<?>) res);
+        } else if (res instanceof Map) {
+            /* 键值对资源方式加载 */
+            result = load((Map<String, Object>) res);
+        } else {
+            /* 默认创建实例 */
+            result = create(res);
+        }
+        return result;
+    }
+
+    /**
+     * 加载资源
+     * 
+     * @param res
+     * @return
+     */
+    protected Object load(String res) {
+        return create(res);
+    }
+
+    /**
+     * 加载资源
+     * 
+     * @param res
+     * @return
+     */
+    protected Object load(Collection<?> res) {
+        List<Object> result = new ArrayList<Object>();
+        Object instance;
+        for (Object config : res) {
+            // 阻止列表集合无限嵌套
+            instance = config instanceof Collection ? create(config)
+                    : load(config);
+            if (instance instanceof Collection) {
+                result.addAll((Collection<?>) instance);
+            } else {
+                result.add(instance);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 加载资源
+     * 
+     * @param res
+     * @return
+     */
+    protected Object load(Map<String, Object> res) {
+        return create(getTargetClass(res), res);
+    }
+
+    /**
+     * 创建实例
+     * 
+     * @param clazz
+     * @param res
+     * @return
+     */
+    protected Object create(Class<?> clazz, Map<String, Object> res) {
+        return Reflects.newInstance(clazz, res);
+    }
+
+    /**
+     * 创建实例
+     * 
+     * @param res
+     * @return
+     */
+    protected Object create(Object res) {
+        Class<?> implementClass = getImplementClass();
+        Asserts.isNotNull(implementClass, "Unexpected load the resource - %s",
+                res);
+        return Converter.convert(implementClass, res);
+    }
+
+}
