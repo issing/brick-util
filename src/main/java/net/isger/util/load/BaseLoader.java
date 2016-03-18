@@ -42,12 +42,21 @@ public class BaseLoader implements Loader {
     }
 
     /**
-     * 目标类型
+     * 实现类型
+     * 
+     * @return
+     */
+    public Class<?> getImplementClass() {
+        return getTargetClass();
+    }
+
+    /**
+     * 实现类型
      * 
      * @param res
      * @return
      */
-    public Class<?> getTargetClass(Map<String, Object> res) {
+    public Class<?> getImplementClass(Map<String, Object> res) {
         Class<?> clazz;
         Class<?> targetClass = this.getTargetClass();
         String className = (String) res.get(PARAM_CLASS);
@@ -65,15 +74,6 @@ public class BaseLoader implements Loader {
         // 指定目标类型约束检测
         Asserts.isAssignable(targetClass, clazz);
         return clazz;
-    }
-
-    /**
-     * 实现类型
-     * 
-     * @return
-     */
-    public Class<?> getImplementClass() {
-        return getTargetClass();
     }
 
     /**
@@ -138,7 +138,7 @@ public class BaseLoader implements Loader {
      * @return
      */
     protected Object load(Map<String, Object> res) {
-        return create(getTargetClass(res), res);
+        return create(getImplementClass(res), res);
     }
 
     /**
@@ -160,8 +160,8 @@ public class BaseLoader implements Loader {
      */
     protected Object create(Object res) {
         Class<?> implementClass = getImplementClass();
-        Asserts.isNotNull(implementClass, "Unexpected load the resource - %s",
-                res);
+        // 指定目标类型约束检测
+        Asserts.isAssignable(getTargetClass(), implementClass);
         return Converter.convert(implementClass, res);
     }
 

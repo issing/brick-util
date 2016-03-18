@@ -56,11 +56,11 @@ public class Asserts {
                         || !source.contains(value), message, args);
     }
 
-    public static void isInstanceOf(Class<?> clazz, Object obj) {
-        isInstanceOf(clazz, obj, "");
+    public static void isInstance(Class<?> clazz, Object obj) {
+        isInstance(clazz, obj, "");
     }
 
-    public static void isInstanceOf(Class<?> type, Object obj, String message,
+    public static void isInstance(Class<?> type, Object obj, String message,
             Object... args) {
         isNotNull(type, "Type to check against must not be null");
         argument(type.isInstance(obj),
