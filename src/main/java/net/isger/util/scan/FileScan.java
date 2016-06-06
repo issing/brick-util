@@ -1,7 +1,6 @@
-package net.isger.util.scanner;
+package net.isger.util.scan;
 
 import java.io.File;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,13 +8,26 @@ public class FileScan extends AbstractScan {
 
     private static final String PROTOCOL = "file";
 
-    public List<String> scan(URL url, final ScanFilter filter) {
-        if (!PROTOCOL.equalsIgnoreCase(url.getProtocol()))
-            return null;
+    protected String getProtocol() {
+        return PROTOCOL;
+    }
+
+    // public List<String> scan(URL url, final ScanFilter filter) {
+    // if (!PROTOCOL.equalsIgnoreCase(url.getProtocol()))
+    // return null;
+    // List<String> result = null;
+    // File path = new File(url.getPath());
+    // if (path.isDirectory()) {
+    // result = scan(path, path, filter);
+    // }
+    // return result;
+    // }
+
+    public List<String> scan(String path, ScanFilter filter) {
         List<String> result = null;
-        File path = new File(url.getPath());
-        if (path.isDirectory()) {
-            result = scan(path, path, filter);
+        File root = new File(path);
+        if (root.isDirectory()) {
+            result = scan(root, root, filter);
         }
         return result;
     }
@@ -38,7 +50,4 @@ public class FileScan extends AbstractScan {
         return result;
     }
 
-    public String toString() {
-        return PROTOCOL;
-    }
 }

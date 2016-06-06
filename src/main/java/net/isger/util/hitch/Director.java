@@ -21,10 +21,10 @@ public class Director {
     protected static final int FAILURE = 3;
 
     /** 分隔记号 */
-    private static final String TOKEN_SEPARETOR = ":";
+    private static final String TOKEN_SEPARETOR = "|";
 
     /** 分隔表达式 */
-    private static final String REGEX_SEPARETOR = "[,;|]";
+    private static final String REGEX_SEPARETOR = "[,;:|]";
 
     protected transient int directed;
 
@@ -49,10 +49,12 @@ public class Director {
             source = this;
         }
         /* 按指示路径完成搭载 */
-        StringTokenizer directPath = new StringTokenizer(directPath()
-                .replaceAll(REGEX_SEPARETOR, TOKEN_SEPARETOR), TOKEN_SEPARETOR);
-        while (directPath.hasMoreElements() && directed != FAILURE) {
+        StringTokenizer directPath = getTokenizer(directPath());
+        while (directPath.hasMoreElements()) {
             directHitch((String) directPath.nextElement(), source);
+            if (directed == FAILURE) {
+                throw new IllegalStateException("Fialure to direct " + source);
+            }
         }
         directInflux();
         directed = SUCCESS;

@@ -1,7 +1,6 @@
 package net.isger.util.reflect.conversion;
 
 import net.isger.util.Reflects;
-import net.isger.util.reflect.Conversion;
 
 public class ClassConversion implements Conversion {
 

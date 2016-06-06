@@ -1,6 +1,5 @@
 package net.isger.util.reflect.conversion;
 
-import net.isger.util.reflect.Conversion;
 
 public class BooleanConversion implements Conversion {
 

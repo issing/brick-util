@@ -1,8 +1,7 @@
-package net.isger.util.scanner;
+package net.isger.util.scan;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -23,18 +22,19 @@ public class JarScan extends AbstractScan {
         LOG = LoggerFactory.getLogger(JarScan.class);
     }
 
-    public List<String> scan(URL url, ScanFilter filter) {
-        if (!PROTOCOL.equalsIgnoreCase(url.getProtocol()))
-            return null;
+    protected String getProtocol() {
+        return PROTOCOL;
+    }
+
+    public List<String> scan(String path, ScanFilter filter) {
         File workPath = null;
-        String path = url.getPath();
         int index = path.lastIndexOf("jar!/");
         if (index != -1) {
             workPath = new File(path.substring(index + 5));
             path = path.substring(0, index + 3);
         } else if (!path.endsWith(".jar")) {
-            throw new IllegalStateException("Have the ability to give the url "
-                    + url + " of jar");
+            throw new IllegalStateException("Have the ability to give " + path
+                    + " of jar");
         }
 
         List<String> result = new ArrayList<String>();
@@ -48,7 +48,7 @@ public class JarScan extends AbstractScan {
                 }
             }
         } catch (IOException e) {
-            LOG.warn("Error scanning hicher from path {}", url, e);
+            LOG.warn("Error scanning hicher from path {}", path, e);
         } finally {
             Files.close(zis);
         }
@@ -72,10 +72,6 @@ public class JarScan extends AbstractScan {
             return isMatch && filter.accept(sourceFile.getName());
         }
         return isMatch;
-    }
-
-    public String toString() {
-        return PROTOCOL;
     }
 
 }

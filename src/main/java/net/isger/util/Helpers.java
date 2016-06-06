@@ -8,11 +8,15 @@ import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Random;
 import java.util.UUID;
 
 import net.isger.util.anno.Alias;
@@ -27,15 +31,24 @@ import net.isger.util.anno.Ignore.Mode;
  */
 public class Helpers {
 
-    private final static char[] DIGITS = { '0', '1', '2', '3', '4', '5', '6',
+    public static final int SEED_DIGIT = 0;
+
+    private static final Object UUID_LOCKED = new Object();
+
+    private static int uuidSearial = 0;
+
+    private final static char[] CODES = { '0', '1', '2', '3', '4', '5', '6',
             '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
             'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
             'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
             'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
             'X', 'Y', 'Z' };
 
+    private final static int[][] LIMITS = new int[][] { { 0, 10 }, { 10, 26 },
+            { 36, 26 } };
+
     /** 最大进制数 */
-    public static final int MAX_RADIX = DIGITS.length;
+    public static final int MAX_RADIX = CODES.length;
 
     /** 最小进制数 */
     public static final int MIN_RADIX = 2;
@@ -44,8 +57,8 @@ public class Helpers {
 
     static {
         DIGIT_INDECES = new HashMap<Character, Integer>();
-        for (int i = 0; i < DIGITS.length; i++) {
-            DIGIT_INDECES.put(DIGITS[i], (int) i);
+        for (int i = 0; i < CODES.length; i++) {
+            DIGIT_INDECES.put(CODES[i], (int) i);
         }
     }
 
@@ -71,10 +84,10 @@ public class Helpers {
             value = -value;
         }
         while (value <= -radix) {
-            buffer[pos--] = DIGITS[(int) (-(value % radix))];
+            buffer[pos--] = CODES[(int) (-(value % radix))];
             value = value / radix;
         }
-        buffer[pos] = DIGITS[(int) (-value)];
+        buffer[pos] = CODES[(int) (-value)];
         if (negative) {
             buffer[--pos] = '-';
         }
@@ -133,7 +146,7 @@ public class Helpers {
     }
 
     /**
-     * 生成19位UUID
+     * 生成20位UUID
      * 
      * @return
      */
@@ -145,12 +158,69 @@ public class Helpers {
         buffer.append(digits(uuid.getMostSignificantBits(), 4));
         buffer.append(digits(uuid.getLeastSignificantBits() >> 48, 4));
         buffer.append(digits(uuid.getLeastSignificantBits(), 12));
+        synchronized (UUID_LOCKED) {
+            buffer.append(CODES[uuidSearial]);
+            if (++uuidSearial >= CODES.length) {
+                uuidSearial = 0;
+            }
+        }
         return buffer.toString();
     }
 
     private static String digits(long val, int digits) {
         long hi = 1L << (digits * 4);
         return parse(hi | (val & (hi - 1)), MAX_RADIX).substring(1);
+    }
+
+    /**
+     * 生成指定位数编码
+     * 
+     * @param length
+     * @return
+     */
+    public static String makeCode(int length) {
+        return makeCode(length, getRandom());
+    }
+
+    /**
+     * 生成指定位数编码
+     * 
+     * @param length
+     * @param seed
+     * @return
+     */
+    public static String makeCode(int length, int seed) {
+        StringBuffer code = new StringBuffer(length);
+        for (int i = 0; i < length; i++) {
+            code.append(getRandomCode(seed));
+        }
+        return code.toString();
+    }
+
+    private static char getRandomCode(int index) {
+        index %= LIMITS.length;
+        return getRandomCode(LIMITS[index][0], LIMITS[index][1]);
+    }
+
+    private static char getRandomCode(int start, int limit) {
+        return CODES[start + getRandom() % limit];
+    }
+
+    /**
+     * 获取随机数
+     * 
+     * @return
+     */
+    public static int getRandom() {
+        UUID uuid = UUID.randomUUID();
+        Random random = new Random(uuid.getMostSignificantBits());
+        int limit = Math
+                .abs((int) (uuid.getLeastSignificantBits() % Integer.MAX_VALUE));
+        int result;
+        while ((result = random.nextInt(limit)) < 0) {
+            continue;
+        }
+        return result;
     }
 
     public static URL getURL(File file) {
@@ -368,31 +438,91 @@ public class Helpers {
         return result;
     }
 
-    public static <T> List<T> getSurplus(List<T> a, List<T> b) {
+    /**
+     * 获取目标盈余
+     * 
+     * @param source
+     * @param target
+     * @return
+     */
+    public static <T> List<T> getSurplus(List<T> source, List<T> target) {
         List<T> result = new ArrayList<T>();
-        for (T v : b) {
-            if (!a.contains(v)) {
+        for (T v : target) {
+            if (!source.contains(v)) {
                 result.add(v);
             }
         }
         return result;
     }
 
-    public static <T> List<T> getMerge(List<T> a, List<T> b) {
-        if (a == null || a.size() == 0)
-            return b;
-        if (b == null || b.size() == 0)
-            return a;
-        List<T> container = getMerge(new ArrayList<T>(), a);
-        for (T t : b) {
-            if (!(t == null || container.contains(t))) {
-                container.add(t);
-            }
+    /**
+     * 获取合并结果
+     * 
+     * @param source
+     * @param target
+     * @return
+     */
+    public static <T> List<T> getMerge(List<T> source, List<T> target) {
+        List<T> container = new ArrayList<T>();
+        if (source != null && source.size() > 0) {
+            add(container, target);
+        }
+        if (target != null && target.size() > 0) {
+            add(container, target);
         }
         return container;
     }
 
-    public static <K, V> Map<K, V> copyMap(Map<K, V> source) {
+    public static <T> int add(List<T> container, Enumeration<T> values) {
+        return add(container, getList(values));
+    }
+
+    public static <T> int add(List<T> container, Iterator<T> values) {
+        return add(container, getList(values));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> int add(List<T> container, T... values) {
+        return add(container, values == null ? null : Arrays.asList(values));
+    }
+
+    public static <T> int add(List<T> container, List<T> values) {
+        int amount = 0;
+        if (values != null) {
+            for (T value : values) {
+                if (add(container, value)) {
+                    amount++;
+                }
+            }
+        }
+        return amount;
+    }
+
+    public static <T> boolean add(List<T> container, T value) {
+        boolean result;
+        if (result = !(value == null || container.contains(value))) {
+            container.add(value);
+        }
+        return result;
+    }
+
+    public static <T> List<T> getList(Enumeration<T> values) {
+        List<T> result = new ArrayList<T>();
+        while (values.hasMoreElements()) {
+            result.add(values.nextElement());
+        }
+        return result;
+    }
+
+    public static <T> List<T> getList(Iterator<T> values) {
+        List<T> result = new ArrayList<T>();
+        while (values.hasNext()) {
+            result.add(values.next());
+        }
+        return result;
+    }
+
+    public static <K, V> Map<K, V> getMap(Map<K, V> source) {
         Map<K, V> target = new HashMap<K, V>();
         if (source != null) {
             target.putAll(source);
@@ -400,7 +530,47 @@ public class Helpers {
         return target;
     }
 
-    public static Object copyArray(Object source, int length) {
+    public static Object getArray(Object source, Object target) {
+        Class<?> sourceClass;
+        if (source == null || !(sourceClass = source.getClass()).isArray()) {
+            return null;
+        }
+        Class<?> targetClass = target == null ? null : target.getClass();
+        if (sourceClass != targetClass) {
+            return source;
+        }
+        int sourceCount = Array.getLength(source);
+        if (sourceCount == 0) {
+            return target;
+        }
+        int targetCount = Array.getLength(target);
+        if (targetCount == 0) {
+            return source;
+        }
+        Object result;
+        int resultCount;
+        if (sourceClass == Object[].class || !(source instanceof Object[])) {
+            result = Array.newInstance(sourceClass.getComponentType(),
+                    sourceCount + targetCount);
+            System.arraycopy(source, 0, result, 0, sourceCount);
+            System.arraycopy(target, 0, result, sourceCount, targetCount);
+        } else {
+            resultCount = Math.min(sourceCount, targetCount);
+            result = Array.newInstance(sourceClass.getComponentType(),
+                    sourceCount);
+            int i = 0;
+            do {
+                Array.set(result, i,
+                        getArray(Array.get(source, i), Array.get(target, i)));
+            } while (++i < resultCount);
+            while (i < sourceCount--) {
+                Array.set(result, sourceCount, Array.get(source, sourceCount));
+            }
+        }
+        return result;
+    }
+
+    public static Object getArray(Object source, int length) {
         Object target;
         Class<?> clazz = source == null ? Object.class : source.getClass();
         if (clazz.isArray()) {

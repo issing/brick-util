@@ -3,6 +3,7 @@ package net.isger.util.reflect;
 import java.util.Vector;
 
 import net.isger.util.hitch.Director;
+import net.isger.util.reflect.action.Action;
 
 public class Actor extends Director {
 

@@ -13,9 +13,11 @@ public class Dates {
             "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd",
             "yyyyMMddHHmmss", "yyyyMMddHHmm", "yyyyMMdd", "HH:mm:ss", "HH:mm" };
 
-    public static final int DATE_NORMAL = 0;
+    public static final int PATTERN_NORMAL = 0;
 
-    public static final int DATE_COMPACT = 7;
+    public static final int PATTERN_COMMON = 1;
+
+    public static final int PATTERN_COMPACT = 7;
 
     private Dates() {
     }
@@ -49,7 +51,7 @@ public class Dates {
     }
 
     public static String toString(Date date) {
-        return toString(date, DATE_NORMAL);
+        return toString(date, PATTERN_NORMAL);
     }
 
     public static String toString(Date date, int pattern) {
@@ -57,7 +59,7 @@ public class Dates {
             return null;
         }
         if (pattern < 0 || pattern >= DATE_PATTERNS.length) {
-            pattern = DATE_NORMAL;
+            pattern = PATTERN_NORMAL;
         }
         SimpleDateFormat parser = new SimpleDateFormat(DATE_PATTERNS[pattern]);
         return parser.format(date);

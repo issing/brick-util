@@ -1,6 +1,5 @@
 package net.isger.util.reflect.conversion;
 
-import net.isger.util.reflect.Conversion;
 import net.isger.util.reflect.Converter;
 
 public class NumberConversion implements Conversion {
@@ -22,6 +21,10 @@ public class NumberConversion implements Conversion {
             return (Number) Converter.defaultValue(type);
         } else if (value instanceof Number) {
             source = (Number) value;
+        } else if (value instanceof Boolean) {
+            source = (Boolean) value ? 1 : 0;
+        } else if (value instanceof byte[]) {
+            source = Double.parseDouble(new String((byte[]) value));
         } else {
             source = Double.parseDouble(value.toString().trim());
         }

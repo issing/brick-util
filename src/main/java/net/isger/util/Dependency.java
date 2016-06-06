@@ -42,7 +42,8 @@ public class Dependency {
         if (dependencies == null) {
             dependencies = new ArrayList<Object>();
         } else if (dependencies.contains(node)) {
-            dependencies.remove(node);
+            throw new IllegalArgumentException(
+                    "(X) Dependencies cannot contain itself [" + node + "]");
         }
         dependencies = Helpers.getMerge(this.dependencies.get(node),
                 dependencies);
@@ -97,7 +98,9 @@ public class Dependency {
      * @param node
      */
     private void setNode(Object node) {
-        this.nodes.add(node);
+        if (!this.nodes.contains(node)) {
+            this.nodes.add(node);
+        }
         List<Object> bedependencies = this.bedependencies.get(node);
         if (bedependencies != null) {
             for (Object bedependency : bedependencies) {
@@ -110,7 +113,7 @@ public class Dependency {
 
     private void addStay(Object node) {
         if (this.stayings.contains(node)) {
-            throw new IllegalStateException("Found the self-devourer: "
+            throw new IllegalStateException("(X) Found the self-devourer: "
                     + this.stayings + " -> " + node);
         }
         this.stayings.add(node);

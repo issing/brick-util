@@ -1,4 +1,4 @@
-package net.isger.util.scanner;
+package net.isger.util.scan;
 
 import java.net.URL;
 import java.util.List;

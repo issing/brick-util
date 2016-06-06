@@ -25,4 +25,16 @@ public class SqlEntry {
         return values;
     }
 
+    public String toString() {
+        StringBuffer buffer = new StringBuffer(sql.length() * 2);
+        buffer.append(sql);
+        if (values != null && values.length > 0) {
+            buffer.append("[").append(values[0]);
+            for (int i = 1; i < values.length; i++) {
+                buffer.append(", ").append(values[1]);
+            }
+            buffer.append("]");
+        }
+        return buffer.toString();
+    }
 }

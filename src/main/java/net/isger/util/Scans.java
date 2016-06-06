@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 import net.isger.util.hitch.Director;
-import net.isger.util.scanner.FileScan;
-import net.isger.util.scanner.JarScan;
-import net.isger.util.scanner.Scan;
-import net.isger.util.scanner.ScanFilter;
+import net.isger.util.scan.FileScan;
+import net.isger.util.scan.JarScan;
+import net.isger.util.scan.Scan;
+import net.isger.util.scan.ScanFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * @author issing
  *
  */
-public class Scanners {
+public class Scans {
 
     private static final String KEY_SCANS = "brick.util.scans";
 
@@ -29,13 +29,13 @@ public class Scanners {
 
     private static final Logger LOG;
 
-    private static final Scanners SCANNER;
+    private static final Scans SCANNER;
 
     private Map<String, Scan> scans;
 
     static {
-        LOG = LoggerFactory.getLogger(Scanners.class);
-        SCANNER = new Scanners();
+        LOG = LoggerFactory.getLogger(Scans.class);
+        SCANNER = new Scans();
         addScan(new FileScan());
         addScan(new JarScan());
         new Director() {
@@ -45,7 +45,7 @@ public class Scanners {
         }.direct(SCANNER);
     }
 
-    private Scanners() {
+    private Scans() {
         scans = new Hashtable<String, Scan>();
     }
 
@@ -61,19 +61,18 @@ public class Scanners {
     }
 
     public static List<String> scan(String name, ScanFilter filter) {
-        List<String> result = null;
+        List<String> result = new ArrayList<String>();
         for (URL url : Reflects.getResources(SCANNER, name)) {
-            result = Helpers.getMerge(result, scan(url, filter));
+            Helpers.add(result, scan(url, filter));
         }
-        return result == null ? new ArrayList<String>() : result;
+        return result;
     }
 
     private static List<String> scan(URL url, ScanFilter filter) {
-        List<String> result = null;
+        List<String> result = new ArrayList<String>();
         for (Scan scan : SCANNER.scans.values()) {
-            result = Helpers.getMerge(result, scan.scan(url, filter));
+            Helpers.add(result, scan.scan(url, filter));
         }
-        return result == null ? new ArrayList<String>() : result;
+        return result;
     }
-
 }

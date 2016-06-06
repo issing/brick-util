@@ -1,4 +1,4 @@
-package net.isger.util.reflect;
+package net.isger.util.reflect.conversion;
 
 public interface Conversion {
 

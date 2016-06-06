@@ -1,4 +1,4 @@
-package net.isger.util.scanner;
+package net.isger.util.scan;
 
 /**
  * 扫描过滤器

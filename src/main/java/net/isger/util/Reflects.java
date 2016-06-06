@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
  */
 public class Reflects {
 
+    private static final Map<Class<?>, Class<?>> WRAP_TYPES;
+
     /** 反射类配置键 */
     public static final String KEY_CLASS = "class";
 
@@ -51,7 +53,28 @@ public class Reflects {
         METHODS = new ConcurrentHashMap<Class<?>, Map<String, List<BoundMethod>>>();
     }
 
+    static {
+        WRAP_TYPES = new HashMap<Class<?>, Class<?>>();
+        WRAP_TYPES.put(Void.TYPE, Void.class);
+        WRAP_TYPES.put(Boolean.TYPE, Boolean.class);
+        WRAP_TYPES.put(Byte.TYPE, Byte.class);
+        WRAP_TYPES.put(Character.TYPE, Character.class);
+        WRAP_TYPES.put(Short.TYPE, Short.class);
+        WRAP_TYPES.put(Integer.TYPE, Integer.class);
+        WRAP_TYPES.put(Long.TYPE, Long.class);
+        WRAP_TYPES.put(Float.TYPE, Float.class);
+        WRAP_TYPES.put(Double.TYPE, Double.class);
+    }
+
     private Reflects() {
+    }
+
+    public static Class<?> getWrapClass(Class<?> primitiveClass) {
+        Class<?> type = WRAP_TYPES.get(primitiveClass);
+        if (type == null) {
+            type = primitiveClass;
+        }
+        return type;
     }
 
     /**
@@ -101,7 +124,7 @@ public class Reflects {
             }
             // 导入别名字段（候选）
             for (BoundField field : boundFields) {
-                name = field.getAliasName();
+                name = field.getAlias();
                 if (name != null) {
                     add(result, name, field);
                 }
@@ -168,7 +191,7 @@ public class Reflects {
         Mode ignoreMode;
         BoundMethod boundMethod;
         List<BoundMethod> boundMethods;
-        while (clazz != Object.class) {
+        while (clazz != null && clazz != Object.class) {
             // 忽略指定类
             ignoreMode = getIgnoreMode(clazz);
             // 导入声明方法（方法名优先）
@@ -180,19 +203,29 @@ public class Reflects {
                     boundMethods.add(boundMethod);
                 }
             }
-            // 导入别名方法（候选）
+            // 导入别名及描述名方法（候选）
             for (BoundMethod method : boundMethods) {
                 name = method.getAliasName();
                 if (name != null) {
                     add(result, name, method);
                 }
+                add(result, method.getMethodName(), method);
             }
             clazz = clazz.getSuperclass();
-            if (clazz == null) {
-                break;
-            }
         }
         return result;
+    }
+
+    /**
+     * 获取绑定方法信息
+     * 
+     * @param clazz
+     * @param name
+     * @return
+     */
+    public static BoundMethod getBoundMethod(Class<?> clazz, String name) {
+        List<BoundMethod> bounds = getBoundMethods(clazz).get(name);
+        return bounds == null ? null : bounds.get(0);
     }
 
     /**
@@ -566,17 +599,16 @@ public class Reflects {
     /**
      * 提取字段值转换为集合
      * 
-     * @param instance
+     * @param bean
      * @return
      */
-    public static Map<String, Object> toMap(Object instance) {
+    public static Map<String, Object> toMap(Object bean) {
         Map<String, Object> values = new HashMap<String, Object>();
-        Map<String, List<BoundField>> fields = getBoundFields(instance
-                .getClass());
+        Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             try {
                 values.put(entry.getKey(),
-                        entry.getValue().get(0).getValue(instance));
+                        entry.getValue().get(0).getValue(bean));
             } catch (Exception e) {
                 LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
             }
@@ -584,12 +616,27 @@ public class Reflects {
         return values;
     }
 
+    /**
+     * 根据网格模型转换为实例
+     * 
+     * @param clazz
+     * @param gridModel
+     * @return
+     */
     public static <T> T toBean(Class<T> clazz, Object[] gridModel) {
         Object[] values = gridModel[1] instanceof Object[][] ? ((Object[][]) gridModel[1])[0]
                 : (Object[]) gridModel[1];
         return toBean(clazz, (Object[]) gridModel[0], values);
     }
 
+    /**
+     * 根据网格模型转换为实例
+     * 
+     * @param clazz
+     * @param columns
+     * @param values
+     * @return
+     */
     public static <T> T toBean(Class<T> clazz, Object[] columns, Object[] values) {
         BoundField field;
         T bean = Reflects.newInstance(clazz);
@@ -603,11 +650,23 @@ public class Reflects {
         return bean;
     }
 
+    /**
+     * 根据网格模型转换为集合
+     * 
+     * @param clazz
+     * @param gridModel
+     * @return
+     */
     public static <T> List<T> toList(Class<T> clazz, Object[] gridModel) {
         List<T> result = new ArrayList<T>();
         String[] columns = (String[]) gridModel[0];
-        for (Object[] values : (Object[][]) gridModel[1]) {
-            result.add(toBean(clazz, columns, values));
+        Object gridValue = gridModel[1];
+        if (gridValue instanceof Object[][]) {
+            for (Object[] values : (Object[][]) gridValue) {
+                result.add(toBean(clazz, columns, values));
+            }
+        } else if (gridValue instanceof Object[]) {
+            result.add(toBean(clazz, columns, (Object[]) gridValue));
         }
         return result;
     }
@@ -654,73 +713,6 @@ public class Reflects {
     // }
     // return result;
     // }
-
-    // private static final String SET_METHOD = "set";
-    //
-    // private static final int SET_METHOD_LEN = SET_METHOD.length();
-    //
-    // private static Map<Class<?>, Map<String, Method>> sms;
-    //
-    // static {
-    // sms = new HashMap<Class<?>, Map<String, Method>>();
-    // }
-    //
-    // private Reflects() {
-    // }
-    //
-    // private static Map<String, Method> getSM(Class<?> clazz) {
-    // return getMethods(clazz, SET_METHOD, SET_METHOD_LEN, null, sms);
-    // }
-    //
-    // private static Map<String, Method> getMethods(Class<?> clazz,
-    // String prefix, int prefixLen, String filter,
-    // Map<Class<?>, Map<String, Method>> allMethods) {
-    // Map<String, Method> result = allMethods.get(clazz);
-    // if (result == null) {
-    // result = new HashMap<String, Method>();
-    // Method[] cms = clazz.getMethods();
-    // String methodName = null;
-    // for (Method method : cms) {
-    // if ((methodName = method.getName()).startsWith(prefix)
-    // && (filter == null || !methodName.equals(filter))) {
-    // method.setAccessible(true);
-    // result.put(makeKey(methodName, prefixLen), method);
-    // }
-    // }
-    // allMethods.put(clazz, result);
-    // }
-    // return result;
-    // }
-    //
-    // private static String makeKey(String methodName, int len) {
-    // StringBuffer fieldName = new StringBuffer(32);
-    // char[] chs = methodName.substring(len).toCharArray();
-    // chs[0] = Character.toLowerCase(chs[0]);
-    // for (char ch : chs) {
-    // if (Character.isUpperCase(ch)) {
-    // fieldName.append('_');
-    // }
-    // fieldName.append(Character.toLowerCase(ch));
-    // }
-    // return fieldName.toString();
-    // }
-    //
-    // public static boolean isClass(String res) {
-    // return getClass(res) != null;
-    // }
-    //
-    // @SuppressWarnings("unchecked")
-    // public static Map<String, Object> toMap(Object instance)
-    // throws RuntimeException {
-    // return (Map<String, Object>) Mapl.toMaplist(instance);
-    // }
-    //
-    // @SuppressWarnings("unchecked")
-    // public static <T> T toInstance(Class<T> clazz, Map<String, Object>
-    // values)
-    // throws RuntimeException {
-    // return (T) Mapl.maplistToObj(values, clazz);
-    // }
     //
     // public static <T> List<T> toListBean(Class<T> clazz, Object[] values) {
     // List<T> result = new ArrayList<T>();
@@ -743,91 +735,6 @@ public class Reflects {
     // }
     // } catch (Exception e) {
     // throw new RuntimeException(e);
-    // }
-    // return result;
-    // }
-    //
-    // public static List<Map<String, Object>> toListMap(Object[] values) {
-    // List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
-    // if (values != null && values.length > 1) {
-    // String[] columns = (String[]) values[0];
-    // Object[][] rows = (Object[][]) values[1];
-    // for (int i = 0; i < rows.length; i++) {
-    // Map<String, Object> row = new HashMap<String, Object>();
-    // for (int j = 0; j < columns.length; j++) {
-    // row.put(columns[j], rows[i][j]);
-    // }
-    // result.add(row);
-    // }
-    // }
-    // return result;
-    // }
-    //
-    // /**
-    // * 获取类型
-    // *
-    // * @param type
-    // * @return
-    // */
-    // public static Class<?> getClass(String type) {
-    // Class<?> result = null;
-    // try {
-    // result = Class.forName(type);
-    // } catch (Exception e) {
-    // }
-    // return result;
-    // }
-    //
-    // /**
-    // * 获取实例
-    // *
-    // * @param type
-    // * @return
-    // */
-    // public static Object getInstance(String type) {
-    // Object result = null;
-    // try {
-    // result = getClass(type).newInstance();
-    // } catch (Exception e) {
-    // }
-    // return result;
-    // }
-    //
-    // /**
-    // * 获取字段
-    // *
-    // * @param clazz
-    // * @param fieldName
-    // * @return
-    // */
-    // public static Field getField(Class<?> clazz, String fieldName) {
-    // Field field = null;
-    // try {
-    // field = clazz.getDeclaredField(fieldName);
-    // } catch (Exception e) {
-    // }
-    // if (field == null && clazz != null) {
-    // field = getField(clazz.getSuperclass(), fieldName);
-    // }
-    // return field;
-    // }
-    //
-    // /**
-    // * 获取字段值
-    // *
-    // * @param object
-    // * @param fieldName
-    // * @return
-    // */
-    // public static Object getProperty(Object instance, String fieldName) {
-    // Object result = null;
-    // Field field = getField(instance.getClass(), fieldName);
-    // if (field != null) {
-    // field.setAccessible(true);
-    // try {
-    // result = field.get(instance);
-    // } catch (Exception e) {
-    // }
     // }
     // return result;
     // }
@@ -875,33 +782,6 @@ public class Reflects {
     // close(buffer);
     // }
     // return result;
-    // }
-    //
-    // private static void close(Closeable instance) {
-    // if (instance != null) {
-    // try {
-    // instance.close();
-    // } catch (IOException e) {
-    // }
-    // }
-    // }
-    //
-    // public static Object getInstance(String type, Object... args) {
-    // Object instance = null;
-    // try {
-    // instance = Mirror.me(Class.forName(type)).born(args);
-    // } catch (ClassNotFoundException e) {
-    // }
-    // return instance;
-    // }
-    //
-    // public static Object invoke(Object instance, String operate, Object...
-    // args) {
-    // return Mirror.me(instance.getClass()).invoke(instance, operate, args);
-    // }
-    //
-    // public static Object cast(Map<String, Object> info, Type type) {
-    // return Mapl.maplistToObj(info, type);
     // }
 
 }

@@ -3,6 +3,7 @@ package net.isger.util.reflect;
 import java.lang.reflect.Field;
 
 import net.isger.util.Strings;
+import net.isger.util.anno.Affix;
 import net.isger.util.anno.Alias;
 
 public class BoundField {
@@ -11,7 +12,9 @@ public class BoundField {
 
     private String name;
 
-    private String aliasName;
+    private String alias;
+
+    private String affix;
 
     public BoundField(Field field) {
         this.field = field;
@@ -19,7 +22,11 @@ public class BoundField {
         this.name = field.getName();
         Alias alias = field.getAnnotation(Alias.class);
         if (alias != null) {
-            this.aliasName = Strings.empty(alias.value());
+            this.alias = Strings.empty(alias.value());
+        }
+        Affix affix = field.getAnnotation(Affix.class);
+        if (affix != null) {
+            this.affix = Strings.empty(affix.value());
         }
     }
 
@@ -31,8 +38,12 @@ public class BoundField {
         return name;
     }
 
-    public String getAliasName() {
-        return aliasName;
+    public String getAlias() {
+        return alias;
+    }
+
+    public String getAffix() {
+        return affix;
     }
 
     public void setValue(Object instance, Object value) {
@@ -59,7 +70,7 @@ public class BoundField {
     }
 
     public boolean match(String name) {
-        return name.equals(this.name) || name.equals(aliasName);
+        return name.equals(this.name) || name.equals(alias);
     }
 
 }

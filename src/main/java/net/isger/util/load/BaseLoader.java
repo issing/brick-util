@@ -59,8 +59,10 @@ public class BaseLoader implements Loader {
     public Class<?> getImplementClass(Map<String, Object> res) {
         Class<?> clazz;
         Class<?> targetClass = this.getTargetClass();
-        String className = (String) res.get(PARAM_CLASS);
-        if (Strings.isNotEmpty(className)) {
+        String className;
+        if (res != null
+                && Strings
+                        .isNotEmpty(className = (String) res.get(PARAM_CLASS))) {
             /* 使用配置实现类 */
             try {
                 clazz = Class.forName(className);

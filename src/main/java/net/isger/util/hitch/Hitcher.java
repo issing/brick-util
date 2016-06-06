@@ -7,8 +7,8 @@ import net.isger.brick.blue.Marks.OPCODES;
 import net.isger.brick.blue.Marks.TYPE;
 import net.isger.brick.blue.Marks.VERSION;
 import net.isger.brick.blue.MethodSeal;
-import net.isger.util.Scanners;
-import net.isger.util.scanner.ScanFilter;
+import net.isger.util.Scans;
+import net.isger.util.scan.ScanFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +61,7 @@ public class Hitcher extends ClassLoader {
                 TYPE.BOOLEAN.name, HITCH_METHOD, TYPE.OBJECT.name);
         String className = null;
         String hitchOperate = null;
-        for (String name : Scanners.scan(path, FILTER)) {
+        for (String name : Scans.scan(path, FILTER)) {
             className = (path + name.replaceFirst("[.]class$", "")).replaceAll(
                     "[\\\\/]", ".");
             hitchOperate = className + ".hitch(obj)";

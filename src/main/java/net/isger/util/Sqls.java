@@ -212,7 +212,7 @@ public class Sqls {
         for (List<BoundField> fields : Reflects.getBoundFields(bean.getClass())
                 .values()) {
             field = fields.get(0);
-            column = Strings.empty(field.getAliasName(),
+            column = Strings.empty(field.getAlias(),
                     Sqls.toColumnName(field.getName()));
             value = field.getValue(bean);
             if (value != null) {
@@ -466,17 +466,23 @@ public class Sqls {
     private static PreparedStatement prepare(PreparedStatement stat,
             Object[] values) throws SQLException {
         Object value;
-        int amount = 0;
-        int count;
+        int size = values == null ? 0 : values.length;
         try {
-            count = stat.getParameterMetaData().getParameterCount();
-        } catch (SQLException e) {
-            count = values == null ? 0 : values.length;
+            size = Math.min(size, stat.getParameterMetaData()
+                    .getParameterCount());
+        } catch (Exception e) {
         }
-        // 绑定参数个数校验
-        Asserts.state(count == 0 || (values != null && count <= values.length),
-                "The required parameters for the binding are not complete");
-        while (amount < count) {
+        if (LOG.isDebugEnabled()) {
+            StringBuffer format = new StringBuffer(20 + 4 * size);
+            format.append("Preparing parameter: [{}");
+            for (int i = 1; i < size; i++) {
+                format.append(", {}");
+            }
+            format.append("]");
+            LOG.info(format.toString(), values);
+        }
+        int amount = 0;
+        while (amount < size) {
             if ((value = values[amount++]) instanceof Date) {
                 stat.setObject(amount, new Timestamp(((Date) value).getTime()));
             } else {
@@ -569,6 +575,6 @@ public class Sqls {
         String sql = sqls.getProperty(id);
         Asserts.state(Strings.isNotEmpty(sql),
                 "Not found the sql [%s] in the [%s.sql.xml] file", id, name);
-        return Strings.format(sql.trim(), args);
+        return Strings.format(sql, args);
     }
 }
