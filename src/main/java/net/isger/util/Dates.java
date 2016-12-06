@@ -64,6 +64,10 @@ public class Dates {
         SimpleDateFormat parser = new SimpleDateFormat(DATE_PATTERNS[pattern]);
         return parser.format(date);
     }
+    
+    public static Date getDate() {
+        return getDate(null, 0);
+    }
 
     public static Date getDate(int delay) {
         return getDate(null, delay);

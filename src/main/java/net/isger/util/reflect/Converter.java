@@ -129,6 +129,9 @@ public class Converter {
 
     public static Object defaultValue(Class<?> clazz) {
         if (clazz.isPrimitive()) {
+            if (Boolean.TYPE == clazz) {
+                return false;
+            }
             return 0;
         }
         return null;

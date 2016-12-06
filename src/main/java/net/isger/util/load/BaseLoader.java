@@ -22,14 +22,34 @@ public class BaseLoader implements Loader {
 
     public static final String PARAM_CLASS = "class";
 
+    private static final Loader LOADER;
+
     /** 目标类型 */
     private Class<?> targetClass;
+
+    static {
+        LOADER = new BaseLoader();
+    }
 
     public BaseLoader() {
     }
 
     public BaseLoader(Class<?> targetClass) {
         this.targetClass = targetClass;
+    }
+
+    /**
+     * 加载资源
+     * 
+     * @param res
+     * @return
+     */
+    public static Object toLoad(Object res) {
+        try {
+            return LOADER.load(res);
+        } catch (Exception e) {
+            return res;
+        }
     }
 
     /**

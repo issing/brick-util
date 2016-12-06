@@ -115,24 +115,21 @@ public class Sqls {
      * @return
      */
     public static String getTableName(Class<?> clazz, String mask) {
-        Alias table = clazz.getAnnotation(Alias.class);
         String tableName;
-        get: {
-            // 优先采用别名（并无需转换处理）
-            if (table != null) {
-                tableName = table.value();
-                if (Strings.isNotEmpty(tableName)) {
-                    break get;
-                }
+        // 优先别名（无需转换名称）
+        Alias table = clazz.getAnnotation(Alias.class);
+        if (table != null) {
+            tableName = table.value();
+            if (Strings.isNotEmpty(tableName)) {
+                return tableName;
             }
-            // 采用类名（并做转换处理）
-            tableName = clazz.getSimpleName();
-            if (Strings.isNotEmpty(mask)) {
-                tableName = Strings.replaceIgnoreCase(tableName, mask);
-            }
-            tableName = toTableName(Strings.toLower(tableName));
         }
-        return tableName;
+        // 采用类名（需要转换名称）
+        tableName = clazz.getSimpleName();
+        if (Strings.isNotEmpty(mask)) {
+            tableName = Strings.replaceIgnoreCase(tableName, mask);
+        }
+        return toTableName(Strings.toLower(tableName));
     }
 
     /**
@@ -472,7 +469,7 @@ public class Sqls {
                     .getParameterCount());
         } catch (Exception e) {
         }
-        if (LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled() && size > 0) {
             StringBuffer format = new StringBuffer(20 + 4 * size);
             format.append("Preparing parameter: [{}");
             for (int i = 1; i < size; i++) {

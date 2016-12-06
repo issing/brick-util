@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import net.isger.util.Strings;
 import net.isger.util.anno.Affix;
 import net.isger.util.anno.Alias;
+import net.isger.util.anno.Infect;
 
 public class BoundField {
 
@@ -15,6 +16,8 @@ public class BoundField {
     private String alias;
 
     private String affix;
+
+    private boolean infect;
 
     public BoundField(Field field) {
         this.field = field;
@@ -28,6 +31,7 @@ public class BoundField {
         if (affix != null) {
             this.affix = Strings.empty(affix.value());
         }
+        this.infect = field.getAnnotation(Infect.class) != null;
     }
 
     public Field getField() {
@@ -46,6 +50,10 @@ public class BoundField {
         return affix;
     }
 
+    public boolean isInfect() {
+        return infect;
+    }
+
     public void setValue(Object instance, Object value) {
         Class<?> type = field.getType();
         try {
@@ -56,7 +64,7 @@ public class BoundField {
         } catch (Exception e) {
             throw new IllegalStateException("Failure to setting field '"
                     + getName() + "' of " + field.getDeclaringClass() + ": "
-                    + value, e.getCause());
+                    + value, e);
         }
     }
 

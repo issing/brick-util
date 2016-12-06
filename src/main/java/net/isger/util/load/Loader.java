@@ -1,7 +1,7 @@
 package net.isger.util.load;
 
 /**
- * 加载器接口
+ * 加载器
  * 
  * @author issing
  * 

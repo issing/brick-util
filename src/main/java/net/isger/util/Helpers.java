@@ -4,7 +4,11 @@ import java.io.File;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -143,6 +147,12 @@ public class Helpers {
             result -= digit;
         }
         return negative ? result : -result;
+    }
+
+    public static boolean toBoolean(Object value) {
+        return value != null
+                && (value instanceof Boolean ? (boolean) value : Boolean
+                        .parseBoolean(value.toString()));
     }
 
     /**
@@ -605,6 +615,32 @@ public class Helpers {
             }
         }
         return mode;
+    }
+
+    public static void sleep(int ns) {
+        sleep(0, ns);
+    }
+
+    public static void sleep(long ms) {
+        sleep(ms, 0);
+    }
+
+    public static void sleep(long ms, int ns) {
+        try {
+            Thread.sleep(ms, ns);
+        } catch (InterruptedException e) {
+        }
+    }
+
+    public static SocketAddress getAddress(String host, int port) {
+        if (Strings.isNotEmpty(host)) {
+            try {
+                return new InetSocketAddress(InetAddress.getByName(host), port);
+            } catch (UnknownHostException e) {
+                return null;
+            }
+        }
+        return new InetSocketAddress(port);
     }
 
 }

@@ -6,11 +6,24 @@ import java.util.Map;
 import net.isger.util.anno.Ignore;
 import net.isger.util.reflect.BoundMethod;
 
+/**
+ * 动态操作器
+ * 
+ * @author issing
+ *
+ */
 @Ignore
 public class DynamicOperator implements Operator {
 
+    /** 默认操作 */
+    protected static final String METH_OPERATE;
+
     /** 操作源 */
     private Object source;
+
+    static {
+        METH_OPERATE = BoundMethod.makeMethodDesc("operate");
+    }
 
     public DynamicOperator() {
         this.source = this;
@@ -22,7 +35,7 @@ public class DynamicOperator implements Operator {
     }
 
     /**
-     * 获取当前实例所有绑定方法
+     * 获取所有绑定方法
      * 
      * @return
      */
@@ -31,44 +44,49 @@ public class DynamicOperator implements Operator {
     }
 
     /**
-     * 获取当前实例指定绑定方法
+     * 获取指定绑定方法
      * 
-     * @param name
+     * @param operate
      * @return
      */
-    private BoundMethod getMethod(String name) {
-        return getMethods().get(name).get(0);
+    protected final BoundMethod getMethod(String operate) {
+        Map<String, List<BoundMethod>> methods = getMethods();
+        if (methods.containsKey(operate)) {
+            return methods.get(operate).get(0);
+        }
+        /* 非方法描述操作，尝试获取无参无返回值方法 */
+        else if (!BoundMethod.isMethodDesc(operate)) {
+            return getMethod(BoundMethod.makeMethodDesc(operate));
+        }
+        return null;
     }
 
     /**
-     * 操作检测
-     * 
-     * @param name
-     * @return
+     * 默认绑定方法操作
      */
-    protected boolean hasOperate(String name) {
-        return getMethods().containsKey(name);
-    }
-
     public void operate() {
+        if (getSource() == this) {
+            throw new IllegalStateException("No target operation");
+        }
+        operate(METH_OPERATE);
     }
 
     /**
-     * 本实例指定绑定方法操作
+     * 指定绑定方法操作
      * 
      * @param operate
      */
-    public Object operate(String operate) {
-        return getMethod(BoundMethod.makeMethodName(operate)).invoke(getSource());
+    protected Object operate(String operate) {
+        return operate(operate, Helpers.wraps());
     }
 
     /**
-     * 本实例指定绑定方法操作
+     * 指定绑定方法操作
      * 
      * @param operate
      * @param args
      */
-    public Object operate(String operate, Object... args) {
+    protected Object operate(String operate, Object... args) {
         return getMethod(operate).invoke(getSource(), args);
     }
 
@@ -77,7 +95,7 @@ public class DynamicOperator implements Operator {
      * 
      * @return
      */
-    protected Object getSource() {
+    protected final Object getSource() {
         return source;
     }
 
@@ -88,11 +106,12 @@ public class DynamicOperator implements Operator {
         DynamicOperator operator;
         try {
             operator = (DynamicOperator) super.clone();
+            /* 重定向本源实例 */
             if (this == getSource()) {
                 operator.source = operator;
             }
         } catch (CloneNotSupportedException e) {
-            throw new IllegalStateException(e.getMessage(), e.getCause());
+            throw new IllegalStateException("Failure to clone operator", e);
         }
         return operator;
     }

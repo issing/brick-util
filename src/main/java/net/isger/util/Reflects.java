@@ -199,7 +199,7 @@ public class Reflects {
             for (Method method : clazz.getDeclaredMethods()) {
                 if ((boundMethod = createBoundMethod(method, ignoreMode)) != null
                         && add(result, boundMethod.getName(), boundMethod)
-                        && add(result, boundMethod.getMethodName(), boundMethod)) {
+                        && add(result, boundMethod.getMethodDesc(), boundMethod)) {
                     boundMethods.add(boundMethod);
                 }
             }
@@ -209,7 +209,7 @@ public class Reflects {
                 if (name != null) {
                     add(result, name, method);
                 }
-                add(result, method.getMethodName(), method);
+                add(result, method.getMethodDesc(), method);
             }
             clazz = clazz.getSuperclass();
         }

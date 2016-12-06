@@ -16,7 +16,7 @@ public class BoundMethod {
 
     private String aliasName;
 
-    private String methodName;
+    private String methodDesc;
 
     private String affix;
 
@@ -28,7 +28,7 @@ public class BoundMethod {
         if (alias != null) {
             this.aliasName = Strings.empty(alias.value());
         }
-        this.methodName = makeMethodName(method);
+        this.methodDesc = makeMethodDesc(method);
         Affix affix = method.getAnnotation(Affix.class);
         if (affix != null) {
             this.affix = Strings.empty(affix.value());
@@ -47,8 +47,8 @@ public class BoundMethod {
         return aliasName;
     }
 
-    public String getMethodName() {
-        return methodName;
+    public String getMethodDesc() {
+        return methodDesc;
     }
 
     public String getAffix() {
@@ -74,18 +74,21 @@ public class BoundMethod {
         }
     }
 
-    public static String makeMethodName(Method method) {
-        return makeMethodName(method.getName(), method.getReturnType(),
+    public static String makeMethodDesc(Method method) {
+        return makeMethodDesc(method.getName(), method.getReturnType(),
                 method.getParameterTypes());
     }
 
-    public static String makeMethodName(String name) {
-        return makeMethodName(name, Void.TYPE);
+    public static String makeMethodDesc(String name) {
+        return makeMethodDesc(name, Void.TYPE);
     }
 
-    public static String makeMethodName(String name, Class<?> resultType,
+    public static String makeMethodDesc(String name, Class<?> resultType,
             Class<?>... argTypes) {
-        return isMethodName(name) ? name : name
+        if (resultType == null || resultType == Void.class) {
+            resultType = Void.TYPE;
+        }
+        return isMethodDesc(name) ? name : name
                 + TYPE.getMethDesc(resultType, argTypes);
     }
 
@@ -93,7 +96,7 @@ public class BoundMethod {
         return methodName.matches(name + TYPE.REGEX_METH);
     }
 
-    public static boolean isMethodName(String methodName) {
+    public static boolean isMethodDesc(String methodName) {
         return Strings.endWithIgnoreCase(methodName, TYPE.REGEX_METH);
     }
 
