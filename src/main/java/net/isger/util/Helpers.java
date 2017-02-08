@@ -13,6 +13,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -346,8 +347,8 @@ public class Helpers {
     }
 
     public static boolean hasAliasName(Annotation[] annos) {
-        boolean result = annos != null && annos.length > 0;
-        if (result) {
+        boolean result = false;
+        if (annos != null && annos.length > 0) {
             for (Annotation anno : annos) {
                 if (anno instanceof Alias) {
                     result = Strings.isNotEmpty(((Alias) anno).value());
@@ -540,6 +541,35 @@ public class Helpers {
         return target;
     }
 
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> getMap(Map<String, Object> params,
+            String namespace) {
+        params = Helpers.canonicalize(params);
+        Object value;
+        for (String name : namespace.split("[./]")) {
+            value = params.get(name);
+            if (value instanceof Map) {
+                params = (Map<String, Object>) value;
+            } else {
+                params = null;
+                break;
+            }
+        }
+        return params;
+    }
+
+    public static Object copyArray(Object source) {
+        Class<?> sourceClass;
+        if (source == null || !(sourceClass = source.getClass()).isArray()) {
+            return null;
+        }
+        int sourceCount = Array.getLength(source);
+        Object result = Array.newInstance(sourceClass.getComponentType(),
+                sourceCount);
+        System.arraycopy(source, 0, result, 0, sourceCount);
+        return result;
+    }
+
     public static Object getArray(Object source, Object target) {
         Class<?> sourceClass;
         if (source == null || !(sourceClass = source.getClass()).isArray()) {
@@ -632,6 +662,13 @@ public class Helpers {
         }
     }
 
+    /**
+     * 获取地址
+     * 
+     * @param host
+     * @param port
+     * @return
+     */
     public static SocketAddress getAddress(String host, int port) {
         if (Strings.isNotEmpty(host)) {
             try {
@@ -641,6 +678,38 @@ public class Helpers {
             }
         }
         return new InetSocketAddress(port);
+    }
+
+    /**
+     * 遍历操作
+     * 
+     * @param instance
+     * @param callable
+     * @return
+     */
+    public static Object each(Object instance, Callable<Object> callable) {
+        int size;
+        if (instance instanceof Collection) {
+            Collection<?> collection = (Collection<?>) instance;
+            size = collection.size();
+            instance = collection.toArray(new Object[size]);
+        } else if (instance.getClass().isArray()) {
+            size = Array.getLength(instance);
+        } else {
+            size = 1;
+            instance = new Object[] { instance };
+        }
+        Object[] result = new Object[size];
+        Object value;
+        for (int i = 0; i < size; i++) {
+            value = Array.get(instance, i);
+            if (value != null && value.getClass().isArray()) {
+                result[i] = callable.call((Object[]) value);
+            } else {
+                result[i] = callable.call(value);
+            }
+        }
+        return (size == 1) ? result[0] : result;
     }
 
 }

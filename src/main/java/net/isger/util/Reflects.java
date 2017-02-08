@@ -34,10 +34,11 @@ import org.slf4j.LoggerFactory;
  */
 public class Reflects {
 
-    private static final Map<Class<?>, Class<?>> WRAP_TYPES;
-
     /** 反射类配置键 */
     public static final String KEY_CLASS = "class";
+
+    /** 包装类型集合 */
+    private static final Map<Class<?>, Class<?>> WRAP_TYPES;
 
     private static final Logger LOG;
 
@@ -46,12 +47,6 @@ public class Reflects {
 
     /** 类方法缓存 */
     private static final Map<Class<?>, Map<String, List<BoundMethod>>> METHODS;
-
-    static {
-        LOG = LoggerFactory.getLogger(Reflects.class);
-        FIELDS = new ConcurrentHashMap<Class<?>, Map<String, List<BoundField>>>();
-        METHODS = new ConcurrentHashMap<Class<?>, Map<String, List<BoundMethod>>>();
-    }
 
     static {
         WRAP_TYPES = new HashMap<Class<?>, Class<?>>();
@@ -64,17 +59,28 @@ public class Reflects {
         WRAP_TYPES.put(Long.TYPE, Long.class);
         WRAP_TYPES.put(Float.TYPE, Float.class);
         WRAP_TYPES.put(Double.TYPE, Double.class);
+
+        LOG = LoggerFactory.getLogger(Reflects.class);
+
+        FIELDS = new ConcurrentHashMap<Class<?>, Map<String, List<BoundField>>>();
+        METHODS = new ConcurrentHashMap<Class<?>, Map<String, List<BoundMethod>>>();
     }
 
     private Reflects() {
     }
 
-    public static Class<?> getWrapClass(Class<?> primitiveClass) {
-        Class<?> type = WRAP_TYPES.get(primitiveClass);
-        if (type == null) {
-            type = primitiveClass;
+    /**
+     * 获取包装类型
+     * 
+     * @param primitive
+     * @return
+     */
+    public static Class<?> getWrapClass(Class<?> primitive) {
+        Class<?> wrap = WRAP_TYPES.get(primitive);
+        if (wrap == null) {
+            wrap = primitive;
         }
-        return type;
+        return wrap;
     }
 
     /**
@@ -85,12 +91,11 @@ public class Reflects {
      */
     public static InputStream getResourceAsStream(String name) {
         ClassLoader classLoader = getClassLoader();
-        InputStream resourceStream = classLoader.getResourceAsStream(name);
-        if (resourceStream == null) {
-            classLoader = Reflects.class.getClassLoader();
-            resourceStream = classLoader.getResourceAsStream(name);
+        InputStream stream = classLoader.getResourceAsStream(name);
+        if (stream == null) {
+            stream = Reflects.class.getClassLoader().getResourceAsStream(name);
         }
-        return resourceStream;
+        return stream;
     }
 
     /**
@@ -111,14 +116,15 @@ public class Reflects {
         Mode ignoreMode;
         BoundField boundField;
         List<BoundField> boundFields;
-        while (clazz != Object.class) {
+        Class<?> type = clazz;
+        while (type != null && type != Object.class) {
             // 忽略指定类
-            ignoreMode = getIgnoreMode(clazz);
+            ignoreMode = getIgnoreMode(type);
             // 导入声明字段（字段名优先）
             boundFields = new ArrayList<BoundField>();
-            for (Field field : clazz.getDeclaredFields()) {
+            for (Field field : type.getDeclaredFields()) {
                 if ((boundField = createBoundField(field, ignoreMode)) != null
-                        && add(result, boundField.getName(), boundField)) {
+                        && toAppend(result, boundField.getName(), boundField)) {
                     boundFields.add(boundField);
                 }
             }
@@ -126,13 +132,13 @@ public class Reflects {
             for (BoundField field : boundFields) {
                 name = field.getAlias();
                 if (name != null) {
-                    add(result, name, field);
+                    toAppend(result, name, field);
                 }
             }
-            clazz = clazz.getSuperclass();
+            type = type.getSuperclass();
         }
         // 屏蔽修改
-        FIELDS.put(clazz, result = unmodifiable(result));
+        FIELDS.put(clazz, result = toUnmodifiable(result));
         return result;
     }
 
@@ -185,21 +191,22 @@ public class Reflects {
         if (result != null || !Object.class.isAssignableFrom(clazz)) {
             return result;
         }
-        METHODS.put(clazz,
-                result = new LinkedHashMap<String, List<BoundMethod>>());
+        result = new LinkedHashMap<String, List<BoundMethod>>();
         String name;
         Mode ignoreMode;
         BoundMethod boundMethod;
         List<BoundMethod> boundMethods;
-        while (clazz != null && clazz != Object.class) {
+        Class<?> type = clazz;
+        while (type != null && type != Object.class) {
             // 忽略指定类
-            ignoreMode = getIgnoreMode(clazz);
+            ignoreMode = getIgnoreMode(type);
             // 导入声明方法（方法名优先）
             boundMethods = new ArrayList<BoundMethod>();
-            for (Method method : clazz.getDeclaredMethods()) {
+            for (Method method : type.getDeclaredMethods()) {
                 if ((boundMethod = createBoundMethod(method, ignoreMode)) != null
-                        && add(result, boundMethod.getName(), boundMethod)
-                        && add(result, boundMethod.getMethodDesc(), boundMethod)) {
+                        && toAppend(result, boundMethod.getName(), boundMethod)
+                        && toAppend(result, boundMethod.getMethodDesc(),
+                                boundMethod)) {
                     boundMethods.add(boundMethod);
                 }
             }
@@ -207,12 +214,14 @@ public class Reflects {
             for (BoundMethod method : boundMethods) {
                 name = method.getAliasName();
                 if (name != null) {
-                    add(result, name, method);
+                    toAppend(result, name, method);
                 }
-                add(result, method.getMethodDesc(), method);
+                toAppend(result, method.getMethodDesc(), method);
             }
-            clazz = clazz.getSuperclass();
+            type = type.getSuperclass();
         }
+        // 屏蔽修改
+        METHODS.put(clazz, result = toUnmodifiable(result));
         return result;
     }
 
@@ -283,7 +292,7 @@ public class Reflects {
      * @param values
      * @return
      */
-    private static <T> Map<String, List<T>> unmodifiable(
+    private static <T> Map<String, List<T>> toUnmodifiable(
             Map<String, List<T>> values) {
         for (Entry<String, List<T>> entry : values.entrySet()) {
             values.put(entry.getKey(),
@@ -292,8 +301,16 @@ public class Reflects {
         return Collections.unmodifiableMap(values);
     }
 
-    private static <T> boolean add(Map<String, List<T>> values, String name,
-            T value) {
+    /**
+     * 追加实例
+     * 
+     * @param values
+     * @param name
+     * @param value
+     * @return
+     */
+    private static <T> boolean toAppend(Map<String, List<T>> values,
+            String name, T value) {
         List<T> list = values.get(name);
         if (list == null) {
             list = new ArrayList<T>();
@@ -357,6 +374,31 @@ public class Reflects {
             toInstance(instance, values);
         }
         return instance;
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param params
+     * @param namespace
+     * @return
+     */
+    public static Object newInstance(Map<String, Object> params,
+            String namespace) {
+        return newInstance(Helpers.getMap(params, namespace));
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param clazz
+     * @param params
+     * @param namespace
+     * @return
+     */
+    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params,
+            String namespace) {
+        return Reflects.newInstance(clazz, Helpers.getMap(params, namespace));
     }
 
     /**
@@ -597,26 +639,6 @@ public class Reflects {
     }
 
     /**
-     * 提取字段值转换为集合
-     * 
-     * @param bean
-     * @return
-     */
-    public static Map<String, Object> toMap(Object bean) {
-        Map<String, Object> values = new HashMap<String, Object>();
-        Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
-        for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
-            try {
-                values.put(entry.getKey(),
-                        entry.getValue().get(0).getValue(bean));
-            } catch (Exception e) {
-                LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
-            }
-        }
-        return values;
-    }
-
-    /**
      * 根据网格模型转换为实例
      * 
      * @param clazz
@@ -651,6 +673,54 @@ public class Reflects {
     }
 
     /**
+     * 提取字段值转换为集合
+     * 
+     * @param bean
+     * @return
+     */
+    public static Map<String, Object> toMap(Object bean) {
+        Map<String, Object> values = new HashMap<String, Object>();
+        Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
+        for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
+            try {
+                values.put(entry.getKey(),
+                        entry.getValue().get(0).getValue(bean));
+            } catch (Exception e) {
+                LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
+            }
+        }
+        return values;
+    }
+
+    /**
+     * 根据网格模型转换为集合
+     * 
+     * @param gridModel
+     * @return
+     */
+    public static Map<String, Object> toMap(Object[] gridModel) {
+        Object[] values = gridModel[1] instanceof Object[][] ? ((Object[][]) gridModel[1])[0]
+                : (Object[]) gridModel[1];
+        return toMap((Object[]) gridModel[0], values);
+    }
+
+    /**
+     * 根据网格模型转换为集合
+     * 
+     * @param columns
+     * @param values
+     * @return
+     */
+    public static Map<String, Object> toMap(Object[] columns, Object[] values) {
+        int size = Math.min(columns.length, values.length);
+        Map<String, Object> bean = new HashMap<String, Object>(size);
+        for (int i = 0; i < size; i++) {
+            bean.put(String.valueOf(columns[i]), values[i]);
+        }
+        return bean;
+    }
+
+    /**
      * 根据网格模型转换为集合
      * 
      * @param clazz
@@ -671,23 +741,28 @@ public class Reflects {
         return result;
     }
 
-    public static Map<String, Object> toMap(Object[] gridModel) {
-        Object[] values = gridModel[1] instanceof Object[][] ? ((Object[][]) gridModel[1])[0]
-                : (Object[]) gridModel[1];
-        return toMap((Object[]) gridModel[0], values);
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> toList(Class<T> clazz,
+            List<Map<String, Object>> values) {
+        return toList(clazz, values, new Callable<T>() {
+            public T call(Object... args) {
+                return (T) args[0];
+            }
+        });
     }
 
-    public static Map<String, Object> toMap(Object[] columns, Object[] values) {
-        Map<String, Object> bean = new HashMap<String, Object>();
-        int size = Math.min(columns.length, values.length);
-        for (int i = 0; i < size; i++) {
-            bean.put(String.valueOf(columns[i]), values[i]);
+    public static <T> List<T> toList(Class<T> clazz,
+            List<Map<String, Object>> values, Callable<T> callable) {
+        List<T> result = new ArrayList<T>(values.size());
+        for (Map<String, Object> value : values) {
+            result.add(callable.call(newInstance(clazz, value), result));
         }
-        return bean;
+        return result;
     }
 
-    public static List<Map<String, Object>> toListMap(Object[] gridModel) {
-        List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    public static List<Map<String, Object>> toList(Object[] gridModel) {
+        List<Map<String, Object>> result = new ArrayList<Map<String, Object>>(
+                ((Object[][]) gridModel[1]).length);
         String[] columns = (String[]) gridModel[0];
         for (Object[] values : (Object[][]) gridModel[1]) {
             result.add(toMap(columns, values));

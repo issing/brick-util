@@ -8,9 +8,9 @@ package net.isger.util.sql;
  */
 public class SqlEntry {
 
-    protected final String sql;
+    protected String sql;
 
-    protected final Object[] values;
+    protected Object[] values;
 
     public SqlEntry(String sql, Object... values) {
         this.sql = sql;
