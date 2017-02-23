@@ -544,39 +544,78 @@ public class Helpers {
     @SuppressWarnings("unchecked")
     public static Map<String, Object> getMap(Map<String, Object> params,
             String namespace) {
-        params = Helpers.canonicalize(params);
-        Object value;
-        for (String name : namespace.split("[./]")) {
-            value = params.get(name);
-            if (value instanceof Map) {
-                params = (Map<String, Object>) value;
-            } else {
-                params = null;
-                break;
+        if (Strings.isNotEmpty(namespace)) {
+            params = Helpers.canonicalize(params);
+            Object value;
+            for (String name : namespace.split("[./]")) {
+                value = params.get(name);
+                if (value instanceof Map) {
+                    params = (Map<String, Object>) value;
+                } else {
+                    params = null;
+                    break;
+                }
             }
         }
         return params;
     }
 
-    public static Object copyArray(Object source) {
-        Class<?> sourceClass;
-        if (source == null || !(sourceClass = source.getClass()).isArray()) {
+    public static Object newArray(Object source) {
+        if (source == null) {
             return null;
         }
-        int sourceCount = Array.getLength(source);
-        Object result = Array.newInstance(sourceClass.getComponentType(),
-                sourceCount);
+        Class<?> sourceClass = source.getClass();
+        int sourceCount;
+        if (sourceClass.isArray()) {
+            sourceCount = Array.getLength(source);
+            sourceClass = sourceClass.getComponentType();
+        } else {
+            sourceCount = 1;
+            source = new Object[] { source };
+        }
+        Object result = Array.newInstance(sourceClass, sourceCount);
         System.arraycopy(source, 0, result, 0, sourceCount);
         return result;
     }
 
-    public static Object getArray(Object source, Object target) {
-        Class<?> sourceClass;
-        if (source == null || !(sourceClass = source.getClass()).isArray()) {
-            return null;
+    public static Object newArray(Class<?> resultType, Object source,
+            int sourceCount, Object target, int targetCount) {
+        Object overValue;
+        int loopCount;
+        int resultCount;
+        if ((sourceCount - targetCount) >= 0) {
+            overValue = source;
+            loopCount = targetCount;
+            resultCount = sourceCount;
+        } else {
+            overValue = target;
+            loopCount = sourceCount;
+            resultCount = targetCount;
         }
-        Class<?> targetClass = target == null ? null : target.getClass();
-        if (sourceClass != targetClass) {
+        Object result = Array.newInstance(resultType, resultCount);
+        int amount = 0;
+        do {
+            Array.set(
+                    result,
+                    amount,
+                    newArray(Array.get(source, amount),
+                            Array.get(target, amount)));
+        } while (++amount < loopCount);
+        while (amount < resultCount) {
+            Array.set(result, amount, Array.get(overValue, amount));
+            amount++;
+        }
+        return result;
+    }
+
+    public static Object newArray(Object source, Object target) {
+        /* 数组合并检测 */
+        target = newArray(target);
+        if (source == null) {
+            return target;
+        }
+        source = newArray(source);
+        if (target == null) {
             return source;
         }
         int sourceCount = Array.getLength(source);
@@ -587,41 +626,118 @@ public class Helpers {
         if (targetCount == 0) {
             return source;
         }
-        Object result;
-        int resultCount;
-        if (sourceClass == Object[].class || !(source instanceof Object[])) {
-            result = Array.newInstance(sourceClass.getComponentType(),
-                    sourceCount + targetCount);
-            System.arraycopy(source, 0, result, 0, sourceCount);
-            System.arraycopy(target, 0, result, sourceCount, targetCount);
+        /* 数组合并操作 */
+        Class<?> sourceType = source.getClass().getComponentType();
+        Class<?> targetType = target.getClass().getComponentType();
+        Class<?> resultType;
+        if (sourceType.isAssignableFrom(targetType)) {
+            resultType = sourceType;
+        } else if (targetType.isAssignableFrom(sourceType)) {
+            resultType = targetType;
         } else {
-            resultCount = Math.min(sourceCount, targetCount);
-            result = Array.newInstance(sourceClass.getComponentType(),
-                    sourceCount);
-            int i = 0;
-            do {
-                Array.set(result, i,
-                        getArray(Array.get(source, i), Array.get(target, i)));
-            } while (++i < resultCount);
-            while (i < sourceCount--) {
-                Array.set(result, sourceCount, Array.get(source, sourceCount));
+            resultType = Object.class;
+        }
+        if (!(sourceType.isArray() || targetType.isArray())) {
+            Object result = Array.newInstance(resultType, sourceCount
+                    + targetCount);
+            for (Object[] current : new Object[][] {
+                    { sourceType, source, 0, sourceCount },
+                    { targetType, target, sourceCount, targetCount } }) {
+                if (resultType.isAssignableFrom((Class<?>) current[0])) {
+                    System.arraycopy(current[1], 0, result,
+                            (Integer) current[2], (Integer) current[3]);
+                } else {
+                    for (int i = 0; i < (Integer) current[3]; i++) {
+                        Array.set(result, i + (Integer) current[2],
+                                Array.get(current[1], i));
+                    }
+                }
             }
+            return result;
+        }
+        return newArray(resultType, source, sourceCount, target, targetCount);
+    }
+
+    public static Object newArray(Object source, int length) {
+        Object result;
+        Class<?> clazz = source == null ? Object.class : source.getClass();
+        if (clazz.isArray()) {
+            result = Array.newInstance(clazz.getComponentType(), length);
+            length = Math.min(Array.getLength(source), length);
+            System.arraycopy(source, 0, result, 0, length);
+        } else {
+            result = Array.newInstance(clazz, length);
+            Array.set(result, 0, source);
         }
         return result;
     }
 
-    public static Object getArray(Object source, int length) {
-        Object target;
-        Class<?> clazz = source == null ? Object.class : source.getClass();
-        if (clazz.isArray()) {
-            target = Array.newInstance(clazz.getComponentType(), length);
-            length = Math.min(Array.getLength(source), length);
-            System.arraycopy(source, 0, target, 0, length);
+    public static Object[][] newGrid(boolean isColumn, Object... values) {
+        int size = values.length;
+        final List<List<Object>> grid = new ArrayList<List<Object>>();
+        if (isColumn) {
+            Object result;
+            for (int i = 0; i < size; i++) {
+                final int colCount = i;
+                result = each(values[i], new Callable<Object>() {
+                    public Object call(Object... args) {
+                        Integer rowIndex = (Integer) args[0];
+                        List<Object> row;
+                        int rowCount = grid.size();
+                        if (rowIndex == rowCount) {
+                            grid.add(row = new ArrayList<Object>());
+                            // 列填充
+                            for (int i = 0; i < colCount; i++) {
+                                row.add(null);
+                            }
+                        } else {
+                            row = grid.get(rowIndex);
+                        }
+                        return row.add(args[1]);
+                    }
+                });
+                // 行填充
+                for (int j = (result instanceof Object[]) ? ((Object[]) result).length
+                        : 1; j < grid.size(); j++) {
+                    grid.get(j).add(null);
+                }
+            }
+            size = grid.size();
         } else {
-            target = Array.newInstance(clazz, length);
-            Array.set(target, 0, source);
+            Object result;
+            int colCount = 0;
+            for (int i = 0; i < size; i++) {
+                final List<Object> row = new ArrayList<Object>();
+                grid.add(row);
+                result = each(values[i], new Callable<Object>() {
+                    public Object call(Object... args) {
+                        return row.add(args[1]);
+                    }
+                });
+                // 行填充
+                int count = (result instanceof Object[]) ? ((Object[]) result).length
+                        : 1;
+                if (count > colCount) {
+                    for (int j = 0; j < i; j++) {
+                        for (int k = colCount; k < count; k++) {
+                            grid.get(j).add(null);
+                        }
+                    }
+                    colCount = count;
+                }
+                // 列填充
+                else {
+                    for (int j = count; j < colCount; j++) {
+                        row.add(null);
+                    }
+                }
+            }
         }
-        return target;
+        Object[][] result = new Object[size][];
+        for (int i = 0; i < size; i++) {
+            result[i] = grid.get(i).toArray();
+        }
+        return result;
     }
 
     public static Object wrap(Object... args) {
@@ -665,6 +781,16 @@ public class Helpers {
     /**
      * 获取地址
      * 
+     * @param port
+     * @return
+     */
+    public static SocketAddress getAddress(int port) {
+        return getAddress(null, port);
+    }
+
+    /**
+     * 获取地址
+     * 
      * @param host
      * @param port
      * @return
@@ -700,14 +826,8 @@ public class Helpers {
             instance = new Object[] { instance };
         }
         Object[] result = new Object[size];
-        Object value;
         for (int i = 0; i < size; i++) {
-            value = Array.get(instance, i);
-            if (value != null && value.getClass().isArray()) {
-                result[i] = callable.call((Object[]) value);
-            } else {
-                result[i] = callable.call(value);
-            }
+            result[i] = callable.call(i, Array.get(instance, i));
         }
         return (size == 1) ? result[0] : result;
     }

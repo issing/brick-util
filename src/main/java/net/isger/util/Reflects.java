@@ -729,7 +729,7 @@ public class Reflects {
      */
     public static <T> List<T> toList(Class<T> clazz, Object[] gridModel) {
         List<T> result = new ArrayList<T>();
-        String[] columns = (String[]) gridModel[0];
+        Object[] columns = (Object[]) gridModel[0];
         Object gridValue = gridModel[1];
         if (gridValue instanceof Object[][]) {
             for (Object[] values : (Object[][]) gridValue) {
@@ -760,14 +760,18 @@ public class Reflects {
         return result;
     }
 
-    public static List<Map<String, Object>> toList(Object[] gridModel) {
+    public static List<Map<String, Object>> toList(Object[] columns,
+            Object[][] values) {
         List<Map<String, Object>> result = new ArrayList<Map<String, Object>>(
-                ((Object[][]) gridModel[1]).length);
-        String[] columns = (String[]) gridModel[0];
-        for (Object[] values : (Object[][]) gridModel[1]) {
-            result.add(toMap(columns, values));
+                values.length);
+        for (Object[] value : values) {
+            result.add(toMap(columns, value));
         }
         return result;
+    }
+
+    public static List<Map<String, Object>> toList(Object[] gridModel) {
+        return toList((Object[]) gridModel[0], (Object[][]) gridModel[1]);
     }
 
     // public static List<Object> toList(Object[] gridModel, String column) {
