@@ -50,13 +50,17 @@ public class Dates {
         return date;
     }
 
+    public static String toString(int pattern) {
+        return toString(null, pattern);
+    }
+
     public static String toString(Date date) {
         return toString(date, PATTERN_NORMAL);
     }
 
     public static String toString(Date date, int pattern) {
         if (date == null) {
-            return null;
+            date = new Date();
         }
         if (pattern < 0 || pattern >= DATE_PATTERNS.length) {
             pattern = PATTERN_NORMAL;
@@ -64,7 +68,7 @@ public class Dates {
         SimpleDateFormat parser = new SimpleDateFormat(DATE_PATTERNS[pattern]);
         return parser.format(date);
     }
-    
+
     public static Date getDate() {
         return getDate(null, 0);
     }

@@ -565,12 +565,12 @@ public class Sqls {
                         + dialectName.trim().toLowerCase() + ".sql");
             }
             // 配置文件中必须包含配置语句
-            Asserts.state(sqls != null, "Not found the [%s.sql.xml] file", name);
+            Asserts.throwState(sqls != null, "Not found the [%s.sql.xml] file", name);
             CACHE_SQLS.put(name, sqls);
         }
         /* 配置语句 */
         String sql = sqls.getProperty(id);
-        Asserts.state(Strings.isNotEmpty(sql),
+        Asserts.throwState(Strings.isNotEmpty(sql),
                 "Not found the sql [%s] in the [%s.sql.xml] file", id, name);
         return Strings.format(sql, args);
     }

@@ -740,6 +740,43 @@ public class Helpers {
         return result;
     }
 
+    public static Object up(Object value) {
+        if (value != null) {
+            Class<?> type = value.getClass();
+            if (type.isArray()) {
+                int length = Array.getLength(value);
+                switch (length) {
+                case 0:
+                    value = null;
+                    break;
+                case 1:
+                    value = up(Array.get(value, 0));
+                    break;
+                default:
+                    List<Object> container = new ArrayList<Object>();
+                    Object element;
+                    for (int i = 0; i < length; i++) {
+                        element = up(Array.get(value, i));
+                        if (element != null) {
+                            container.add(element);
+                        }
+                    }
+                    switch (container.size()) {
+                    case 0:
+                        value = null;
+                        break;
+                    case 1:
+                        value = container.get(0);
+                        break;
+                    default:
+                        value = container.toArray();
+                    }
+                }
+            }
+        }
+        return value;
+    }
+
     public static Object wrap(Object... args) {
         return args;
     }

@@ -22,8 +22,8 @@ public class Strings {
      * @param value
      * @return
      */
-    public static boolean isEmpty(String value) {
-        return (value == null || value.matches("^\\s*$"));
+    public static boolean isEmpty(Object value) {
+        return value == null || value.toString().matches("^\\s*$");
     }
 
     /**
@@ -32,7 +32,7 @@ public class Strings {
      * @param value
      * @return
      */
-    public static boolean isNotEmpty(String value) {
+    public static boolean isNotEmpty(Object value) {
         return !isEmpty(value);
     }
 
@@ -42,7 +42,7 @@ public class Strings {
      * @param value
      * @return
      */
-    public static String empty(String value) {
+    public static String empty(Object value) {
         return empty(value, "");
     }
 
@@ -53,8 +53,8 @@ public class Strings {
      * @param def
      * @return
      */
-    public static String empty(String value, String def) {
-        return isEmpty(value) ? def : value.trim();
+    public static String empty(Object value, String def) {
+        return isEmpty(value) ? def : value.toString().trim();
     }
 
     /**

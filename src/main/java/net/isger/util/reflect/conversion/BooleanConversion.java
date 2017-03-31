@@ -1,6 +1,5 @@
 package net.isger.util.reflect.conversion;
 
-
 public class BooleanConversion implements Conversion {
 
     public static final BooleanConversion CONVERSION = new BooleanConversion();
@@ -14,7 +13,9 @@ public class BooleanConversion implements Conversion {
     }
 
     public Object convert(Class<?> type, Object value) {
-        return value == null ? false : Boolean.parseBoolean(value.toString());
+        return value == null ? false
+                : value instanceof Number ? ((Number) value).intValue() != 0
+                        : Boolean.parseBoolean(value.toString());
     }
 
     public String toString() {

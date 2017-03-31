@@ -17,7 +17,7 @@ public class Asserts {
 
     public static void isTrue(boolean expression, String message,
             Object... args) {
-        argument(expression, message, args);
+        throwArgument(expression, message, args);
     }
 
     public static void isNull(Object object) {
@@ -25,7 +25,7 @@ public class Asserts {
     }
 
     public static void isNull(Object object, String message, Object... args) {
-        argument(object == null, message, args);
+        throwArgument(object == null, message, args);
     }
 
     public static void isNotNull(Object object) {
@@ -33,7 +33,7 @@ public class Asserts {
     }
 
     public static void isNotNull(Object object, String message, Object... args) {
-        argument(object != null, message, args);
+        throwArgument(object != null, message, args);
     }
 
     public static void isNotEmpty(String text) {
@@ -41,7 +41,7 @@ public class Asserts {
     }
 
     public static void isNotEmpty(String text, String message, Object... args) {
-        argument(Strings.isNotEmpty(text), message, args);
+        throwArgument(Strings.isNotEmpty(text), message, args);
     }
 
     public static void isNotContains(String source, String value) {
@@ -51,9 +51,8 @@ public class Asserts {
 
     public static void isNotContains(String source, String value,
             String message, Object... args) {
-        argument(
-                Strings.isEmpty(source) || Strings.isEmpty(value)
-                        || !source.contains(value), message, args);
+        throwArgument(Strings.isEmpty(source) || Strings.isEmpty(value)
+                || !source.contains(value), message, args);
     }
 
     public static void isInstance(Class<?> clazz, Object obj) {
@@ -63,7 +62,7 @@ public class Asserts {
     public static void isInstance(Class<?> type, Object obj, String message,
             Object... args) {
         isNotNull(type, "Type to check against must not be null");
-        argument(type.isInstance(obj),
+        throwArgument(type.isInstance(obj),
                 "%sinstance of class [%s] must be an instance of %s",
                 Strings.isEmpty(message) ? "" : Strings.format(message, args)
                         + " - ", (obj != null ? obj.getClass().getName()
@@ -77,33 +76,48 @@ public class Asserts {
     public static void isAssignable(Class<?> superType, Class<?> subType,
             String message, Object... args) {
         isNotNull(superType, "Type to check against must not be null");
-        argument(superType.isAssignableFrom(subType),
+        throwArgument(superType.isAssignableFrom(subType),
                 "%s%s is not assignable to %s", Strings.isEmpty(message) ? ""
                         : Strings.format(message, args) + " - ", subType,
                 superType);
     }
 
-    public static void argument(boolean expression) {
-        argument(expression, "The argument is invalid");
+    public static void throwArgument(boolean expression) {
+        throwArgument(expression, null);
     }
 
-    public static void argument(boolean expression, String message,
+    public static void throwArgument(boolean expression, String message,
             Object... args) {
         if (!expression) {
-            throw new IllegalArgumentException("(X) "
-                    + Strings.format(message, args));
+            throw argument(message, args);
         }
     }
 
-    public static void state(boolean expression) {
-        state(expression, "The state invariant must be true");
+    public static IllegalArgumentException argument(String message,
+            Object... args) {
+        if (Strings.isEmpty(message)) {
+            message = "The argument is invalid";
+        }
+        return new IllegalArgumentException("(X) "
+                + Strings.format(message, args));
     }
 
-    public static void state(boolean expression, String message, Object... args) {
+    public static void throwState(boolean expression) {
+        throwState(expression, null);
+    }
+
+    public static void throwState(boolean expression, String message,
+            Object... args) {
         if (!expression) {
-            throw new IllegalStateException("(X) "
-                    + Strings.format(message, args));
+            throw state(message, args);
         }
+    }
+
+    public static IllegalStateException state(String message, Object... args) {
+        if (Strings.isEmpty(message)) {
+            message = "The state invariant must be true";
+        }
+        return new IllegalStateException("(X) " + Strings.format(message, args));
     }
 
 }

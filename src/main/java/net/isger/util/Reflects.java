@@ -642,13 +642,13 @@ public class Reflects {
      * 根据网格模型转换为实例
      * 
      * @param clazz
-     * @param gridModel
+     * @param grid
      * @return
      */
-    public static <T> T toBean(Class<T> clazz, Object[] gridModel) {
-        Object[] values = gridModel[1] instanceof Object[][] ? ((Object[][]) gridModel[1])[0]
-                : (Object[]) gridModel[1];
-        return toBean(clazz, (Object[]) gridModel[0], values);
+    public static <T> T toBean(Class<T> clazz, Object[] grid) {
+        Object[] values = grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0]
+                : (Object[]) grid[1];
+        return toBean(clazz, (Object[]) grid[0], values);
     }
 
     /**
@@ -695,13 +695,13 @@ public class Reflects {
     /**
      * 根据网格模型转换为集合
      * 
-     * @param gridModel
+     * @param grid
      * @return
      */
-    public static Map<String, Object> toMap(Object[] gridModel) {
-        Object[] values = gridModel[1] instanceof Object[][] ? ((Object[][]) gridModel[1])[0]
-                : (Object[]) gridModel[1];
-        return toMap((Object[]) gridModel[0], values);
+    public static Map<String, Object> toMap(Object[] grid) {
+        Object[] values = grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0]
+                : (Object[]) grid[1];
+        return toMap((Object[]) grid[0], values);
     }
 
     /**
@@ -724,13 +724,13 @@ public class Reflects {
      * 根据网格模型转换为集合
      * 
      * @param clazz
-     * @param gridModel
+     * @param grid
      * @return
      */
-    public static <T> List<T> toList(Class<T> clazz, Object[] gridModel) {
+    public static <T> List<T> toList(Class<T> clazz, Object[] grid) {
         List<T> result = new ArrayList<T>();
-        Object[] columns = (Object[]) gridModel[0];
-        Object gridValue = gridModel[1];
+        Object[] columns = (Object[]) grid[0];
+        Object gridValue = grid[1];
         if (gridValue instanceof Object[][]) {
             for (Object[] values : (Object[][]) gridValue) {
                 result.add(toBean(clazz, columns, values));
@@ -746,7 +746,7 @@ public class Reflects {
             List<Map<String, Object>> values) {
         return toList(clazz, values, new Callable<T>() {
             public T call(Object... args) {
-                return (T) args[0];
+                return (T) args[1];
             }
         });
     }
@@ -754,8 +754,9 @@ public class Reflects {
     public static <T> List<T> toList(Class<T> clazz,
             List<Map<String, Object>> values, Callable<T> callable) {
         List<T> result = new ArrayList<T>(values.size());
+        int step = 0;
         for (Map<String, Object> value : values) {
-            result.add(callable.call(newInstance(clazz, value), result));
+            result.add(callable.call(step++, newInstance(clazz, value), result));
         }
         return result;
     }
@@ -770,8 +771,8 @@ public class Reflects {
         return result;
     }
 
-    public static List<Map<String, Object>> toList(Object[] gridModel) {
-        return toList((Object[]) gridModel[0], (Object[][]) gridModel[1]);
+    public static List<Map<String, Object>> toList(Object[] grid) {
+        return toList((Object[]) grid[0], (Object[][]) grid[1]);
     }
 
     // public static List<Object> toList(Object[] gridModel, String column) {
