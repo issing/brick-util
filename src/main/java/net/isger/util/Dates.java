@@ -73,19 +73,16 @@ public class Dates {
         return getDate(null, 0);
     }
 
-    public static Date getDate(int delay) {
+    public static Date getDate(long delay) {
         return getDate(null, delay);
     }
 
-    public static Date getDate(Date startTime, int delay) {
+    public static Date getDate(Date startTime, long delay) {
         if (startTime == null) {
             startTime = new Date();
         }
-        if (delay > 0) {
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(startTime);
-            calendar.add(Calendar.MILLISECOND, delay);
-            startTime = calendar.getTime();
+        if (delay != 0) {
+            startTime = new Date(startTime.getTime() + delay);
         }
         return startTime;
     }

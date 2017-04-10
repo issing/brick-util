@@ -10,6 +10,7 @@ import java.net.SocketAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.AccessController;
+import java.security.MessageDigest;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +51,7 @@ public class Helpers {
             'X', 'Y', 'Z' };
 
     private final static int[][] LIMITS = new int[][] { { 0, 10 }, { 10, 26 },
-            { 36, 26 } };
+            { 36, 26 }, { 0, 36 }, { 10, 54 }, { 0, 54 } };
 
     /** 最大进制数 */
     public static final int MAX_RADIX = CODES.length;
@@ -150,10 +151,46 @@ public class Helpers {
         return negative ? result : -result;
     }
 
+    /**
+     * 转换布尔值
+     * 
+     * @param value
+     * @return
+     */
     public static boolean toBoolean(Object value) {
         return value != null
                 && (value instanceof Boolean ? (boolean) value : Boolean
                         .parseBoolean(value.toString()));
+    }
+
+    /**
+     * 生成MD5摘要
+     * 
+     * @param value
+     * @return
+     */
+    public static String makeMD5(byte[] value) {
+        try {
+            MessageDigest md5 = MessageDigest.getInstance("MD5");
+            md5.update(value);
+            byte[] digest = md5.digest();
+            int index;
+            StringBuffer buffer = new StringBuffer(32);
+            for (int offset = 0; offset < digest.length; offset++) {
+                index = digest[offset];
+                if (index < 0) {
+                    index += 256;
+                }
+                if (index < 16) {
+                    buffer.append("0");
+                }
+                buffer.append(Integer.toHexString(index));
+            }
+            return buffer.toString();
+        } catch (Exception e) {
+            throw Asserts.state("Failure to make MD5 for [{}] - {}", value,
+                    e.getMessage());
+        }
     }
 
     /**

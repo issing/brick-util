@@ -1,5 +1,8 @@
 package net.isger.util;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -125,6 +128,26 @@ public class Strings {
             String content) {
         Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
         return pattern.matcher(value).replaceAll(content);
+    }
+
+    /**
+     * 转换编码
+     * 
+     * @param data
+     * @param sourceCharset
+     * @param targetCharset
+     * @return
+     * @throws UnsupportedEncodingException
+     */
+    public static String toCharset(byte[] data, String sourceCharset,
+            String targetCharset) throws UnsupportedEncodingException {
+        if (isEmpty(sourceCharset) || sourceCharset.equals(targetCharset)) {
+            return new String(data, targetCharset);
+        }
+        return new String(Charset
+                .forName(targetCharset)
+                .encode(Charset.forName(sourceCharset).decode(
+                        ByteBuffer.wrap(data))).array(), targetCharset);
     }
 
     /**

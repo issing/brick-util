@@ -1,5 +1,6 @@
 package net.isger.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -363,6 +364,29 @@ public class Files {
             close(os);
         }
         return file;
+    }
+
+    /**
+     * 读输入流
+     * 
+     * @param is
+     * @return
+     * @throws IOException
+     */
+    public static byte[] read(InputStream is) throws IOException {
+        ByteArrayOutputStream bs = null;
+        byte[] buffer = new byte[1024];
+        try {
+            bs = new ByteArrayOutputStream(1024);
+            int size;
+            while ((size = is.read(buffer)) != -1) {
+                bs.write(buffer, 0, size);
+                bs.flush();
+            }
+        } finally {
+            close(bs);
+        }
+        return bs.toByteArray();
     }
 
     /**
