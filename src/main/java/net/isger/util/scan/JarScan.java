@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import net.isger.util.Files;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.isger.util.Files;
 
 public class JarScan extends AbstractScan {
 
@@ -33,8 +33,8 @@ public class JarScan extends AbstractScan {
             workPath = new File(path.substring(index + 5));
             path = path.substring(0, index + 3);
         } else if (!path.endsWith(".jar")) {
-            throw new IllegalStateException("Have the ability to give " + path
-                    + " of jar");
+            throw new IllegalStateException(
+                    "Have the ability to give " + path + " of jar");
         }
 
         List<String> result = new ArrayList<String>();
@@ -56,19 +56,26 @@ public class JarScan extends AbstractScan {
     }
 
     protected boolean match(File path, ZipEntry entry, ScanFilter filter) {
-        boolean isMatch = false;
-        if (!entry.isDirectory()) {
+        boolean isMatch;
+        if (isMatch = !entry.isDirectory()) {
             File sourceFile = new File(entry.getName());
             File parentPath = sourceFile.getParentFile();
-            toMatchPath: {
-                if (parentPath == null) {
-                    isMatch = path == null;
-                    break toMatchPath;
+            // toMatchPath: {
+            if (parentPath == null) {
+                isMatch = path == null;
+            } else if (parentPath.getAbsolutePath()
+                    .startsWith(path.getAbsolutePath())) {
+                if (!filter.isDeep(path, parentPath)) {
+                    isMatch = parentPath.equals(path);
                 }
-                isMatch = filter.isDeep() ? parentPath.getAbsolutePath()
-                        .startsWith(path.getAbsolutePath()) : parentPath
-                        .equals(path);
+            } else {
+                return false;
             }
+            // isMatch = filter.isDeep(parentPath.getPath())
+            // ? parentPath.getAbsolutePath()
+            // .startsWith(path.getAbsolutePath())
+            // : parentPath.equals(path);
+            // }
             return isMatch && filter.accept(sourceFile.getName());
         }
         return isMatch;

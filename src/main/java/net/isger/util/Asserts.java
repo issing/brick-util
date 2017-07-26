@@ -32,7 +32,8 @@ public class Asserts {
         isNotNull(object, "The argument not be null");
     }
 
-    public static void isNotNull(Object object, String message, Object... args) {
+    public static void isNotNull(Object object, String message,
+            Object... args) {
         throwArgument(object != null, message, args);
     }
 
@@ -64,9 +65,9 @@ public class Asserts {
         isNotNull(type, "Type to check against must not be null");
         throwArgument(type.isInstance(obj),
                 "%sinstance of class [%s] must be an instance of %s",
-                Strings.isEmpty(message) ? "" : Strings.format(message, args)
-                        + " - ", (obj != null ? obj.getClass().getName()
-                        : "null"), type);
+                Strings.isEmpty(message) ? ""
+                        : Strings.format(message, args) + " - ",
+                (obj != null ? obj.getClass().getName() : "null"), type);
     }
 
     public static void isAssignable(Class<?> superType, Class<?> subType) {
@@ -77,9 +78,10 @@ public class Asserts {
             String message, Object... args) {
         isNotNull(superType, "Type to check against must not be null");
         throwArgument(superType.isAssignableFrom(subType),
-                "%s%s is not assignable to %s", Strings.isEmpty(message) ? ""
-                        : Strings.format(message, args) + " - ", subType,
-                superType);
+                "%s%s is not assignable to %s",
+                Strings.isEmpty(message) ? ""
+                        : Strings.format(message, args) + " - ",
+                subType, superType);
     }
 
     public static void throwArgument(boolean expression) {
@@ -98,8 +100,8 @@ public class Asserts {
         if (Strings.isEmpty(message)) {
             message = "The argument is invalid";
         }
-        return new IllegalArgumentException("(X) "
-                + Strings.format(message, args));
+        return new IllegalArgumentException(
+                "(X) " + Strings.format(message, args), getCause(args));
     }
 
     public static void throwState(boolean expression) {
@@ -117,7 +119,14 @@ public class Asserts {
         if (Strings.isEmpty(message)) {
             message = "The state invariant must be true";
         }
-        return new IllegalStateException("(X) " + Strings.format(message, args));
+        return new IllegalStateException("(X) " + Strings.format(message, args),
+                getCause(args));
+    }
+
+    public static Throwable getCause(Object[] args) {
+        return args != null && args.length > 0
+                && (args[args.length - 1] instanceof Throwable)
+                        ? (Throwable) args[args.length - 1] : null;
     }
 
 }

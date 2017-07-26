@@ -21,7 +21,7 @@ public class Director {
     protected static final int FAILURE = 3;
 
     /** 分隔记号 */
-    private static final String TOKEN_SEPARETOR = "|";
+    public static final String TOKEN_SEPARETOR = "|";
 
     /** 分隔表达式 */
     private static final String REGEX_SEPARETOR = "[,;:|]";
@@ -126,8 +126,9 @@ public class Director {
      * @return
      */
     protected StringTokenizer getTokenizer(String path) {
-        return new StringTokenizer(path.replaceAll(REGEX_SEPARETOR,
-                TOKEN_SEPARETOR), TOKEN_SEPARETOR);
+        return new StringTokenizer(
+                path.replaceAll(REGEX_SEPARETOR, TOKEN_SEPARETOR),
+                TOKEN_SEPARETOR);
     }
 
     protected StringTokenizer getTokenizer(Properties props, String key) {

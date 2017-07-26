@@ -557,10 +557,10 @@ public class Reflects {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static void toInstance(Object instance, Map<String, Object> values) {
+    public static <T> T toInstance(T instance, Map<String, Object> values) {
         if (instance instanceof Map) {
             ((Map<String, Object>) instance).putAll(values);
-            return;
+            return instance;
         }
         values = Helpers.canonicalize(values);
         String fieldName = null;
@@ -573,6 +573,7 @@ public class Reflects {
                         .setValue(instance, values.get(fieldName));
             }
         }
+        return instance;
     }
 
     public static List<URL> getResources(String name) {

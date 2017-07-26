@@ -1,5 +1,10 @@
 package net.isger.util.hitch;
 
+import java.io.File;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.isger.brick.blue.ClassSeal;
 import net.isger.brick.blue.Marks.ACCESS;
 import net.isger.brick.blue.Marks.MISC;
@@ -9,9 +14,6 @@ import net.isger.brick.blue.Marks.VERSION;
 import net.isger.brick.blue.MethodSeal;
 import net.isger.util.Scans;
 import net.isger.util.scan.ScanFilter;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Hitcher extends ClassLoader {
 
@@ -32,7 +34,7 @@ public class Hitcher extends ClassLoader {
     static {
         LOG = LoggerFactory.getLogger(Hitcher.class);
         FILTER = new ScanFilter() {
-            public boolean isDeep() {
+            public boolean isDeep(File root, File path) {
                 return false;
             }
 
@@ -62,8 +64,8 @@ public class Hitcher extends ClassLoader {
         String className = null;
         String hitchOperate = null;
         for (String name : Scans.scan(path, FILTER)) {
-            className = (path + name.replaceFirst("[.]class$", "")).replaceAll(
-                    "[\\\\/]", ".");
+            className = (path + name.replaceFirst("[.]class$", ""))
+                    .replaceAll("[\\\\/]", ".");
             hitchOperate = className + ".hitch(obj)";
             if (ms.getOperateMark(hitchOperate) != null) {
                 LOG.warn("(!) Multiple to hitching {}", className);
@@ -84,8 +86,8 @@ public class Hitcher extends ClassLoader {
         try {
             station = this.defineClass(HITCH_STATION, code, 0, code.length);
         } catch (Throwable e) {
-            throw new IllegalStateException("Failure create hitch station for "
-                    + path, e);
+            throw new IllegalStateException(
+                    "Failure create hitch station for " + path, e);
         }
     }
 
@@ -93,8 +95,9 @@ public class Hitcher extends ClassLoader {
         boolean isHitch = amount == 0;
         if (!isHitch) {
             try {
-                isHitch = (Boolean) station.getMethod(HITCH_METHOD,
-                        Object.class).invoke(station, source);
+                isHitch = (Boolean) station
+                        .getMethod(HITCH_METHOD, Object.class)
+                        .invoke(station, source);
             } catch (Exception e) {
                 LOG.warn("Failure to hitch resource", e);
                 isHitch = false;

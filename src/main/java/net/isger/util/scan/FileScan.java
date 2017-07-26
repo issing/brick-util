@@ -34,7 +34,6 @@ public class FileScan extends AbstractScan {
 
     private List<String> scan(File root, File path, ScanFilter filter) {
         List<String> result = new ArrayList<String>();
-        boolean isDeep = filter.isDeep();
         File[] files = path.listFiles();
         if (files != null) {
             for (File file : files) {
@@ -42,7 +41,7 @@ public class FileScan extends AbstractScan {
                     if (filter.accept(file.getName())) {
                         result.add(getName(root, file));
                     }
-                } else if (file.isDirectory() && isDeep) {
+                } else if (file.isDirectory() && filter.isDeep(root, file)) {
                     result.addAll(scan(root, file, filter));
                 }
             }

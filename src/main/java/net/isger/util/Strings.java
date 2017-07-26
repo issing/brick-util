@@ -106,6 +106,17 @@ public class Strings {
     }
 
     /**
+     * 数据内容判断
+     * 
+     * @param source
+     * @param target
+     * @return
+     */
+    public static boolean equals(byte[] source, byte[] target) {
+        return new String(source).equals(new String(target));
+    }
+
+    /**
      * 忽略大小写替换
      * 
      * @param value
@@ -224,6 +235,42 @@ public class Strings {
         } catch (Exception e) {
             return message;
         }
+    }
+
+    /**
+     * 追加
+     * 
+     * @param separator
+     * @param values
+     * @return
+     */
+    public static String append(String separator, String[] values) {
+        return append(separator, null, values);
+    }
+
+    /**
+     * 追加
+     * 
+     * @param separator
+     * @param seal
+     * @param values
+     * @return
+     */
+    public static String append(String separator, String seal, String[] values) {
+        String result = null;
+        int size = values.length;
+        seal = empty(seal);
+        if (size > 0) {
+            StringBuffer buffer = new StringBuffer(size-- * 32);
+            int i = -1;
+            while (++i < size) {
+                buffer.append(seal).append(values[i]).append(seal)
+                        .append(separator);
+            }
+            buffer.append(seal).append(values[i]).append(seal);
+            result = buffer.toString();
+        }
+        return result;
     }
 
 }

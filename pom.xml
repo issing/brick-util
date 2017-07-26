@@ -20,7 +20,17 @@
     <url>https://github.com/issing/brick-util</url>
   </scm>
 
+  <properties>
+    <bouncycastle.version>1.56</bouncycastle.version>
+  </properties>
+
   <dependencies>
+    <!-- 工具依赖 -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <version>${bouncycastle.version}</version>
+    </dependency>
     <!-- 砖头依赖 -->
     <dependency>
       <groupId>net.isger</groupId>

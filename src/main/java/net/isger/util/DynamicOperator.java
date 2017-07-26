@@ -87,7 +87,11 @@ public class DynamicOperator implements Operator {
      * @param args
      */
     protected Object operate(String operate, Object... args) {
-        return getMethod(operate).invoke(getSource(), args);
+        BoundMethod method = getMethod(operate);
+        Asserts.isNotNull(method,
+                "Unfound the specified operate in the dynamic Operator [%s]",
+                source.getClass().getName());
+        return method.invoke(getSource(), args);
     }
 
     /**

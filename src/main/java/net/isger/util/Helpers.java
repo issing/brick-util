@@ -10,7 +10,6 @@ import java.net.SocketAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.AccessController;
-import java.security.MessageDigest;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,15 +42,12 @@ public class Helpers {
 
     private static int uuidSearial = 0;
 
-    private final static char[] CODES = { '0', '1', '2', '3', '4', '5', '6',
-            '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-            'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
-            'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-            'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-            'X', 'Y', 'Z' };
+    private final static String RADIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    private final static char[] CODES = RADIX.toCharArray();
 
     private final static int[][] LIMITS = new int[][] { { 0, 10 }, { 10, 26 },
-            { 36, 26 }, { 0, 36 }, { 10, 54 }, { 0, 54 } };
+            { 36, 26 }, { 0, 16 }, { 0, 36 }, { 10, 52 }, { 0, 62 } };
 
     /** 最大进制数 */
     public static final int MAX_RADIX = CODES.length;
@@ -158,9 +154,66 @@ public class Helpers {
      * @return
      */
     public static boolean toBoolean(Object value) {
-        return value != null
-                && (value instanceof Boolean ? (boolean) value : Boolean
-                        .parseBoolean(value.toString()));
+        return value != null && (value instanceof Boolean ? (boolean) value
+                : Boolean.parseBoolean(value.toString()));
+    }
+
+    /**
+     * 转换整形
+     * 
+     * @param value
+     * @param def
+     * @return
+     */
+    public static int toInt(Object value, int def) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        } else if (value != null) {
+            try {
+                def = Integer.parseInt(value.toString());
+            } catch (Exception e) {
+            }
+        }
+        return def;
+    }
+
+    /**
+     * 转换16进制
+     * 
+     * @param values
+     * @return
+     */
+    public static String toHex(byte[] values) {
+        int hex;
+        StringBuffer buffer = new StringBuffer(values.length);
+        for (byte value : values) {
+            if ((hex = value & 0xFF) < 16) {
+                buffer.append("0");
+            }
+            buffer.append(Integer.toHexString(hex));
+        }
+        return buffer.toString();
+    }
+
+    public static byte[] toHex(String hex) {
+        int size = hex.length() / 2;
+        byte[] result = new byte[size];
+        char[] values = hex.toCharArray();
+        int offset;
+        byte radixHigh, radixLow;
+        for (int i = 0; i < size; i++) {
+            radixHigh = toRadix(values[offset = i * 2]);
+            radixLow = toRadix(values[offset + 1]);
+            if (radixHigh == -1 || radixLow == -1) {
+                return null;
+            }
+            result[i] = (byte) (radixHigh << 4 | radixLow);
+        }
+        return result;
+    }
+
+    public static byte toRadix(char value) {
+        return (byte) RADIX.indexOf(value);
     }
 
     /**
@@ -171,26 +224,21 @@ public class Helpers {
      */
     public static String makeMD5(byte[] value) {
         try {
-            MessageDigest md5 = MessageDigest.getInstance("MD5");
-            md5.update(value);
-            byte[] digest = md5.digest();
-            int index;
-            StringBuffer buffer = new StringBuffer(32);
-            for (int offset = 0; offset < digest.length; offset++) {
-                index = digest[offset];
-                if (index < 0) {
-                    index += 256;
-                }
-                if (index < 16) {
-                    buffer.append("0");
-                }
-                buffer.append(Integer.toHexString(index));
-            }
-            return buffer.toString();
+            return toHex(Securities.toDigest("MD5", value));
         } catch (Exception e) {
             throw Asserts.state("Failure to make MD5 for [{}] - {}", value,
                     e.getMessage());
         }
+    }
+
+    /**
+     * 生成MD5摘要
+     * 
+     * @param hex
+     * @return
+     */
+    public static String makeMD5(String hex) {
+        return makeMD5(toHex(hex));
     }
 
     /**
@@ -245,13 +293,19 @@ public class Helpers {
         return code.toString();
     }
 
-    private static char getRandomCode(int index) {
-        index %= LIMITS.length;
-        return getRandomCode(LIMITS[index][0], LIMITS[index][1]);
+    /**
+     * 生成随机码
+     * 
+     * @param seed
+     * @return
+     */
+    private static char getRandomCode(int seed) {
+        seed %= LIMITS.length;
+        return getRandomCode(LIMITS[seed][0], LIMITS[seed][1]);
     }
 
     private static char getRandomCode(int start, int limit) {
-        return CODES[start + getRandom() % limit];
+        return CODES[start + getRandom(limit)];
     }
 
     /**
@@ -260,15 +314,25 @@ public class Helpers {
      * @return
      */
     public static int getRandom() {
+        return getRandom(0);
+    }
+
+    /**
+     * 获取随机数
+     * 
+     * @param limit
+     * @return
+     */
+    public static int getRandom(int limit) {
         UUID uuid = UUID.randomUUID();
         Random random = new Random(uuid.getMostSignificantBits());
-        int limit = Math
-                .abs((int) (uuid.getLeastSignificantBits() % Integer.MAX_VALUE));
+        int seed = Math.abs(
+                (int) (uuid.getLeastSignificantBits() % Integer.MAX_VALUE));
         int result;
-        while ((result = random.nextInt(limit)) < 0) {
+        while ((result = random.nextInt(seed)) < 0) {
             continue;
         }
-        return result;
+        return limit <= 0 ? result : result % limit;
     }
 
     public static URL getURL(File file) {
@@ -283,7 +347,8 @@ public class Helpers {
         return getPropertiesURL(isXML, null, name);
     }
 
-    public static URL getPropertiesURL(boolean isXML, Object source, String name) {
+    public static URL getPropertiesURL(boolean isXML, Object source,
+            String name) {
         URL url = Reflects.getResource(source, name);
         if (url == null) {
             if (isXML) {
@@ -333,11 +398,13 @@ public class Helpers {
         return load(load(props, false, name), true, name);
     }
 
-    public static Properties load(Properties props, Object source, String name) {
+    public static Properties load(Properties props, Object source,
+            String name) {
         return load(load(props, false, source, name), true, source, name);
     }
 
-    public static Properties load(Properties props, boolean isXML, String name) {
+    public static Properties load(Properties props, boolean isXML,
+            String name) {
         return load(props, isXML, getPropertiesURL(isXML, name));
     }
 
@@ -415,7 +482,8 @@ public class Helpers {
         return getAliasName(clazz, mask, null);
     }
 
-    public static String getAliasName(Class<?> clazz, String mask, String value) {
+    public static String getAliasName(Class<?> clazz, String mask,
+            String value) {
         String name;
         if (hasAliasName(clazz)) {
             name = clazz.getAnnotation(Alias.class).value().trim();
@@ -424,8 +492,8 @@ public class Helpers {
         } else {
             name = Strings.toLower(clazz.getSimpleName());
         }
-        return Strings.isEmpty(mask) ? name : Strings.replaceIgnoreCase(name,
-                mask);
+        return Strings.isEmpty(mask) ? name
+                : Strings.replaceIgnoreCase(name, mask);
     }
 
     /**
@@ -632,11 +700,8 @@ public class Helpers {
         Object result = Array.newInstance(resultType, resultCount);
         int amount = 0;
         do {
-            Array.set(
-                    result,
-                    amount,
-                    newArray(Array.get(source, amount),
-                            Array.get(target, amount)));
+            Array.set(result, amount, newArray(Array.get(source, amount),
+                    Array.get(target, amount)));
         } while (++amount < loopCount);
         while (amount < resultCount) {
             Array.set(result, amount, Array.get(overValue, amount));
@@ -675,8 +740,8 @@ public class Helpers {
             resultType = Object.class;
         }
         if (!(sourceType.isArray() || targetType.isArray())) {
-            Object result = Array.newInstance(resultType, sourceCount
-                    + targetCount);
+            Object result = Array.newInstance(resultType,
+                    sourceCount + targetCount);
             for (Object[] current : new Object[][] {
                     { sourceType, source, 0, sourceCount },
                     { targetType, target, sourceCount, targetCount } }) {
@@ -734,8 +799,9 @@ public class Helpers {
                     }
                 });
                 // 行填充
-                for (int j = (result instanceof Object[]) ? ((Object[]) result).length
-                        : 1; j < grid.size(); j++) {
+                for (int j = (result instanceof Object[])
+                        ? ((Object[]) result).length : 1; j < grid
+                                .size(); j++) {
                     grid.get(j).add(null);
                 }
             }
@@ -752,8 +818,8 @@ public class Helpers {
                     }
                 });
                 // 行填充
-                int count = (result instanceof Object[]) ? ((Object[]) result).length
-                        : 1;
+                int count = (result instanceof Object[])
+                        ? ((Object[]) result).length : 1;
                 if (count > colCount) {
                     for (int j = 0; j < i; j++) {
                         for (int k = colCount; k < count; k++) {
@@ -887,7 +953,8 @@ public class Helpers {
      * @param callable
      * @return
      */
-    public static Object each(Object instance, Callable<Object> callable) {
+    public static <T extends Object> Object each(Object instance,
+            Callable<T> callable) {
         int size;
         if (instance instanceof Collection) {
             Collection<?> collection = (Collection<?>) instance;
