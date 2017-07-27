@@ -17,14 +17,14 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.isger.util.anno.Ignore;
 import net.isger.util.anno.Ignore.Mode;
 import net.isger.util.reflect.BoundField;
 import net.isger.util.reflect.BoundMethod;
 import net.isger.util.reflect.Constructor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 反射工具
@@ -185,7 +185,8 @@ public class Reflects {
      * @param clazz
      * @return
      */
-    public static Map<String, List<BoundMethod>> getBoundMethods(Class<?> clazz) {
+    public static Map<String, List<BoundMethod>> getBoundMethods(
+            Class<?> clazz) {
         Map<String, List<BoundMethod>> result = METHODS.get(clazz);
         // 跳过接口以及原始数据类型（不继承Object类）
         if (result != null || !Object.class.isAssignableFrom(clazz)) {
@@ -203,7 +204,8 @@ public class Reflects {
             // 导入声明方法（方法名优先）
             boundMethods = new ArrayList<BoundMethod>();
             for (Method method : type.getDeclaredMethods()) {
-                if ((boundMethod = createBoundMethod(method, ignoreMode)) != null
+                if ((boundMethod = createBoundMethod(method,
+                        ignoreMode)) != null
                         && toAppend(result, boundMethod.getName(), boundMethod)
                         && toAppend(result, boundMethod.getMethodDesc(),
                                 boundMethod)) {
@@ -368,7 +370,8 @@ public class Reflects {
      * @param values
      * @return
      */
-    public static <T> T newInstance(Class<T> clazz, Map<String, Object> values) {
+    public static <T> T newInstance(Class<T> clazz,
+            Map<String, Object> values) {
         T instance = newInstance(clazz);
         if (values != null && values.size() > 0) {
             toInstance(instance, values);
@@ -500,8 +503,8 @@ public class Reflects {
         }
         Class<?> result = null;
         try {
-            result = (classLoader != null ? classLoader.loadClass(name) : Class
-                    .forName(name));
+            result = (classLoader != null ? classLoader.loadClass(name)
+                    : Class.forName(name));
         } catch (Exception ex) {
         }
         return result;
@@ -564,13 +567,13 @@ public class Reflects {
         }
         values = Helpers.canonicalize(values);
         String fieldName = null;
-        Map<String, List<BoundField>> fields = getBoundFields(instance
-                .getClass());
+        Map<String, List<BoundField>> fields = getBoundFields(
+                instance.getClass());
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             fieldName = entry.getKey();
             if (values.containsKey(fieldName)) {
-                entry.getValue().get(0)
-                        .setValue(instance, values.get(fieldName));
+                entry.getValue().get(0).setValue(instance,
+                        values.get(fieldName));
             }
         }
         return instance;
@@ -647,8 +650,8 @@ public class Reflects {
      * @return
      */
     public static <T> T toBean(Class<T> clazz, Object[] grid) {
-        Object[] values = grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0]
-                : (Object[]) grid[1];
+        Object[] values = grid[1] instanceof Object[][]
+                ? ((Object[][]) grid[1])[0] : (Object[]) grid[1];
         return toBean(clazz, (Object[]) grid[0], values);
     }
 
@@ -660,17 +663,9 @@ public class Reflects {
      * @param values
      * @return
      */
-    public static <T> T toBean(Class<T> clazz, Object[] columns, Object[] values) {
-        BoundField field;
-        T bean = Reflects.newInstance(clazz);
-        int size = Math.min(columns.length, values.length);
-        for (int i = 0; i < size; i++) {
-            field = getBoundField(clazz, String.valueOf(columns[i]));
-            if (field != null) {
-                field.setValue(bean, values[i]);
-            }
-        }
-        return bean;
+    public static <T> T toBean(Class<T> clazz, Object[] columns,
+            Object[] values) {
+        return Reflects.newInstance(clazz, toMap(columns, values));
     }
 
     /**
@@ -687,7 +682,8 @@ public class Reflects {
                 values.put(entry.getKey(),
                         entry.getValue().get(0).getValue(bean));
             } catch (Exception e) {
-                LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
+                LOG.warn("Failure getting field [{}] value.", entry.getKey(),
+                        e);
             }
         }
         return values;
@@ -700,8 +696,8 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object[] grid) {
-        Object[] values = grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0]
-                : (Object[]) grid[1];
+        Object[] values = grid[1] instanceof Object[][]
+                ? ((Object[][]) grid[1])[0] : (Object[]) grid[1];
         return toMap((Object[]) grid[0], values);
     }
 
@@ -757,7 +753,8 @@ public class Reflects {
         List<T> result = new ArrayList<T>(values.size());
         int step = 0;
         for (Map<String, Object> value : values) {
-            result.add(callable.call(step++, newInstance(clazz, value), result));
+            result.add(
+                    callable.call(step++, newInstance(clazz, value), result));
         }
         return result;
     }

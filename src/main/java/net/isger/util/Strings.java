@@ -155,10 +155,12 @@ public class Strings {
         if (isEmpty(sourceCharset) || sourceCharset.equals(targetCharset)) {
             return new String(data, targetCharset);
         }
-        return new String(Charset
-                .forName(targetCharset)
-                .encode(Charset.forName(sourceCharset).decode(
-                        ByteBuffer.wrap(data))).array(), targetCharset);
+        return new String(
+                Charset.forName(targetCharset)
+                        .encode(Charset.forName(sourceCharset)
+                                .decode(ByteBuffer.wrap(data)))
+                        .array(),
+                targetCharset);
     }
 
     /**
@@ -256,18 +258,21 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String append(String separator, String seal, String[] values) {
+    public static String append(String separator, String seal,
+            String[] values) {
         String result = null;
         int size = values.length;
-        seal = empty(seal);
+        String[] pair = empty(seal).split("[|]", 2);
+        String beginSeal = pair[0];
+        String endSeal = pair.length == 1 ? beginSeal : pair[1];
         if (size > 0) {
             StringBuffer buffer = new StringBuffer(size-- * 32);
             int i = -1;
             while (++i < size) {
-                buffer.append(seal).append(values[i]).append(seal)
+                buffer.append(beginSeal).append(values[i]).append(endSeal)
                         .append(separator);
             }
-            buffer.append(seal).append(values[i]).append(seal);
+            buffer.append(beginSeal).append(values[i]).append(endSeal);
             result = buffer.toString();
         }
         return result;

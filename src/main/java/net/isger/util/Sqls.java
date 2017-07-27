@@ -14,12 +14,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.isger.util.anno.Alias;
 import net.isger.util.reflect.BoundField;
 import net.isger.util.sql.SqlEntry;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 标准SQL工具
@@ -152,7 +152,7 @@ public class Sqls {
      *         |   data1   |     1     |
      *         |   data2   |     2     |
      *         +-----------------------+
-     * </pre>
+     *         </pre>
      */
     public static Object[] getGridData(ResultSet resultSet) {
         List<Object[]> result = new ArrayList<Object[]>();
@@ -198,7 +198,7 @@ public class Sqls {
      *         +-----------------------+
      *         |   data1   |     1     |
      *         +-----------------------+
-     * </pre>
+     *                   </pre>
      */
     public static Object[] getGridData(Object bean) {
         String column;
@@ -434,8 +434,8 @@ public class Sqls {
      * @param conn
      * @return
      */
-    private static PreparedStatement getStatement(String sql,
-            Object[][] values, Connection conn) {
+    private static PreparedStatement getStatement(String sql, Object[][] values,
+            Connection conn) {
         if (LOG.isDebugEnabled()) {
             LOG.info("Preparing batch statement: {}", sql);
         }
@@ -465,8 +465,8 @@ public class Sqls {
         Object value;
         int size = values == null ? 0 : values.length;
         try {
-            size = Math.min(size, stat.getParameterMetaData()
-                    .getParameterCount());
+            size = Math.min(size,
+                    stat.getParameterMetaData().getParameterCount());
         } catch (Exception e) {
         }
         if (LOG.isDebugEnabled() && size > 0) {
@@ -561,11 +561,12 @@ public class Sqls {
             sqls = Helpers.getProperties(clazz, name + ".sql");
             /* 方言配置 */
             if (Strings.isNotEmpty(dialectName)) {
-                sqls = Helpers.load(sqls, clazz, name + "$"
-                        + dialectName.trim().toLowerCase() + ".sql");
+                sqls = Helpers.load(sqls, clazz,
+                        name + "$" + dialectName.trim().toLowerCase() + ".sql");
             }
             // 配置文件中必须包含配置语句
-            Asserts.throwState(sqls != null, "Not found the [%s.sql.xml] file", name);
+            Asserts.throwState(sqls != null, "Not found the [%s.sql.xml] file",
+                    name);
             CACHE_SQLS.put(name, sqls);
         }
         /* 配置语句 */
