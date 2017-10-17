@@ -14,6 +14,7 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,8 +26,6 @@ import java.util.Random;
 import java.util.UUID;
 
 import net.isger.util.anno.Alias;
-import net.isger.util.anno.Ignore;
-import net.isger.util.anno.Ignore.Mode;
 
 /**
  * 帮助工具
@@ -249,11 +248,13 @@ public class Helpers {
     public static String makeUUID() {
         UUID uuid = UUID.randomUUID();
         StringBuilder buffer = new StringBuilder();
-        buffer.append(digits(uuid.getMostSignificantBits() >> 32, 8));
-        buffer.append(digits(uuid.getMostSignificantBits() >> 16, 4));
-        buffer.append(digits(uuid.getMostSignificantBits(), 4));
-        buffer.append(digits(uuid.getLeastSignificantBits() >> 48, 4));
-        buffer.append(digits(uuid.getLeastSignificantBits(), 12));
+        long mostBits = uuid.getMostSignificantBits();
+        buffer.append(getDigits(mostBits >> 32, 8));
+        buffer.append(getDigits(mostBits >> 16, 4));
+        buffer.append(getDigits(mostBits, 4));
+        long leastBits = uuid.getLeastSignificantBits();
+        buffer.append(getDigits(leastBits >> 48, 4));
+        buffer.append(getDigits(leastBits, 12));
         synchronized (UUID_LOCKED) {
             buffer.append(CODES[uuidSearial]);
             if (++uuidSearial >= CODES.length) {
@@ -263,9 +264,16 @@ public class Helpers {
         return buffer.toString();
     }
 
-    private static String digits(long val, int digits) {
-        long hi = 1L << (digits * 4);
-        return parse(hi | (val & (hi - 1)), MAX_RADIX).substring(1);
+    /**
+     * 获取指定位数值
+     *
+     * @param value
+     * @param bits
+     * @return
+     */
+    private static String getDigits(long value, int bits) {
+        long hi = 1L << (bits * 4);
+        return parse(hi | (value & (hi - 1)), MAX_RADIX).substring(1);
     }
 
     /**
@@ -497,13 +505,29 @@ public class Helpers {
     }
 
     /**
-     * 集合规范化
+     * 屏蔽集合修改功能
+     * 
+     * @param values
+     * @return
+     */
+    public static <T> Map<String, List<T>> toUnmodifiable(
+            Map<String, List<T>> values) {
+        for (Entry<String, List<T>> entry : values.entrySet()) {
+            values.put(entry.getKey(),
+                    Collections.unmodifiableList(entry.getValue()));
+        }
+        return Collections.unmodifiableMap(values);
+    }
+
+    /**
+     * 集合层级化
      * 
      * @param values
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> canonicalize(Map<String, Object> values) {
+    public static Map<String, Object> toHierarchical(
+            Map<String, Object> values) {
         Map<String, Object> result = new HashMap<String, Object>();
         int index;
         String key;
@@ -541,6 +565,65 @@ public class Helpers {
             container.put(subKey, entry.getValue());
         }
         return result;
+    }
+
+    /**
+     * 集合扁平化
+     *
+     * @param values
+     * @return
+     */
+    public static Map<String, Object> toFlat(Map<String, Object> values) {
+        return null;
+    }
+
+    /**
+     * 追加实例
+     * 
+     * @param values
+     * @param name
+     * @param value
+     * @return
+     */
+    public static <K, T> boolean toAppend(Map<K, List<T>> values, K name,
+            T value) {
+        return toAppend(values, name, value, true);
+    }
+
+    public static <K, T> boolean toAppend(Map<K, List<T>> values, K name,
+            T value, boolean repeat) {
+        return toAppend(values, name, Arrays.asList(value), repeat) > 0;
+    }
+
+    /**
+     * 追加实例
+     * 
+     * @param values
+     * @param name
+     * @param value
+     * @return
+     */
+    public static <K, T> int toAppend(Map<K, List<T>> values, K name,
+            Collection<T> value) {
+        return toAppend(values, name, value, true);
+    }
+
+    /**
+     * 追加实例
+     * 
+     * @param values
+     * @param name
+     * @param value
+     * @return
+     */
+    public static <K, T> int toAppend(Map<K, List<T>> values, K name,
+            Collection<T> value, boolean repeat) {
+        List<T> container = values.get(name);
+        if (container == null) {
+            values.put(name, container = new ArrayList<T>());
+        }
+        return repeat ? (container.addAll(value) ? value.size() : 0)
+                : add(container, value);
     }
 
     public static boolean contains(List<?> a, List<?> b) {
@@ -589,20 +672,20 @@ public class Helpers {
         return container;
     }
 
-    public static <T> int add(List<T> container, Enumeration<T> values) {
+    public static <T> int add(Collection<T> container, Enumeration<T> values) {
         return add(container, getList(values));
     }
 
-    public static <T> int add(List<T> container, Iterator<T> values) {
+    public static <T> int add(Collection<T> container, Iterator<T> values) {
         return add(container, getList(values));
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> int add(List<T> container, T... values) {
+    public static <T> int add(Collection<T> container, T... values) {
         return add(container, values == null ? null : Arrays.asList(values));
     }
 
-    public static <T> int add(List<T> container, List<T> values) {
+    public static <T> int add(Collection<T> container, Collection<T> values) {
         int amount = 0;
         if (values != null) {
             for (T value : values) {
@@ -614,7 +697,7 @@ public class Helpers {
         return amount;
     }
 
-    public static <T> boolean add(List<T> container, T value) {
+    public static <T> boolean add(Collection<T> container, T value) {
         boolean result;
         if (result = !(value == null || container.contains(value))) {
             container.add(value);
@@ -650,7 +733,7 @@ public class Helpers {
     public static Map<String, Object> getMap(Map<String, Object> params,
             String namespace) {
         if (Strings.isNotEmpty(namespace)) {
-            params = Helpers.canonicalize(params);
+            params = Helpers.toHierarchical(params);
             Object value;
             for (String name : namespace.split("[./]")) {
                 value = params.get(name);
@@ -663,6 +746,16 @@ public class Helpers {
             }
         }
         return params;
+    }
+
+    public static Object getInstance(Map<String, Object> params,
+            String namespace) {
+        int index = namespace.lastIndexOf(".");
+        if (index > 0) {
+            params = getMap(params, namespace.substring(0, index));
+            namespace = namespace.substring(index + 1);
+        }
+        return params.get(namespace);
     }
 
     public static Object newArray(Object source) {
@@ -813,10 +906,12 @@ public class Helpers {
                 final List<Object> row = new ArrayList<Object>();
                 grid.add(row);
                 result = each(values[i], new Callable<Object>() {
+
                     public Object call(Object... args) {
                         return row.add(args[1]);
                     }
                 });
+
                 // 行填充
                 int count = (result instanceof Object[])
                         ? ((Object[]) result).length : 1;
@@ -843,37 +938,33 @@ public class Helpers {
         return result;
     }
 
-    public static Object up(Object value) {
+    /**
+     * 数组紧凑化
+     *
+     * @param value
+     * @return
+     */
+    public static Object compact(Object value) {
         if (value != null) {
+            if (value instanceof Collection) {
+                value = ((Collection<?>) value).toArray();
+            }
             Class<?> type = value.getClass();
             if (type.isArray()) {
-                int length = Array.getLength(value);
-                switch (length) {
+                int size = Array.getLength(value);
+                switch (size) {
                 case 0:
                     value = null;
                     break;
                 case 1:
-                    value = up(Array.get(value, 0));
+                    value = compact(Array.get(value, 0));
                     break;
                 default:
                     List<Object> container = new ArrayList<Object>();
-                    Object element;
-                    for (int i = 0; i < length; i++) {
-                        element = up(Array.get(value, i));
-                        if (element != null) {
-                            container.add(element);
-                        }
+                    for (int i = 0; i < size; i++) {
+                        container.add(compact(Array.get(value, i)));
                     }
-                    switch (container.size()) {
-                    case 0:
-                        value = null;
-                        break;
-                    case 1:
-                        value = container.get(0);
-                        break;
-                    default:
-                        value = container.toArray();
-                    }
+                    value = compact(container.toArray());
                 }
             }
         }
@@ -891,16 +982,6 @@ public class Helpers {
     @SafeVarargs
     public static <T> T[] group(T... args) {
         return args;
-    }
-
-    public static Mode getMode(Ignore ignore, Mode mode) {
-        if (ignore != null) {
-            Mode result = ignore.mode();
-            if (result != null) {
-                return result;
-            }
-        }
-        return mode;
     }
 
     public static void sleep(int ns) {
@@ -946,15 +1027,36 @@ public class Helpers {
         return new InetSocketAddress(port);
     }
 
+    public static boolean isMultiple(Object instance) {
+        return instance instanceof Collection || instance.getClass().isArray();
+    }
+
     /**
      * 遍历操作
      * 
      * @param instance
      * @param callable
+     * @param args
      * @return
      */
     public static <T extends Object> Object each(Object instance,
-            Callable<T> callable) {
+            Callable<T> callable, Object... args) {
+        return each(false, instance, callable, args);
+    }
+
+    /**
+     * 遍历操作
+     * 
+     *
+     * @param multipled
+     * @param instance
+     * @param callable
+     * @param args
+     * @return
+     */
+    public static <T extends Object> Object each(boolean multipled,
+            Object instance, Callable<T> callable, Object... args) {
+        boolean isMultiple = true;
         int size;
         if (instance instanceof Collection) {
             Collection<?> collection = (Collection<?>) instance;
@@ -963,14 +1065,52 @@ public class Helpers {
         } else if (instance.getClass().isArray()) {
             size = Array.getLength(instance);
         } else {
+            isMultiple = false;
             size = 1;
             instance = new Object[] { instance };
         }
         Object[] result = new Object[size];
         for (int i = 0; i < size; i++) {
-            result[i] = callable.call(i, Array.get(instance, i));
+            result[i] = callable.call(i, Array.get(instance, i), args);
         }
-        return (size == 1) ? result[0] : result;
+        return isMultiple || multipled ? result : result[0];
+    }
+
+    public static int getIndex(Object array, Object instance) {
+        int size = 0;
+        if (array instanceof Collection) {
+            Collection<?> collection = (Collection<?>) array;
+            size = collection.size();
+            array = collection.toArray(new Object[size]);
+        } else if (array.getClass().isArray()) {
+            size = Array.getLength(array);
+        }
+        for (int i = 0; i < size; i++) {
+            if (instance.equals(Array.get(array, i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static Object getInstance(Object array, int index) {
+        int size = 0;
+        if (array instanceof Collection) {
+            Collection<?> collection = (Collection<?>) array;
+            size = collection.size();
+            array = collection.toArray(new Object[size]);
+        } else if (array.getClass().isArray()) {
+            size = Array.getLength(array);
+        }
+        return index < 0 || index >= size ? null : Array.get(array, index);
+    }
+
+    public static int hashCode(Object instance) {
+        return instance == null ? 0 : instance.hashCode();
+    }
+
+    public static boolean equals(Object source, Object target) {
+        return source == target || (source != null && source.equals(target));
     }
 
 }

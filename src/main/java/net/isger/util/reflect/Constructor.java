@@ -3,10 +3,10 @@ package net.isger.util.reflect;
 import java.util.Hashtable;
 import java.util.Map;
 
-import net.isger.util.hitch.Director;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.isger.util.hitch.Director;
 
 public class Constructor {
 
@@ -81,8 +81,8 @@ public class Constructor {
         try {
             return clazz.newInstance();
         } catch (Exception e) {
-            throw new IllegalStateException("Unsupported construct type "
-                    + clazz, e);
+            throw new IllegalStateException(
+                    "Unsupported construct type " + clazz, e);
         }
     }
 }

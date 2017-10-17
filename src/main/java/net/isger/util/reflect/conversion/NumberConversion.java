@@ -1,5 +1,8 @@
 package net.isger.util.reflect.conversion;
 
+import java.lang.reflect.Type;
+
+import net.isger.util.Reflects;
 import net.isger.util.reflect.Converter;
 
 public class NumberConversion implements Conversion {
@@ -9,16 +12,19 @@ public class NumberConversion implements Conversion {
     private NumberConversion() {
     }
 
-    public boolean isSupport(Class<?> type) {
-        return Boolean.class.isAssignableFrom(type)
-                || Character.class.isAssignableFrom(type)
-                || Number.class.isAssignableFrom(type) || type.isPrimitive();
+    public boolean isSupport(Type type) {
+        Class<?> rawClass = Reflects.getRawClass(type);
+        return Boolean.class.isAssignableFrom(rawClass)
+                || Character.class.isAssignableFrom(rawClass)
+                || Number.class.isAssignableFrom(rawClass)
+                || rawClass.isPrimitive();
     }
 
-    public Object convert(Class<?> type, Object value) {
+    public Object convert(Type type, Object value) {
+        Class<?> rawClass = Reflects.getRawClass(type);
         Number source;
         if (value == null) {
-            return (Number) Converter.defaultValue(type);
+            return Converter.defaultValue(rawClass);
         } else if (value instanceof Number) {
             source = (Number) value;
         } else if (value instanceof Boolean) {
@@ -28,28 +34,32 @@ public class NumberConversion implements Conversion {
         } else {
             source = Double.parseDouble(value.toString().trim());
         }
-        if (Boolean.class.isAssignableFrom(type)
-                || Boolean.TYPE.isAssignableFrom(type)) {
+        if (Boolean.class.isAssignableFrom(rawClass)
+                || Boolean.TYPE.isAssignableFrom(rawClass)) {
             return source.intValue() != 0;
         }
-        if (Character.class.isAssignableFrom(type)
-                || Character.TYPE.isAssignableFrom(type)) {
+        if (Character.class.isAssignableFrom(rawClass)
+                || Character.TYPE.isAssignableFrom(rawClass)) {
             return (char) source.byteValue();
         }
-        if (Integer.class.isAssignableFrom(type)
-                || Integer.TYPE.isAssignableFrom(type)) {
+        if (Short.class.isAssignableFrom(rawClass)
+                || Short.TYPE.isAssignableFrom(rawClass)) {
+            return source.shortValue();
+        }
+        if (Integer.class.isAssignableFrom(rawClass)
+                || Integer.TYPE.isAssignableFrom(rawClass)) {
             return source.intValue();
         }
-        if (Long.class.isAssignableFrom(type)
-                || Long.TYPE.isAssignableFrom(type)) {
+        if (Long.class.isAssignableFrom(rawClass)
+                || Long.TYPE.isAssignableFrom(rawClass)) {
             return source.longValue();
         }
-        if (Float.class.isAssignableFrom(type)
-                || Float.TYPE.isAssignableFrom(type)) {
+        if (Float.class.isAssignableFrom(rawClass)
+                || Float.TYPE.isAssignableFrom(rawClass)) {
             return source.floatValue();
         }
-        if (Double.class.isAssignableFrom(type)
-                || Double.TYPE.isAssignableFrom(type)) {
+        if (Double.class.isAssignableFrom(rawClass)
+                || Double.TYPE.isAssignableFrom(rawClass)) {
             return source.doubleValue();
         }
         return source.intValue();

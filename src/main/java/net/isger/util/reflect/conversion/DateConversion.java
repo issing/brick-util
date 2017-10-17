@@ -1,9 +1,12 @@
 package net.isger.util.reflect.conversion;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Date;
 
+import net.isger.util.Asserts;
 import net.isger.util.Dates;
+import net.isger.util.Reflects;
 
 public class DateConversion implements Conversion {
 
@@ -12,11 +15,12 @@ public class DateConversion implements Conversion {
     private DateConversion() {
     }
 
-    public boolean isSupport(Class<?> type) {
-        return type.equals(Date.class) || Date.class.isAssignableFrom(type);
+    public boolean isSupport(Type type) {
+        Class<?> rawClass = Reflects.getRawClass(type);
+        return Date.class.isAssignableFrom(rawClass);
     }
 
-    public Date convert(Class<?> type, Object value) {
+    public Date convert(Type type, Object value) {
         String source;
         convert: {
             if (value == null) {
@@ -38,19 +42,20 @@ public class DateConversion implements Conversion {
             }
         }
         try {
-            Method method = type.getDeclaredMethod("valueOf");
+            Method method = Reflects.getRawClass(type)
+                    .getDeclaredMethod("valueOf");
             return (Date) method.invoke(type, value);
         } catch (Exception e) {
         }
         Date date = Dates.toDate(value);
         if (date == null) {
-            throw new IllegalArgumentException(source);
+            throw Asserts.argument(source);
         }
         return date;
     }
 
     public String toString() {
-        return Date.class.getName();
+        return "date";
     }
 
 }

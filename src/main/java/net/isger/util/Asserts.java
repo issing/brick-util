@@ -1,5 +1,7 @@
 package net.isger.util;
 
+import java.lang.reflect.Type;
+
 /**
  * 断言工具
  * 
@@ -20,54 +22,62 @@ public class Asserts {
         throwArgument(expression, message, args);
     }
 
-    public static void isNull(Object object) {
-        isNull(object, "The argument must be null");
+    public static <T extends Object> T isNull(T value) {
+        return isNull(value, "The argument must be null");
     }
 
-    public static void isNull(Object object, String message, Object... args) {
-        throwArgument(object == null, message, args);
-    }
-
-    public static void isNotNull(Object object) {
-        isNotNull(object, "The argument not be null");
-    }
-
-    public static void isNotNull(Object object, String message,
+    public static <T extends Object> T isNull(T value, String message,
             Object... args) {
-        throwArgument(object != null, message, args);
+        throwArgument(value == null, message, args);
+        return value;
     }
 
-    public static void isNotEmpty(String text) {
-        isNotEmpty(text, "The argument not be null or empty");
+    public static <T extends Object> T isNotNull(T value) {
+        isNotNull(value, "The argument not be null");
+        return value;
     }
 
-    public static void isNotEmpty(String text, String message, Object... args) {
-        throwArgument(Strings.isNotEmpty(text), message, args);
+    public static <T extends Object> T isNotNull(T value, String message,
+            Object... args) {
+        throwArgument(value != null, message, args);
+        return value;
     }
 
-    public static void isNotContains(String source, String value) {
-        isNotContains(source, value,
+    public static <T extends Object> String isNotEmpty(T value) {
+        return isNotEmpty(value, "The argument not be null or empty");
+    }
+
+    public static <T extends Object> String isNotEmpty(T value, String message,
+            Object... args) {
+        throwArgument(Strings.isNotEmpty(value), message, args);
+        return value.toString().trim();
+    }
+
+    public static String isNotContains(String source, String value) {
+        return isNotContains(source, value,
                 "The source must not contain the substring [%s]", value);
     }
 
-    public static void isNotContains(String source, String value,
+    public static String isNotContains(String source, String value,
             String message, Object... args) {
         throwArgument(Strings.isEmpty(source) || Strings.isEmpty(value)
                 || !source.contains(value), message, args);
+        return source;
     }
 
-    public static void isInstance(Class<?> clazz, Object obj) {
-        isInstance(clazz, obj, "");
+    public static void isInstance(Class<?> clazz, Object instance) {
+        isInstance(clazz, instance, "");
     }
 
-    public static void isInstance(Class<?> type, Object obj, String message,
-            Object... args) {
+    public static void isInstance(Class<?> type, Object instance,
+            String message, Object... args) {
         isNotNull(type, "Type to check against must not be null");
-        throwArgument(type.isInstance(obj),
+        throwArgument(type.isInstance(instance),
                 "%sinstance of class [%s] must be an instance of %s",
                 Strings.isEmpty(message) ? ""
                         : Strings.format(message, args) + " - ",
-                (obj != null ? obj.getClass().getName() : "null"), type);
+                (instance != null ? instance.getClass().getName() : "null"),
+                type);
     }
 
     public static void isAssignable(Class<?> superType, Class<?> subType) {
@@ -82,6 +92,12 @@ public class Asserts {
                 Strings.isEmpty(message) ? ""
                         : Strings.format(message, args) + " - ",
                 subType, superType);
+    }
+
+    public static void isNotPrimitive(Type type) {
+        throwArgument(
+                !(type instanceof Class<?>) || !((Class<?>) type).isPrimitive(),
+                "%s is primitive", type);
     }
 
     public static void throwArgument(boolean expression) {

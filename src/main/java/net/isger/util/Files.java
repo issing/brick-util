@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -81,8 +82,8 @@ public class Files {
         try {
             jos = new JarOutputStream(new FileOutputStream(path));
         } catch (IOException e) {
-            jos = new JarOutputStream(new URL(path).openConnection()
-                    .getOutputStream());
+            jos = new JarOutputStream(
+                    new URL(path).openConnection().getOutputStream());
         }
         return jos;
     }
@@ -247,7 +248,8 @@ public class Files {
      */
     public static File createFile(File file) {
         File parentDir = file.getParentFile();
-        if (parentDir.exists() && parentDir.isDirectory() || parentDir.mkdirs()) {
+        if (parentDir.exists() && parentDir.isDirectory()
+                || parentDir.mkdirs()) {
             try {
                 if (file.exists() && file.isFile() || file.createNewFile()) {
                     return file;
@@ -387,6 +389,28 @@ public class Files {
             close(bs);
         }
         return bs.toByteArray();
+    }
+
+    /**
+     * 字节码转换
+     *
+     * @param instance
+     * @return
+     * @throws IOException
+     */
+    public static byte[] toBytes(Object instance) throws IOException {
+        byte[] result = null;
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        ObjectOutputStream os = null;
+        try {
+            os = new ObjectOutputStream(buffer);
+            os.writeObject(instance);
+            result = buffer.toByteArray();
+        } finally {
+            close(os);
+            close(buffer);
+        }
+        return result;
     }
 
     /**

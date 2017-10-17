@@ -1,9 +1,10 @@
 package net.isger.util.reflect.conversion;
 
-import java.lang.reflect.Array;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
 
+import net.isger.util.Reflects;
 import net.isger.util.reflect.Converter;
 
 public class CollectionConversion implements Conversion {
@@ -13,32 +14,28 @@ public class CollectionConversion implements Conversion {
     private CollectionConversion() {
     }
 
-    public boolean isSupport(Class<?> type) {
-        return type.equals(Collection.class);
+    public boolean isSupport(Type type) {
+        return Collection.class.isAssignableFrom(Reflects.getRawClass(type));
     }
 
-    public Object convert(Class<?> type, Object value) {
+    @SuppressWarnings("unchecked")
+    public Object convert(Type type, Object value) {
         if (value instanceof Object[]) {
             value = Arrays.asList((Object[]) value);
         } else if (!(value instanceof Collection)) {
-            throw new IllegalStateException("Unexpected class conversion for "
-                    + value);
+            value = Arrays.asList(value);
         }
-        Class<?> componentType = type.getComponentType();
-        if (componentType.isAssignableFrom(value.getClass().getComponentType())) {
-            return value;
+        Collection<Object> result = (Collection<Object>) Reflects
+                .newInstance(Reflects.getRawClass(type));
+        Class<?> actualClass = (Class<?>) Reflects.getActualType(type);
+        for (Object instance : (Collection<?>) value) {
+            result.add(Converter.convert(actualClass, instance));
         }
-        int count = ((Collection<?>) value).size();
-        Object[] values = ((Collection<?>) value).toArray();
-        Object array = Array.newInstance(componentType, count);
-        for (int i = 0; i < count; i++) {
-            Array.set(array, i, Converter.convert(componentType, values[i]));
-        }
-        return Arrays.asList((Object[]) array);
+        return result;
     }
 
     public String toString() {
-        return Collection.class.getName();
+        return "collection";
     }
 
 }

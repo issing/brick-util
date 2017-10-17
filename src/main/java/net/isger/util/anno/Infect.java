@@ -15,4 +15,6 @@ import java.lang.annotation.Target;
 @Target({ ElementType.FIELD })
 public @interface Infect {
 
+    String value() default ".*";
+
 }

@@ -89,16 +89,14 @@ public class Securities {
                 createRoot("CN=" + root + "," + issuer, period, 1, rkp));
         /* 创建中级凭证 */
         KeyPair ikp = createKeyPair(algorithm);
-        X500PrivateCredential interCredential = createCredential(
-                intermediate,
+        X500PrivateCredential interCredential = createCredential(intermediate,
                 ikp.getPrivate(),
                 createIntermediate("CN=" + intermediate + "," + issuer, period,
                         1, ikp.getPublic(), rootCredential.getPrivateKey(),
                         rootCredential.getCertificate()));
         /* 创建实体凭证 */
         KeyPair ekp = createKeyPair(algorithm);
-        X500PrivateCredential entityCredential = createCredential(
-                entity,
+        X500PrivateCredential entityCredential = createCredential(entity,
                 ekp.getPrivate(),
                 createEntity("CN=" + entity + "," + issuer, period, 1,
                         ekp.getPublic(), interCredential.getPrivateKey(),
@@ -107,10 +105,8 @@ public class Securities {
         store.setCertificateEntry(rootCredential.getAlias(),
                 rootCredential.getCertificate());
         /* 设置秘钥入口 */
-        store.setKeyEntry(
-                entityCredential.getAlias(),
-                entityCredential.getPrivateKey(),
-                password,
+        store.setKeyEntry(entityCredential.getAlias(),
+                entityCredential.getPrivateKey(), password,
                 new Certificate[] { entityCredential.getCertificate(),
                         interCredential.getCertificate(),
                         rootCredential.getCertificate() });
@@ -195,8 +191,8 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore createKeyStore(String name, String password,
-            Key key, Certificate... certificates) throws Exception {
+    public static KeyStore createKeyStore(String name, String password, Key key,
+            Certificate... certificates) throws Exception {
         return createKeyStore("PKCS12", name, password, key, certificates);
     }
 
@@ -216,8 +212,9 @@ public class Securities {
             throws Exception {
         KeyStore keyStore = KeyStore.getInstance(algorithm);
         keyStore.load(null, null);
-        keyStore.setKeyEntry(name, key, Strings.isEmpty(password) ? null
-                : password.toCharArray(), certificates);
+        keyStore.setKeyEntry(name, key,
+                Strings.isEmpty(password) ? null : password.toCharArray(),
+                certificates);
         return keyStore;
     }
 
@@ -266,7 +263,8 @@ public class Securities {
                 new X500Name(issuer), BigInteger.valueOf(serial), notBefore,
                 Dates.getDate(notBefore, period), new X500Name(issuer),
                 keyPair.getPublic());
-        return getCertificate(builder.build(createSigner(keyPair.getPrivate())));
+        return getCertificate(
+                builder.build(createSigner(keyPair.getPrivate())));
     }
 
     /**
@@ -284,8 +282,8 @@ public class Securities {
         X509v1CertificateBuilder builder = new X509v1CertificateBuilder(
                 new X500Name(issuer), BigInteger.valueOf(1), notBefore,
                 Dates.getDate(notBefore, period), new X500Name(issuer),
-                SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(keyPair
-                        .getPublic()));
+                SubjectPublicKeyInfoFactory
+                        .createSubjectPublicKeyInfo(keyPair.getPublic()));
         return getCertificate(builder.build(createSigner(keyPair))
                 .toASN1Structure().getEncoded());
     }
@@ -308,8 +306,8 @@ public class Securities {
         Date notBefore = new Date();
         X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
                 caCert.getSubjectX500Principal(), BigInteger.valueOf(serial),
-                notBefore, Dates.getDate(notBefore, period), new X500Principal(
-                        subject), inKey);
+                notBefore, Dates.getDate(notBefore, period),
+                new X500Principal(subject), inKey);
         JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
         builder.addExtension(Extension.authorityKeyIdentifier, false,
                 extUtils.createAuthorityKeyIdentifier(caCert))
@@ -317,9 +315,7 @@ public class Securities {
                         extUtils.createSubjectKeyIdentifier(inKey))
                 .addExtension(Extension.basicConstraints, true,
                         new BasicConstraints(0))
-                .addExtension(
-                        Extension.keyUsage,
-                        true,
+                .addExtension(Extension.keyUsage, true,
                         new KeyUsage(KeyUsage.digitalSignature
                                 | KeyUsage.keyCertSign | KeyUsage.cRLSign));
         return getCertificate(builder.build(createSigner(caKey)));
@@ -343,8 +339,8 @@ public class Securities {
         Date notBefore = new Date();
         X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
                 caCert.getSubjectX500Principal(), BigInteger.valueOf(serail),
-                notBefore, Dates.getDate(notBefore, period), new X500Principal(
-                        subject), entityKey);
+                notBefore, Dates.getDate(notBefore, period),
+                new X500Principal(subject), entityKey);
         JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
         builder.addExtension(Extension.authorityKeyIdentifier, false,
                 extUtils.createAuthorityKeyIdentifier(caCert))
@@ -352,11 +348,8 @@ public class Securities {
                         extUtils.createSubjectKeyIdentifier(entityKey))
                 .addExtension(Extension.basicConstraints, true,
                         new BasicConstraints(false))
-                .addExtension(
-                        Extension.keyUsage,
-                        true,
-                        new KeyUsage(KeyUsage.digitalSignature
-                                | KeyUsage.keyEncipherment));
+                .addExtension(Extension.keyUsage, true, new KeyUsage(
+                        KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
         return getCertificate(builder.build(createSigner(caKey)));
     }
 
@@ -408,8 +401,8 @@ public class Securities {
      */
     public static PrivateKey getPrivateKey(KeyStore store, String name,
             String password) throws Exception {
-        return (PrivateKey) store.getKey(name, Strings.isEmpty(password) ? null
-                : password.toCharArray());
+        return (PrivateKey) store.getKey(name,
+                Strings.isEmpty(password) ? null : password.toCharArray());
     }
 
     /**
@@ -569,8 +562,8 @@ public class Securities {
                 .find(algorithm);
         AlgorithmIdentifier digAlg = new DefaultDigestAlgorithmIdentifierFinder()
                 .find(sigAlg);
-        return new BcRSAContentSignerBuilder(sigAlg, digAlg).build(keyPair
-                .getPrivate());
+        return new BcRSAContentSignerBuilder(sigAlg, digAlg)
+                .build(keyPair.getPrivate());
     }
 
     /**
@@ -594,8 +587,8 @@ public class Securities {
      */
     public static ContentSigner createSigner(String algorithm, PrivateKey key)
             throws Exception {
-        return new JcaContentSignerBuilder(algorithm).setProvider("BC").build(
-                key);
+        return new JcaContentSignerBuilder(algorithm).setProvider("BC")
+                .build(key);
     }
 
     /**
@@ -805,8 +798,8 @@ public class Securities {
         }
 
         store = createSuite("JKS", "Bildatas Trust NetWork", "cube", "iot",
-                "iot.key".toCharArray(), "RSA", issuser.toString(), 20l * 365
-                        * 24 * 60 * 60 * 1000);
+                "iot.key".toCharArray(), "RSA", issuser.toString(),
+                20l * 365 * 24 * 60 * 60 * 1000);
         try (OutputStream os = new FileOutputStream(
                 Files.createFile("/tmp/iot.keystore"))) {
             store.store(os, "iot.store".toCharArray());

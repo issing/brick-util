@@ -12,6 +12,7 @@ public class DefaultHitch {
         Converter.addConversion(BooleanConversion.CONVERSION);
         Converter.addConversion(NumberConversion.CONVERSION);
         Converter.addConversion(DateConversion.CONVERSION);
+        Converter.addConversion(ArrayConversion.CONVERSION);
         Converter.addConversion(CollectionConversion.CONVERSION);
     }
 

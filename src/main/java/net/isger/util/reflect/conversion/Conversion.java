@@ -1,5 +1,7 @@
 package net.isger.util.reflect.conversion;
 
+import java.lang.reflect.Type;
+
 public interface Conversion {
 
     /**
@@ -8,7 +10,7 @@ public interface Conversion {
      * @param type
      * @return
      */
-    public boolean isSupport(Class<?> type);
+    public boolean isSupport(Type type);
 
     /**
      * 转换类型
@@ -17,6 +19,6 @@ public interface Conversion {
      * @param res
      * @return
      */
-    public Object convert(Class<?> type, Object res);
+    public Object convert(Type type, Object value);
 
 }
