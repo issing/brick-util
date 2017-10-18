@@ -20,22 +20,15 @@
     <url>https://github.com/issing/brick-util</url>
   </scm>
 
-  <properties>
-    <bouncycastle.version>1.56</bouncycastle.version>
-    <inject.version>1</inject.version>
-  </properties>
-
   <dependencies>
     <!-- 工具依赖 -->
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
-      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>javax.inject</groupId>
       <artifactId>javax.inject</artifactId>
-      <version>${inject.version}</version>
     </dependency>
     <!-- 砖头依赖 -->
     <dependency>
