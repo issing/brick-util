@@ -79,7 +79,7 @@ public class Director {
      */
     protected final String directPath(String key, String value) {
         String hitchPath = Helpers.getProperty(key, value);
-        if (!(value == null || hitchPath.endsWith(value))) {
+        if (!(value == null || hitchPath.lastIndexOf(value) >= 0)) {
             hitchPath += TOKEN_SEPARETOR + value;
         }
         return hitchPath;
