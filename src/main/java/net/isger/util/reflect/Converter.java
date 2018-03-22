@@ -102,11 +102,6 @@ public class Converter {
             return defaultValue(type);
         }
         Class<?> rawClass = Reflects.getRawClass(type);
-        /* 可赋值操作 */
-        Class<?> srcClass = value.getClass();
-        if (rawClass.isAssignableFrom(srcClass)) {
-            return value;
-        }
         /* 自定义转换 */
         for (Conversion conversion : CONVERTER.conversions.values()) {
             if (conversion.isSupport(type)) {
@@ -119,6 +114,11 @@ public class Converter {
                     }
                 }
             }
+        }
+        /* 可赋值操作 */
+        Class<?> srcClass = value.getClass();
+        if (rawClass.isAssignableFrom(srcClass)) {
+            return value;
         }
         /* 多值转换 */
         if (value instanceof Collection) {

@@ -22,6 +22,8 @@ public class ClassConversion implements Conversion {
             if (result != null) {
                 return result;
             }
+        } else if (value instanceof Type) {
+            return Reflects.getRawClass((Type) value);
         }
         throw Asserts.state("Unexpected class conversion for %s", value);
     }

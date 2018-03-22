@@ -590,9 +590,18 @@ public class Helpers {
         return toAppend(values, name, value, true);
     }
 
+    /**
+     * 追加实例
+     *
+     * @param values
+     * @param name
+     * @param value
+     * @param repeat
+     * @return
+     */
     public static <K, T> boolean toAppend(Map<K, List<T>> values, K name,
             T value, boolean repeat) {
-        return toAppend(values, name, Arrays.asList(value), repeat) > 0;
+        return toAppends(values, name, Arrays.asList(value), repeat) > 0;
     }
 
     /**
@@ -603,9 +612,9 @@ public class Helpers {
      * @param value
      * @return
      */
-    public static <K, T> int toAppend(Map<K, List<T>> values, K name,
+    public static <K, T> int toAppends(Map<K, List<T>> values, K name,
             Collection<T> value) {
-        return toAppend(values, name, value, true);
+        return toAppends(values, name, value, true);
     }
 
     /**
@@ -616,7 +625,7 @@ public class Helpers {
      * @param value
      * @return
      */
-    public static <K, T> int toAppend(Map<K, List<T>> values, K name,
+    public static <K, T> int toAppends(Map<K, List<T>> values, K name,
             Collection<T> value, boolean repeat) {
         List<T> container = values.get(name);
         if (container == null) {
@@ -776,29 +785,16 @@ public class Helpers {
         return result;
     }
 
-    public static Object newArray(Class<?> resultType, Object source,
-            int sourceCount, Object target, int targetCount) {
-        Object overValue;
-        int loopCount;
-        int resultCount;
-        if ((sourceCount - targetCount) >= 0) {
-            overValue = source;
-            loopCount = targetCount;
-            resultCount = sourceCount;
+    public static Object newArray(Object source, int length) {
+        Object result;
+        Class<?> clazz = source == null ? Object.class : source.getClass();
+        if (clazz.isArray()) {
+            result = Array.newInstance(clazz.getComponentType(), length);
+            length = Math.min(Array.getLength(source), length);
+            System.arraycopy(source, 0, result, 0, length);
         } else {
-            overValue = target;
-            loopCount = sourceCount;
-            resultCount = targetCount;
-        }
-        Object result = Array.newInstance(resultType, resultCount);
-        int amount = 0;
-        do {
-            Array.set(result, amount, newArray(Array.get(source, amount),
-                    Array.get(target, amount)));
-        } while (++amount < loopCount);
-        while (amount < resultCount) {
-            Array.set(result, amount, Array.get(overValue, amount));
-            amount++;
+            result = Array.newInstance(clazz, length);
+            Array.set(result, 0, source);
         }
         return result;
     }
@@ -853,17 +849,40 @@ public class Helpers {
         return newArray(resultType, source, sourceCount, target, targetCount);
     }
 
-    public static Object newArray(Object source, int length) {
-        Object result;
-        Class<?> clazz = source == null ? Object.class : source.getClass();
-        if (clazz.isArray()) {
-            result = Array.newInstance(clazz.getComponentType(), length);
-            length = Math.min(Array.getLength(source), length);
-            System.arraycopy(source, 0, result, 0, length);
+    public static Object newArray(Class<?> resultType, Object source,
+            int sourceCount, Object target, int targetCount) {
+        Object overValue;
+        int loopCount;
+        int resultCount;
+        if ((sourceCount - targetCount) >= 0) {
+            overValue = source;
+            loopCount = targetCount;
+            resultCount = sourceCount;
         } else {
-            result = Array.newInstance(clazz, length);
-            Array.set(result, 0, source);
+            overValue = target;
+            loopCount = sourceCount;
+            resultCount = targetCount;
         }
+        Object result = Array.newInstance(resultType, resultCount);
+        int amount = 0;
+        do {
+            Array.set(result, amount, newArray(Array.get(source, amount),
+                    Array.get(target, amount)));
+        } while (++amount < loopCount);
+        while (amount < resultCount) {
+            Array.set(result, amount, Array.get(overValue, amount));
+            amount++;
+        }
+        return result;
+    }
+
+    public static Object newArray(Class<?> resultType, Object source,
+            int sourceCount) {
+        Object result = Array.newInstance(resultType, sourceCount);
+        int amount = 0;
+        do {
+            Array.set(result, amount, Array.get(source, amount));
+        } while (++amount < sourceCount);
         return result;
     }
 
@@ -893,8 +912,8 @@ public class Helpers {
                 });
                 // 行填充
                 for (int j = (result instanceof Object[])
-                        ? ((Object[]) result).length : 1; j < grid
-                                .size(); j++) {
+                        ? ((Object[]) result).length
+                        : 1; j < grid.size(); j++) {
                     grid.get(j).add(null);
                 }
             }
@@ -914,7 +933,8 @@ public class Helpers {
 
                 // 行填充
                 int count = (result instanceof Object[])
-                        ? ((Object[]) result).length : 1;
+                        ? ((Object[]) result).length
+                        : 1;
                 if (count > colCount) {
                     for (int j = 0; j < i; j++) {
                         for (int k = colCount; k < count; k++) {
@@ -961,10 +981,14 @@ public class Helpers {
                     break;
                 default:
                     List<Object> container = new ArrayList<Object>();
+                    Object pending;
                     for (int i = 0; i < size; i++) {
-                        container.add(compact(Array.get(value, i)));
+                        if ((pending = compact(Array.get(value, i))) != null) {
+                            container.add(pending);
+                        }
                     }
-                    value = compact(container.toArray());
+                    value = container.size() < 2 ? compact(container)
+                            : container.toArray();
                 }
             }
         }

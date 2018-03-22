@@ -92,12 +92,11 @@ public class BoundField {
                 value = assembler.call(this, instance, value);
             }
             if (value != Reflects.UNKNOWN) {
-                if (!rawClass.isInstance(value)) {
+                if (rawClass.isInstance(value)) {
+                    value = resolve(rawClass, token.getType(), value);
+                } else {
                     value = Converter.convert(token.getType(), value,
                             assembler);
-                } else {
-                    value = resolve(token.getRawClass(), token.getType(),
-                            value);
                 }
                 field.set(instance, value);
             }

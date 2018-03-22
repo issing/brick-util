@@ -1,8 +1,6 @@
 package net.isger.util;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -30,8 +28,6 @@ import javax.security.auth.x500.X500Principal;
 import javax.security.auth.x500.X500PrivateCredential;
 
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.X500NameBuilder;
-import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
@@ -779,32 +775,6 @@ public class Securities {
         signature.initVerify(key);
         signature.update(data);
         return signature.verify(sign);
-    }
-
-    public static void main(String[] args) throws Exception {
-        X500NameBuilder x500NameBld = new X500NameBuilder(BCStyle.INSTANCE);
-        x500NameBld.addRDN(BCStyle.C, "CN");
-        x500NameBld.addRDN(BCStyle.ST, "GuangDong");
-        x500NameBld.addRDN(BCStyle.L, "GuangZhou");
-        x500NameBld.addRDN(BCStyle.O, "Bildatas.com");
-        x500NameBld.addRDN(BCStyle.OU, "Bildatas Security Center");
-        X500Name issuser = x500NameBld.build();
-
-        KeyStore store = createKeyStore("cube", "cube.key", issuser.toString(),
-                20l * 365 * 24 * 60 * 60 * 1000);
-        try (OutputStream os = new FileOutputStream(
-                Files.createFile("/tmp/cube.pfx"))) {
-            store.store(os, "cube.store".toCharArray());
-        }
-
-        store = createSuite("JKS", "Bildatas Trust NetWork", "cube", "iot",
-                "iot.key".toCharArray(), "RSA", issuser.toString(),
-                20l * 365 * 24 * 60 * 60 * 1000);
-        try (OutputStream os = new FileOutputStream(
-                Files.createFile("/tmp/iot.keystore"))) {
-            store.store(os, "iot.store".toCharArray());
-        }
-        System.out.println(store);
     }
 
 }

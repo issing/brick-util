@@ -242,12 +242,72 @@ public class Strings {
     /**
      * 追加
      * 
+     * @param values
+     * @return
+     */
+    public static String append(String[] values) {
+        return append("", "", values, 0, values.length);
+    }
+
+    /**
+     * 追加
+     * 
+     * @param values
+     * @param beginIndex
+     * @return
+     */
+    public static String append(String[] values, int beginIndex) {
+        return append("", "", values, beginIndex, values.length);
+    }
+
+    /**
+     * 追加
+     * 
+     * @param values
+     * @param beginIndex
+     * @param count
+     * @return
+     */
+    public static String append(String[] values, int beginIndex, int count) {
+        return append("", "", values, beginIndex, count);
+    }
+
+    /**
+     * 追加
+     * 
      * @param separator
      * @param values
      * @return
      */
     public static String append(String separator, String[] values) {
-        return append(separator, null, values);
+        return append(separator, "", values, 0, values.length);
+    }
+
+    /**
+     * 追加
+     * 
+     * @param separator
+     * @param values
+     * @param beginIndex
+     * @return
+     */
+    public static String append(String separator, String[] values,
+            int beginIndex) {
+        return append(separator, "", values, beginIndex, values.length);
+    }
+
+    /**
+     * 追加
+     * 
+     * @param separator
+     * @param values
+     * @param beginIndex
+     * @param count
+     * @return
+     */
+    public static String append(String separator, String[] values,
+            int beginIndex, int count) {
+        return append(separator, "", values, beginIndex, count);
     }
 
     /**
@@ -256,24 +316,44 @@ public class Strings {
      * @param separator
      * @param seal
      * @param values
+     * @param beginIndex
      * @return
      */
-    public static String append(String separator, String seal,
-            String[] values) {
+    public static String append(String separator, String seal, String[] values,
+            int beginIndex) {
+        return append(separator, seal, values, beginIndex, values.length);
+    }
+
+    /**
+     * 追加
+     * 
+     * @param separator
+     * @param seal
+     * @param values
+     * @param beginIndex
+     * @param count
+     * @return
+     */
+    public static String append(String separator, String seal, String[] values,
+            int beginIndex, int count) {
+        separator = empty(separator);
+        beginIndex = Math.max(beginIndex, 0);
+        int size = Math.min(beginIndex + count, values.length);
         String result = null;
-        int size = values.length;
-        String[] pair = empty(seal).split("[|]", 2);
-        String beginSeal = pair[0];
-        String endSeal = pair.length == 1 ? beginSeal : pair[1];
-        if (size > 0) {
-            StringBuffer buffer = new StringBuffer(size-- * 32);
-            int i = -1;
-            while (++i < size) {
-                buffer.append(beginSeal).append(values[i]).append(endSeal)
-                        .append(separator);
+        if (beginIndex < size) {
+            String[] pair = empty(seal).split("[|]", 2);
+            String beginSeal = pair[0];
+            String endSeal = pair.length == 1 ? beginSeal : pair[1];
+            if (size > beginIndex) {
+                StringBuffer buffer = new StringBuffer(size-- * 32);
+                int i = beginIndex - 1;
+                while (++i < size) {
+                    buffer.append(beginSeal).append(values[i]).append(endSeal)
+                            .append(separator);
+                }
+                buffer.append(beginSeal).append(values[i]).append(endSeal);
+                result = buffer.toString();
             }
-            buffer.append(beginSeal).append(values[i]).append(endSeal);
-            result = buffer.toString();
         }
         return result;
     }

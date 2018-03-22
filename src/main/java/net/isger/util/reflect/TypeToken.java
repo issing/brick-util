@@ -31,7 +31,8 @@ public class TypeToken<T> {
 
     private Type getActualType(Class<?> type) {
         Type superType = type.getGenericSuperclass();
-        Asserts.isInstance(Class.class, superType, "Missing type parameter");
+        Asserts.isInstance(ParameterizedType.class, superType,
+                "Missing type parameter");
         ParameterizedType paramType = (ParameterizedType) superType;
         return paramType.getActualTypeArguments()[0];
     }

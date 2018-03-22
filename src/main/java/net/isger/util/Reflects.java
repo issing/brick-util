@@ -196,8 +196,10 @@ public class Reflects {
                         args[t] = resolvedTypeArgument;
                     }
                 }
-                return changed ? newParamType(newOwnerType,
-                        original.getRawType(), args) : original;
+                return changed
+                        ? newParamType(newOwnerType, original.getRawType(),
+                                args)
+                        : original;
             } else if (resolveType instanceof WildcardType) {
                 WildcardType original = (WildcardType) resolveType;
                 Type[] originalLowerBound = original.getLowerBounds();
@@ -920,7 +922,8 @@ public class Reflects {
                     public Object call(Object... args) {
                         return args[2]; // 直接返回字段实例
                     }
-                } : new Callable<Object>() {
+                }
+                : new Callable<Object>() {
                     public Object call(Object... args) {
                         return assembler.call(
                                 (Object[]) Helpers.newArray(args, values));
@@ -963,7 +966,8 @@ public class Reflects {
      */
     public static <T> T toBean(Class<T> clazz, Object[] grid) {
         Object[] values = grid[1] instanceof Object[][]
-                ? ((Object[][]) grid[1])[0] : (Object[]) grid[1];
+                ? ((Object[][]) grid[1])[0]
+                : (Object[]) grid[1];
         return toBean(clazz, (Object[]) grid[0], values);
     }
 
@@ -1024,7 +1028,8 @@ public class Reflects {
      */
     public static Map<String, Object> toMap(Object[] grid) {
         Object[] values = grid[1] instanceof Object[][]
-                ? ((Object[][]) grid[1])[0] : (Object[]) grid[1];
+                ? ((Object[][]) grid[1])[0]
+                : (Object[]) grid[1];
         return toMap((Object[]) grid[0], values);
     }
 
