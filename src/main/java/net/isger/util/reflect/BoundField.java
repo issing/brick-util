@@ -118,7 +118,8 @@ public class BoundField {
                         resolve(rawClass, resolveType, Array.get(value, i)));
             }
             value = array;
-        } else if (value instanceof Collection) {
+        } else if (Collection.class.isAssignableFrom(rawClass)
+                && (value instanceof Collection)) {
             ParameterizedType paramType = (ParameterizedType) resolveType;
             Collection<Object> resolve = (Collection<Object>) Reflects
                     .newInstance(rawClass);

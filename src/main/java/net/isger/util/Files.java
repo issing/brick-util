@@ -261,6 +261,48 @@ public class Files {
     }
 
     /**
+     * 删除文件
+     *
+     * @param file
+     */
+    public static void delete(File file) {
+        if (file.isDirectory()) {
+            for (File subFile : file.listFiles()) {
+                delete(subFile);
+            }
+        }
+        file.delete();
+    }
+
+    /**
+     * 创建目录
+     *
+     * @param file
+     * @return
+     */
+    public static boolean mkdirs(File file) {
+        return mkdirs(file, false);
+    }
+
+    /**
+     * 创建目录
+     *
+     * @param file
+     * @param force
+     * @return
+     */
+    public static boolean mkdirs(File file, boolean force) {
+        boolean result = false;
+        if (isCanonical(file)) {
+            if (force) {
+                delete(file);
+            }
+            result = file.mkdirs();
+        }
+        return result;
+    }
+
+    /**
      * 写文件
      * 
      * @param path
