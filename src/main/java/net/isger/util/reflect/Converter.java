@@ -60,6 +60,10 @@ public class Converter {
         }
     }
 
+    public static Conversion getConversion(String name) {
+        return CONVERTER.conversions.get(name);
+    }
+
     /**
      * 类型检测
      * 

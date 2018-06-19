@@ -169,7 +169,26 @@ public class Helpers {
             return ((Number) value).intValue();
         } else if (value != null) {
             try {
-                def = Integer.parseInt(value.toString());
+                def = Double.valueOf(value.toString()).intValue();
+            } catch (Exception e) {
+            }
+        }
+        return def;
+    }
+
+    /**
+     * 转换双精度
+     * 
+     * @param value
+     * @param def
+     * @return
+     */
+    public static double toDouble(Object value, double def) {
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        } else if (value != null) {
+            try {
+                def = Double.valueOf(value.toString());
             } catch (Exception e) {
             }
         }
@@ -502,6 +521,25 @@ public class Helpers {
         }
         return Strings.isEmpty(mask) ? name
                 : Strings.replaceIgnoreCase(name, mask);
+    }
+
+    /**
+     * 转换集合
+     *
+     * @param content
+     * @return
+     */
+    public static Map<String, Object> toMap(String content) {
+        Map<String, Object> result = new HashMap<String, Object>();
+        String[] pending = content.split("[\\&]");
+        String[] entry;
+        for (String pair : pending) {
+            entry = pair.split("[\\=]", 2);
+            if (entry.length == 2) {
+                result.put(entry[0], entry[1]);
+            }
+        }
+        return result;
     }
 
     /**
@@ -1127,6 +1165,25 @@ public class Helpers {
             size = Array.getLength(array);
         }
         return index < 0 || index >= size ? null : Array.get(array, index);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T coalesce(T... instances) {
+        for (T instance : instances) {
+            if (instance != null) {
+                return instance;
+            }
+        }
+        return null;
+    }
+
+    public static int toInt(String value, int beginIndex, int endIndex) {
+        return toInt(10, value, beginIndex, endIndex);
+    }
+
+    public static int toInt(int radix, String value, int beginIndex,
+            int endIndex) {
+        return Integer.parseInt(value.substring(beginIndex, endIndex), radix);
     }
 
     public static int hashCode(Object instance) {

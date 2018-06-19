@@ -26,7 +26,7 @@ public class Strings {
      * @return
      */
     public static boolean isEmpty(Object value) {
-        return value == null || value.toString().matches("^\\s*$");
+        return value == null || value.toString().matches("^[\\s ]*$");
     }
 
     /**
@@ -245,8 +245,8 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String append(String[] values) {
-        return append("", "", values, 0, values.length);
+    public static String join(String[] values) {
+        return join(values, 0);
     }
 
     /**
@@ -256,8 +256,8 @@ public class Strings {
      * @param beginIndex
      * @return
      */
-    public static String append(String[] values, int beginIndex) {
-        return append("", "", values, beginIndex, values.length);
+    public static String join(String[] values, int beginIndex) {
+        return join(values, beginIndex, values.length);
     }
 
     /**
@@ -268,8 +268,8 @@ public class Strings {
      * @param count
      * @return
      */
-    public static String append(String[] values, int beginIndex, int count) {
-        return append("", "", values, beginIndex, count);
+    public static String join(String[] values, int beginIndex, int count) {
+        return join("", "", values, beginIndex, count);
     }
 
     /**
@@ -279,8 +279,8 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String append(String separator, String[] values) {
-        return append(separator, "", values, 0, values.length);
+    public static String join(String separator, String[] values) {
+        return join(separator, values, 0);
     }
 
     /**
@@ -291,9 +291,9 @@ public class Strings {
      * @param beginIndex
      * @return
      */
-    public static String append(String separator, String[] values,
+    public static String join(String separator, String[] values,
             int beginIndex) {
-        return append(separator, "", values, beginIndex, values.length);
+        return join(separator, values, beginIndex, values.length);
     }
 
     /**
@@ -305,9 +305,9 @@ public class Strings {
      * @param count
      * @return
      */
-    public static String append(String separator, String[] values,
+    public static String join(String separator, String[] values,
             int beginIndex, int count) {
-        return append(separator, "", values, beginIndex, count);
+        return join(separator, "", values, beginIndex, count);
     }
 
     /**
@@ -319,9 +319,9 @@ public class Strings {
      * @param beginIndex
      * @return
      */
-    public static String append(String separator, String seal, String[] values,
+    public static String join(String separator, String seal, String[] values,
             int beginIndex) {
-        return append(separator, seal, values, beginIndex, values.length);
+        return join(separator, seal, seal, values, beginIndex, values.length);
     }
 
     /**
@@ -334,28 +334,58 @@ public class Strings {
      * @param count
      * @return
      */
-    public static String append(String separator, String seal, String[] values,
+    public static String join(String separator, String seal, String[] values,
             int beginIndex, int count) {
-        separator = empty(separator);
+        return join(separator, seal, seal, values, beginIndex, values.length);
+    }
+
+    /**
+     * 追加
+     *
+     * @param separator
+     * @param beginSeal
+     * @param endSeal
+     * @param values
+     * @param beginIndex
+     * @param count
+     * @return
+     */
+    public static String join(String separator, String beginSeal,
+            String endSeal, String[] values, int beginIndex, int count) {
+        separator = Helpers.coalesce(separator, "");
+        beginSeal = Strings.empty(beginSeal);
+        endSeal = Strings.empty(endSeal);
         beginIndex = Math.max(beginIndex, 0);
-        int size = Math.min(beginIndex + count, values.length);
-        String result = null;
-        if (beginIndex < size) {
-            String[] pair = empty(seal).split("[|]", 2);
-            String beginSeal = pair[0];
-            String endSeal = pair.length == 1 ? beginSeal : pair[1];
-            if (size > beginIndex) {
-                StringBuffer buffer = new StringBuffer(size-- * 32);
-                int i = beginIndex - 1;
-                while (++i < size) {
-                    buffer.append(beginSeal).append(values[i]).append(endSeal)
-                            .append(separator);
+        count = Math.min(beginIndex + count, values.length);
+        if (beginIndex < count) {
+            StringBuffer buffer = new StringBuffer(count-- * 32);
+            int amount = beginIndex - 1;
+            while (++amount < count) {
+                if (values[amount] == null) {
+                    buffer.append("null");
+                } else {
+                    buffer.append(beginSeal).append(values[amount])
+                            .append(endSeal);
                 }
-                buffer.append(beginSeal).append(values[i]).append(endSeal);
-                result = buffer.toString();
+                buffer.append(separator);
+            }
+            if (values[amount] == null) {
+                buffer.append("null");
+            } else {
+                buffer.append(beginSeal).append(values[amount]).append(endSeal);
+            }
+            return buffer.toString();
+        }
+        return null;
+    }
+
+    public static String[] trim(String[] values) {
+        if (values != null) {
+            for (int i = 0; i < values.length; i++) {
+                values[i] = Strings.empty(values[i]);
             }
         }
-        return result;
+        return values;
     }
 
 }

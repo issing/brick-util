@@ -1,5 +1,6 @@
 package net.isger.util.reflect;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 import net.isger.brick.blue.Marks.TYPE;
@@ -59,6 +60,10 @@ public class BoundMethod {
         return Reflects.isAbstract(method);
     }
 
+    public <T extends Annotation> T getAnnotation(Class<T> anno) {
+        return method.getAnnotation(anno);
+    }
+
     public Object invoke(Object instance, Object... args) {
         try {
             return method.invoke(instance, args);
@@ -69,8 +74,8 @@ public class BoundMethod {
             if (cause instanceof RuntimeException) {
                 throw (RuntimeException) cause;
             }
-            throw new IllegalStateException("Failure to invoke method "
-                    + getName(), cause);
+            throw new IllegalStateException(
+                    "Failure to invoke method " + getName(), cause);
         }
     }
 
@@ -88,8 +93,8 @@ public class BoundMethod {
         if (resultType == null || resultType == Void.class) {
             resultType = Void.TYPE;
         }
-        return isMethodDesc(name) ? name : name
-                + TYPE.getMethDesc(resultType, argTypes);
+        return isMethodDesc(name) ? name
+                : name + TYPE.getMethDesc(resultType, argTypes);
     }
 
     public static boolean matches(String methodName, String name) {

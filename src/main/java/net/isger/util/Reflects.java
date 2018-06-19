@@ -2,6 +2,7 @@ package net.isger.util;
 
 import java.io.InputStream;
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -687,6 +688,56 @@ public class Reflects {
     public static BoundMethod getBoundMethod(Class<?> clazz, String name) {
         List<BoundMethod> bounds = getBoundMethods(clazz).get(name);
         return bounds == null ? null : bounds.get(0);
+    }
+
+    public static <T extends Annotation> List<BoundMethod> getBoundMethods(
+            Class<?> clazz, Class<T> anno) {
+        List<BoundMethod> result = new ArrayList<BoundMethod>();
+        for (List<BoundMethod> bounds : getBoundMethods(clazz).values()) {
+            result.addAll(getBoundMethods(bounds, anno));
+        }
+        return result;
+    }
+
+    private static <T extends Annotation> List<BoundMethod> getBoundMethods(
+            List<BoundMethod> bounds, Class<T> anno) {
+        List<BoundMethod> methods = new ArrayList<BoundMethod>();
+        for (BoundMethod bound : bounds) {
+            if (bound.getAnnotation(anno) != null) {
+                methods.add(bound);
+            }
+        }
+        return methods;
+    }
+
+    public static <T extends Annotation> BoundMethod getBoundMethod(
+            Class<?> clazz, Class<T> anno) {
+        BoundMethod method = null;
+        for (List<BoundMethod> bounds : getBoundMethods(clazz).values()) {
+            if ((method = getBoundMethod(bounds, anno)) != null) {
+                break;
+            }
+        }
+        return method;
+    }
+
+    public static <T extends Annotation> BoundMethod getBoundMethod(
+            Class<?> clazz, String name, Class<T> anno) {
+        List<BoundMethod> bounds = getBoundMethods(clazz).get(name);
+        if (bounds != null) {
+            return getBoundMethod(bounds, anno);
+        }
+        return null;
+    }
+
+    private static <T extends Annotation> BoundMethod getBoundMethod(
+            List<BoundMethod> bounds, Class<T> anno) {
+        for (BoundMethod bound : bounds) {
+            if (bound.getAnnotation(anno) != null) {
+                return bound;
+            }
+        }
+        return null;
     }
 
     /**

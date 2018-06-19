@@ -28,7 +28,7 @@ public class BaseLoader implements Loader {
     private Class<?> targetClass;
 
     static {
-        LOADER = new BaseLoader();
+        LOADER = new BaseLoader(Object.class);
     }
 
     public BaseLoader() {
@@ -80,15 +80,14 @@ public class BaseLoader implements Loader {
         Class<?> clazz;
         Class<?> targetClass = this.getTargetClass();
         String className;
-        if (res != null
-                && Strings
-                        .isNotEmpty(className = (String) res.get(PARAM_CLASS))) {
+        if (res != null && Strings
+                .isNotEmpty(className = (String) res.get(PARAM_CLASS))) {
             /* 使用配置实现类 */
             try {
                 clazz = Class.forName(className);
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException("Not found class "
-                        + className);
+                throw new IllegalArgumentException(
+                        "Not found class " + className);
             }
         } else {
             clazz = getImplementClass();
@@ -171,7 +170,7 @@ public class BaseLoader implements Loader {
      * @return
      */
     protected Object create(Class<?> clazz, Map<String, Object> res) {
-        return Reflects.newInstance(clazz, res);
+        return clazz == Object.class ? res : Reflects.newInstance(clazz, res);
     }
 
     /**

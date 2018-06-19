@@ -50,8 +50,8 @@ public class PageSql extends SqlEntry {
         } else {
             wrapValues = new Object[valCount];
         }
-        wrapValues[valCount - 2] = (page.getStart() - 1) * page.getLimit();
         wrapValues[valCount - 1] = page.getLimit();
+        wrapValues[valCount - 2] = (page.getStart() - 1) * page.getLimit();
         return wrapValues;
     }
 

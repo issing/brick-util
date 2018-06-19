@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -385,29 +386,64 @@ public class Files {
     }
 
     /**
+     * 重命名文件
+     *
+     * @param source
+     * @param target
+     * @return
+     */
+    public static File rename(File source, File target) {
+        if (!source.exists()) {
+            return null;
+        }
+        delete(target);
+        if (!source.renameTo(target)) {
+            InputStream is = null;
+            try {
+                target = copy(is = new FileInputStream(source), target);
+            } catch (FileNotFoundException e) {
+                target = null;
+            } finally {
+                close(is);
+            }
+        }
+        return target;
+    }
+
+    /**
      * 拷贝文件
      * 
      * @param source
      * @param target
      * @return
-     * @throws IOException
      */
-    public static File copy(InputStream source, String target)
-            throws IOException {
-        File file = createFile(target);
+    public static File copy(InputStream source, String target) {
+        return copy(source, createFile(target));
+    }
+
+    /**
+     * 拷贝文件
+     *
+     * @param source
+     * @param target
+     * @return
+     */
+    public static File copy(InputStream source, File target) {
         OutputStream os = null;
         try {
-            os = new FileOutputStream(file);
+            os = new FileOutputStream(target);
             byte[] buffer = new byte[1024];
             int size;
             while ((size = source.read(buffer)) != -1) {
                 os.write(buffer, 0, size);
                 os.flush();
             }
+        } catch (Exception e) {
+            target = null;
         } finally {
             close(os);
         }
-        return file;
+        return target;
     }
 
     /**

@@ -32,7 +32,7 @@ public class Dates {
             } else if (value instanceof Number) {
                 date = new Date(((Number) value).longValue());
             } else {
-                String source = String.valueOf(value);
+                String source = String.valueOf(value).replaceAll("[Tt]", " ");
                 SimpleDateFormat parser = new SimpleDateFormat();
                 parser.setLenient(true);
                 ParsePosition pos = new ParsePosition(0);

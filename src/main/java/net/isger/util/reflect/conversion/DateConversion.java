@@ -7,6 +7,7 @@ import java.util.Date;
 import net.isger.util.Asserts;
 import net.isger.util.Dates;
 import net.isger.util.Reflects;
+import net.isger.util.Strings;
 
 public class DateConversion implements Conversion {
 
@@ -23,7 +24,7 @@ public class DateConversion implements Conversion {
     public Date convert(Type type, Object value) {
         String source;
         convert: {
-            if (value == null) {
+            if (Strings.isEmpty(value)) {
                 return null;
             } else if (value instanceof byte[]) {
                 source = new String((byte[]) value);
