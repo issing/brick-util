@@ -154,7 +154,8 @@ public class Helpers {
      */
     public static boolean toBoolean(Object value) {
         return value != null && (value instanceof Boolean ? (boolean) value
-                : Boolean.parseBoolean(value.toString()));
+                : Boolean.parseBoolean(value.toString())
+                        || (toInt(value, 0) != 0));
     }
 
     /**
