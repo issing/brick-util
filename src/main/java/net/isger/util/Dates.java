@@ -9,9 +9,10 @@ import java.util.Date;
 public class Dates {
 
     private static final String DATE_PATTERNS[] = { "yyyy-MM-dd HH:mm:ss.SSS",
-            "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd",
-            "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd",
-            "yyyyMMddHHmmss", "yyyyMMddHHmm", "yyyyMMdd", "HH:mm:ss", "HH:mm" };
+            "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd", "yyyy-MM",
+            "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd", "yyyy/MM",
+            "yyyyMMddHHmmss", "yyyyMMddHHmm", "yyyyMMdd", "yyyyMM", "yyyy",
+            "HH:mm:ss", "HH:mm" };
 
     public static final int PATTERN_NORMAL = 0;
 
