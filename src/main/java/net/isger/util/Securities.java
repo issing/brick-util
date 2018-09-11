@@ -682,7 +682,7 @@ public class Securities {
     }
 
     /**
-     * 数据密码
+     * 数据密文
      * 
      * @param mode
      * @param key

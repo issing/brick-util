@@ -18,7 +18,19 @@ public class Dates {
 
     public static final int PATTERN_COMMON = 1;
 
-    public static final int PATTERN_COMPACT = 7;
+    public static final int PATTERN_COMPACT = 9;
+
+    private static final int UNITS[] = { 1, 1000, 60000, 3600000, 86400000 };
+
+    public static final int UNIT_MILLIS = 0;
+
+    public static final int UNIT_SECOND = 1;
+
+    public static final int UNIT_MINUTE = 2;
+
+    public static final int UNIT_HOUR = 3;
+
+    public static final int UNIT_DAY = 4;
 
     private Dates() {
     }
@@ -51,22 +63,22 @@ public class Dates {
         return date;
     }
 
-    public static String toString(int pattern) {
-        return toString(null, pattern);
+    public static String toString(int selector) {
+        return toString(null, selector);
     }
 
     public static String toString(Date date) {
         return toString(date, PATTERN_NORMAL);
     }
 
-    public static String toString(Date date, int pattern) {
+    public static String toString(Date date, int selector) {
         if (date == null) {
             date = new Date();
         }
-        if (pattern < 0 || pattern >= DATE_PATTERNS.length) {
-            pattern = PATTERN_NORMAL;
+        if (selector < 0 || selector >= DATE_PATTERNS.length) {
+            selector = PATTERN_NORMAL;
         }
-        SimpleDateFormat parser = new SimpleDateFormat(DATE_PATTERNS[pattern]);
+        SimpleDateFormat parser = new SimpleDateFormat(DATE_PATTERNS[selector]);
         return parser.format(date);
     }
 
@@ -89,10 +101,13 @@ public class Dates {
     }
 
     public static long getGap(Date startTime, Date endTime) {
-        return getGap(startTime, endTime, 86400000);
+        return getGap(startTime, endTime, UNIT_DAY);
     }
 
-    public static long getGap(Date startTime, Date endTime, long unitMillis) {
+    public static long getGap(Date startTime, Date endTime, int unit) {
+        if (unit < 0 || unit > UNIT_DAY) {
+            unit = UNIT_DAY;
+        }
         Calendar sc = Calendar.getInstance();
         sc.setTime(startTime);
         sc.set(Calendar.HOUR_OF_DAY, 0);
@@ -105,6 +120,6 @@ public class Dates {
         ec.set(Calendar.MINUTE, 0);
         ec.set(Calendar.SECOND, 0);
         ec.set(Calendar.MILLISECOND, 0);
-        return (ec.getTimeInMillis() - sc.getTimeInMillis()) / unitMillis;
+        return (ec.getTimeInMillis() - sc.getTimeInMillis()) / UNITS[unit];
     }
 }

@@ -246,7 +246,11 @@ public class Strings {
      * @return
      */
     public static String join(String[] values) {
-        return join(values, 0);
+        return join(false, values);
+    }
+
+    public static String join(boolean isCompact, String[] values) {
+        return join(isCompact, values, 0);
     }
 
     /**
@@ -257,7 +261,12 @@ public class Strings {
      * @return
      */
     public static String join(String[] values, int beginIndex) {
-        return join(values, beginIndex, values.length);
+        return join(false, values, beginIndex);
+    }
+
+    public static String join(boolean isCompact, String[] values,
+            int beginIndex) {
+        return join(isCompact, values, beginIndex, values.length);
     }
 
     /**
@@ -269,7 +278,12 @@ public class Strings {
      * @return
      */
     public static String join(String[] values, int beginIndex, int count) {
-        return join("", "", values, beginIndex, count);
+        return join(false, values, beginIndex, count);
+    }
+
+    public static String join(boolean isCompact, String[] values,
+            int beginIndex, int count) {
+        return join(isCompact, "", values, beginIndex, count);
     }
 
     /**
@@ -280,7 +294,12 @@ public class Strings {
      * @return
      */
     public static String join(String separator, String[] values) {
-        return join(separator, values, 0);
+        return join(false, separator, values);
+    }
+
+    public static String join(boolean isCompact, String separator,
+            String[] values) {
+        return join(isCompact, separator, values, 0);
     }
 
     /**
@@ -293,7 +312,12 @@ public class Strings {
      */
     public static String join(String separator, String[] values,
             int beginIndex) {
-        return join(separator, values, beginIndex, values.length);
+        return join(false, separator, values, beginIndex);
+    }
+
+    public static String join(boolean isCompact, String separator,
+            String[] values, int beginIndex) {
+        return join(isCompact, separator, values, beginIndex, values.length);
     }
 
     /**
@@ -305,9 +329,14 @@ public class Strings {
      * @param count
      * @return
      */
-    public static String join(String separator, String[] values,
-            int beginIndex, int count) {
-        return join(separator, "", values, beginIndex, count);
+    public static String join(String separator, String[] values, int beginIndex,
+            int count) {
+        return join(false, separator, values, beginIndex, count);
+    }
+
+    public static String join(boolean isCompact, String separator,
+            String[] values, int beginIndex, int count) {
+        return join(isCompact, separator, "", values, beginIndex, count);
     }
 
     /**
@@ -321,7 +350,13 @@ public class Strings {
      */
     public static String join(String separator, String seal, String[] values,
             int beginIndex) {
-        return join(separator, seal, seal, values, beginIndex, values.length);
+        return join(separator, seal, values, beginIndex, values.length);
+    }
+
+    public static String join(boolean isCompact, String separator, String seal,
+            String[] values, int beginIndex) {
+        return join(isCompact, separator, seal, values, beginIndex,
+                values.length);
     }
 
     /**
@@ -336,7 +371,13 @@ public class Strings {
      */
     public static String join(String separator, String seal, String[] values,
             int beginIndex, int count) {
-        return join(separator, seal, seal, values, beginIndex, values.length);
+        return join(false, separator, seal, values, beginIndex, values.length);
+    }
+
+    public static String join(boolean isCompact, String separator, String seal,
+            String[] values, int beginIndex, int count) {
+        return join(isCompact, separator, seal, seal, values, beginIndex,
+                values.length);
     }
 
     /**
@@ -350,8 +391,9 @@ public class Strings {
      * @param count
      * @return
      */
-    public static String join(String separator, String beginSeal,
-            String endSeal, String[] values, int beginIndex, int count) {
+    public static String join(boolean isCompact, String separator,
+            String beginSeal, String endSeal, String[] values, int beginIndex,
+            int count) {
         separator = Helpers.coalesce(separator, "");
         beginSeal = Strings.empty(beginSeal);
         endSeal = Strings.empty(endSeal);
@@ -361,7 +403,10 @@ public class Strings {
             StringBuffer buffer = new StringBuffer(count-- * 32);
             int amount = beginIndex - 1;
             while (++amount < count) {
-                if (values[amount] == null) {
+                if (Strings.isEmpty(values[amount])) {
+                    if (isCompact) {
+                        continue;
+                    }
                     buffer.append("null");
                 } else {
                     buffer.append(beginSeal).append(values[amount])
@@ -370,7 +415,13 @@ public class Strings {
                 buffer.append(separator);
             }
             if (values[amount] == null) {
-                buffer.append("null");
+                if (isCompact) {
+                    if (buffer.length() > 0) {
+                        buffer.setLength(buffer.length() - separator.length());
+                    }
+                } else {
+                    buffer.append("null");
+                }
             } else {
                 buffer.append(beginSeal).append(values[amount]).append(endSeal);
             }

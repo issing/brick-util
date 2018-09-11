@@ -41,11 +41,11 @@ public class Helpers {
 
     private static int uuidSearial = 0;
 
-    private final static String RADIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private final static String TABLE_RADIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    private final static char[] CODES = RADIX.toCharArray();
+    private final static char[] CODES = TABLE_RADIX.toCharArray();
 
-    private final static int[][] LIMITS = new int[][] { { 0, 10 }, { 10, 26 },
+    private final static int[][] CODES_LIMITS = { { 0, 10 }, { 10, 26 },
             { 36, 26 }, { 0, 16 }, { 0, 36 }, { 10, 52 }, { 0, 62 } };
 
     /** 最大进制数 */
@@ -58,7 +58,7 @@ public class Helpers {
 
     static {
         DIGIT_INDECES = new HashMap<Character, Integer>();
-        for (int i = 0; i < CODES.length; i++) {
+        for (int i = 0; i < MAX_RADIX; i++) {
             DIGIT_INDECES.put(CODES[i], (int) i);
         }
     }
@@ -232,7 +232,7 @@ public class Helpers {
     }
 
     public static byte toRadix(char value) {
-        return (byte) RADIX.indexOf(value);
+        return (byte) TABLE_RADIX.indexOf(value);
     }
 
     /**
@@ -277,7 +277,7 @@ public class Helpers {
         buffer.append(getDigits(leastBits, 12));
         synchronized (UUID_LOCKED) {
             buffer.append(CODES[uuidSearial]);
-            if (++uuidSearial >= CODES.length) {
+            if (++uuidSearial >= MAX_RADIX) {
                 uuidSearial = 0;
             }
         }
@@ -328,8 +328,8 @@ public class Helpers {
      * @return
      */
     private static char getRandomCode(int seed) {
-        seed %= LIMITS.length;
-        return getRandomCode(LIMITS[seed][0], LIMITS[seed][1]);
+        seed %= CODES_LIMITS.length;
+        return getRandomCode(CODES_LIMITS[seed][0], CODES_LIMITS[seed][1]);
     }
 
     private static char getRandomCode(int start, int limit) {
@@ -361,6 +361,18 @@ public class Helpers {
             continue;
         }
         return limit <= 0 ? result : result % limit;
+    }
+
+    public static int getBitCount(long value) {
+        return Long.bitCount(value);
+    }
+
+    public static int getBitCount(byte[] bytes) {
+        int count = 0;
+        for (byte value : bytes) {
+            count += Integer.bitCount(value & 0xff);
+        }
+        return count;
     }
 
     public static URL getURL(File file) {
