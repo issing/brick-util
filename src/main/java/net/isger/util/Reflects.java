@@ -443,6 +443,40 @@ public class Reflects {
     }
 
     /**
+     * 获取所有接口
+     *
+     * @param clazz
+     * @return
+     */
+    public static Class<?>[] getInterfaces(Class<?> clazz) {
+        List<Class<?>> interfaces = new ArrayList<Class<?>>();
+        appendInterfaces(interfaces, clazz);
+        return interfaces.toArray(new Class<?>[interfaces.size()]);
+    }
+
+    /**
+     * 递归追加接口
+     *
+     * @param container
+     * @param clazz
+     */
+    private static void appendInterfaces(List<Class<?>> container,
+            Class<?> clazz) {
+        if (clazz != null) {
+            if (clazz.isInterface()) {
+                container.add(clazz);
+            }
+            for (Class<?> interfaceClass : clazz.getInterfaces()) {
+                if (container.contains(interfaceClass)) {
+                    continue;
+                }
+                appendInterfaces(container, interfaceClass);
+            }
+            appendInterfaces(container, clazz.getSuperclass());
+        }
+    }
+
+    /**
      * 获取类加载器
      * 
      * @param source

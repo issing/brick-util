@@ -28,6 +28,9 @@ public class CollectionConversion implements Conversion {
         Collection<Object> result = (Collection<Object>) Reflects
                 .newInstance(Reflects.getRawClass(type));
         Class<?> actualClass = (Class<?>) Reflects.getActualType(type);
+        if (type == actualClass) {
+            actualClass = Object.class;
+        }
         for (Object instance : (Collection<?>) value) {
             result.add(Converter.convert(actualClass, instance));
         }
