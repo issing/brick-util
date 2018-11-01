@@ -2,6 +2,8 @@ package net.isger.util;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.net.InetAddress;
@@ -41,11 +43,13 @@ public class Helpers {
 
     private static int uuidSearial = 0;
 
-    private final static String TABLE_RADIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String REGEX_CODE = "[A-Z0-9]+(\\-[A-Z0-9]+)*";
 
-    private final static char[] CODES = TABLE_RADIX.toCharArray();
+    private static final String TABLE_RADIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    private final static int[][] CODES_LIMITS = { { 0, 10 }, { 10, 26 },
+    private static final char[] CODES = TABLE_RADIX.toCharArray();
+
+    private static final int[][] CODES_LIMITS = { { 0, 10 }, { 10, 26 },
             { 36, 26 }, { 0, 16 }, { 0, 36 }, { 10, 52 }, { 0, 62 } };
 
     /** 最大进制数 */
@@ -530,7 +534,11 @@ public class Helpers {
         } else if (Strings.isNotEmpty(value)) {
             name = value.trim();
         } else {
-            name = Strings.toLower(clazz.getSimpleName());
+            name = clazz.getSimpleName();
+            if (Sqls.toColumnName(name).startsWith("i_")) {
+                name = name.substring(1);
+            }
+            name = name.toLowerCase();
         }
         return Strings.isEmpty(mask) ? name
                 : Strings.replaceIgnoreCase(name, mask);
@@ -1059,6 +1067,11 @@ public class Helpers {
         return args;
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> T[][] groups(T[]... args) {
+        return args;
+    }
+
     public static void sleep(int ns) {
         sleep(0, ns);
     }
@@ -1100,6 +1113,18 @@ public class Helpers {
             }
         }
         return new InetSocketAddress(port);
+    }
+
+    public static boolean isCode(String value) {
+        return isCode(value, 64);
+    }
+
+    public static boolean isCode(String value, int limit) {
+        if (limit <= 0) {
+            limit = 64;
+        }
+        return Strings.isNotEmpty(value) && value.matches(REGEX_CODE)
+                && value.length() < limit;
     }
 
     public static boolean isMultiple(Object instance) {
@@ -1180,6 +1205,14 @@ public class Helpers {
         return index < 0 || index >= size ? null : Array.get(array, index);
     }
 
+    public static Object nvl(Object value, Object alternative) {
+        return nvl(value, value, alternative);
+    }
+
+    public static Object nvl(Object value, Object leftist, Object rightist) {
+        return value == null ? rightist : leftist;
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> T coalesce(T... instances) {
         for (T instance : instances) {
@@ -1205,6 +1238,15 @@ public class Helpers {
 
     public static boolean equals(Object source, Object target) {
         return source == target || (source != null && source.equals(target));
+    }
+
+    public static String getStackTrace(Throwable cause) {
+        if (cause == null) {
+            return null;
+        }
+        StringWriter writer = new StringWriter();
+        cause.printStackTrace(new PrintWriter(writer, true));
+        return writer.getBuffer().toString();
     }
 
 }

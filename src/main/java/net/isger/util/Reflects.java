@@ -963,6 +963,8 @@ public class Reflects {
                 } else {
                     return (T) new ArrayList<Object>();
                 }
+            } else if (Map.class.isAssignableFrom(rawClass)) {
+                return (T) new HashMap<String, Object>();
             }
             // return new Standin(clazz).getSource();
             throw Asserts.state("Unsupport %s", rawClass);
@@ -1017,7 +1019,8 @@ public class Reflects {
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             fieldName = entry.getKey();
             field = entry.getValue().get(0);
-            if (values.containsKey(fieldName)) {
+            if (values.containsKey(fieldName)
+                    || values.containsKey(fieldName = field.getAlias())) {
                 field.setValue(instance, values.get(fieldName), fieldAssembler);
             } else {
                 field.setValue(instance, UNKNOWN, fieldAssembler);

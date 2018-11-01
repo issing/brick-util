@@ -17,6 +17,8 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+
 import net.isger.util.anno.Alias;
 import net.isger.util.reflect.BoundField;
 import net.isger.util.sql.SqlEntry;
@@ -34,9 +36,12 @@ public class Sqls {
     /** SQL配置集合 */
     private final static Map<String, Properties> CACHE_SQLS;
 
+    private static final Gson GSON;
+
     static {
         LOG = LoggerFactory.getLogger(Sqls.class);
         CACHE_SQLS = new HashMap<String, Properties>();
+        GSON = new Gson();
     }
 
     /**
@@ -482,8 +487,11 @@ public class Sqls {
         while (amount < size) {
             if ((value = values[amount++]) instanceof Date) {
                 stat.setObject(amount, new Timestamp(((Date) value).getTime()));
-            } else {
+            } else if (value instanceof Number || value instanceof Boolean
+                    || value instanceof String) {
                 stat.setObject(amount, value);
+            } else {
+                stat.setObject(amount, GSON.toJson(value));
             }
         }
         return stat;

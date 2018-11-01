@@ -63,6 +63,14 @@ public class Dates {
         return date;
     }
 
+    public static String toString(Object date) {
+        return toString(date, PATTERN_NORMAL);
+    }
+
+    public static String toString(Object date, int selector) {
+        return toString(toDate(date), selector);
+    }
+
     public static String toString(int selector) {
         return toString(null, selector);
     }
@@ -110,16 +118,22 @@ public class Dates {
         }
         Calendar sc = Calendar.getInstance();
         sc.setTime(startTime);
-        sc.set(Calendar.HOUR_OF_DAY, 0);
-        sc.set(Calendar.MINUTE, 0);
-        sc.set(Calendar.SECOND, 0);
-        sc.set(Calendar.MILLISECOND, 0);
         Calendar ec = Calendar.getInstance();
         ec.setTime(endTime);
-        ec.set(Calendar.HOUR_OF_DAY, 0);
-        ec.set(Calendar.MINUTE, 0);
-        ec.set(Calendar.SECOND, 0);
-        ec.set(Calendar.MILLISECOND, 0);
+        switch (unit) {
+        case UNIT_DAY:
+            sc.set(Calendar.HOUR_OF_DAY, 0);
+            ec.set(Calendar.HOUR_OF_DAY, 0);
+        case UNIT_HOUR:
+            sc.set(Calendar.MINUTE, 0);
+            ec.set(Calendar.MINUTE, 0);
+        case UNIT_MINUTE:
+            ec.set(Calendar.SECOND, 0);
+            sc.set(Calendar.SECOND, 0);
+        case UNIT_SECOND:
+            sc.set(Calendar.MILLISECOND, 0);
+            ec.set(Calendar.MILLISECOND, 0);
+        }
         return (ec.getTimeInMillis() - sc.getTimeInMillis()) / UNITS[unit];
     }
 }

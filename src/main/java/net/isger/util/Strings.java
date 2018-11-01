@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
@@ -241,127 +242,162 @@ public class Strings {
 
     /**
      * 追加
+     *
+     * @param values
+     * @return
+     */
+    public static String join(Collection<?> values) {
+        return join(false, values);
+    }
+
+    /**
+     * 追加
+     *
+     * @param isCompact
+     * @param values
+     * @return
+     */
+    public static String join(boolean isCompact, Collection<?> values) {
+        return join(isCompact, null, values);
+    }
+
+    /**
+     * 追加
+     *
+     * @param isCompact
+     * @param separator
+     * @param values
+     * @return
+     */
+    public static String join(boolean isCompact, String separator,
+            Collection<?> values) {
+        return join(isCompact, separator, null, values);
+    }
+
+    /**
+     * 追加
+     *
+     * @param isCompact
+     * @param separator
+     * @param seal
+     * @param values
+     * @return
+     */
+    public static String join(boolean isCompact, String separator, String seal,
+            Collection<?> values) {
+        return join(isCompact, separator, seal, seal, values);
+    }
+
+    /**
+     * 追加
+     *
+     * @param isCompact
+     * @param separator
+     * @param beginSeal
+     * @param endSeal
+     * @param values
+     * @return
+     */
+    public static String join(boolean isCompact, String separator,
+            String beginSeal, String endSeal, Collection<?> values) {
+        return join(isCompact, separator, beginSeal, endSeal, values.toArray());
+    }
+
+    /**
+     * 追加
      * 
      * @param values
      * @return
      */
-    public static String join(String[] values) {
+    public static String join(Object[] values) {
         return join(false, values);
     }
 
-    public static String join(boolean isCompact, String[] values) {
+    /**
+     * 追加
+     *
+     * @param isCompact
+     * @param values
+     * @return
+     */
+    public static String join(boolean isCompact, Object[] values) {
         return join(isCompact, values, 0);
     }
 
     /**
      * 追加
-     * 
-     * @param values
-     * @param beginIndex
-     * @return
-     */
-    public static String join(String[] values, int beginIndex) {
-        return join(false, values, beginIndex);
-    }
-
-    public static String join(boolean isCompact, String[] values,
-            int beginIndex) {
-        return join(isCompact, values, beginIndex, values.length);
-    }
-
-    /**
-     * 追加
-     * 
-     * @param values
-     * @param beginIndex
-     * @param count
-     * @return
-     */
-    public static String join(String[] values, int beginIndex, int count) {
-        return join(false, values, beginIndex, count);
-    }
-
-    public static String join(boolean isCompact, String[] values,
-            int beginIndex, int count) {
-        return join(isCompact, "", values, beginIndex, count);
-    }
-
-    /**
-     * 追加
-     * 
+     *
+     * @param isCompact
      * @param separator
      * @param values
      * @return
      */
-    public static String join(String separator, String[] values) {
-        return join(false, separator, values);
-    }
-
     public static String join(boolean isCompact, String separator,
-            String[] values) {
+            Object[] values) {
         return join(isCompact, separator, values, 0);
     }
 
     /**
      * 追加
-     * 
-     * @param separator
-     * @param values
-     * @param beginIndex
-     * @return
-     */
-    public static String join(String separator, String[] values,
-            int beginIndex) {
-        return join(false, separator, values, beginIndex);
-    }
-
-    public static String join(boolean isCompact, String separator,
-            String[] values, int beginIndex) {
-        return join(isCompact, separator, values, beginIndex, values.length);
-    }
-
-    /**
-     * 追加
-     * 
-     * @param separator
-     * @param values
-     * @param beginIndex
-     * @param count
-     * @return
-     */
-    public static String join(String separator, String[] values, int beginIndex,
-            int count) {
-        return join(false, separator, values, beginIndex, count);
-    }
-
-    public static String join(boolean isCompact, String separator,
-            String[] values, int beginIndex, int count) {
-        return join(isCompact, separator, "", values, beginIndex, count);
-    }
-
-    /**
-     * 追加
-     * 
+     *
+     * @param isCompact
      * @param separator
      * @param seal
      * @param values
-     * @param beginIndex
      * @return
      */
-    public static String join(String separator, String seal, String[] values,
-            int beginIndex) {
-        return join(separator, seal, values, beginIndex, values.length);
+    public static String join(boolean isCompact, String separator, String seal,
+            Object[] values) {
+        return join(isCompact, separator, seal, values, 0);
     }
 
-    public static String join(boolean isCompact, String separator, String seal,
-            String[] values, int beginIndex) {
-        return join(isCompact, separator, seal, values, beginIndex,
+    /**
+     * 追加
+     *
+     * @param isCompact
+     * @param separator
+     * @param beginSeal
+     * @param endSeal
+     * @param values
+     * @return
+     */
+    public static String join(boolean isCompact, String separator,
+            String beginSeal, String endSeal, Object[] values) {
+        return join(isCompact, separator, beginSeal, endSeal, values, 0,
                 values.length);
     }
 
     /**
      * 追加
-     * 
+     *
+     * @param isCompact
+     * @param values
+     * @param beginIndex
+     * @return
+     */
+    public static String join(boolean isCompact, Object[] values,
+            int beginIndex) {
+        return join(isCompact, "", values, beginIndex);
+    }
+
+    /**
+     * 追加
+     *
+     * @param isCompact
+     * @param separator
+     * @param values
+     * @param beginIndex
+     * @return
+     */
+    public static String join(boolean isCompact, String separator,
+            Object[] values, int beginIndex) {
+        return join(isCompact, separator, "", values, beginIndex);
+    }
+
+    /**
+     * 追加
+     *
+     * @param isCompact
      * @param separator
      * @param seal
      * @param values
@@ -369,13 +405,8 @@ public class Strings {
      * @param count
      * @return
      */
-    public static String join(String separator, String seal, String[] values,
-            int beginIndex, int count) {
-        return join(false, separator, seal, values, beginIndex, values.length);
-    }
-
     public static String join(boolean isCompact, String separator, String seal,
-            String[] values, int beginIndex, int count) {
+            Object[] values, int beginIndex) {
         return join(isCompact, separator, seal, seal, values, beginIndex,
                 values.length);
     }
@@ -392,7 +423,7 @@ public class Strings {
      * @return
      */
     public static String join(boolean isCompact, String separator,
-            String beginSeal, String endSeal, String[] values, int beginIndex,
+            String beginSeal, String endSeal, Object[] values, int beginIndex,
             int count) {
         separator = Helpers.coalesce(separator, "");
         beginSeal = Strings.empty(beginSeal);
@@ -430,6 +461,12 @@ public class Strings {
         return null;
     }
 
+    /**
+     * 
+     *
+     * @param values
+     * @return
+     */
     public static String[] trim(String[] values) {
         if (values != null) {
             for (int i = 0; i < values.length; i++) {

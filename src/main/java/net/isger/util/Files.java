@@ -181,7 +181,7 @@ public class Files {
      * @return
      */
     public static String getCanonical(String path) {
-        return path == null ? null : getCanonical(new File(path));
+        return getCanonical(new File(path));
     }
 
     /**
@@ -194,7 +194,7 @@ public class Files {
         String path;
         try {
             path = file.getCanonicalPath();
-        } catch (IOException e) {
+        } catch (Exception e) {
             path = null;
         }
         return path;
@@ -272,7 +272,9 @@ public class Files {
                 delete(subFile);
             }
         }
-        file.delete();
+        if (file.exists()) {
+            file.delete();
+        }
     }
 
     /**
@@ -396,7 +398,12 @@ public class Files {
         if (!source.exists()) {
             return null;
         }
-        delete(target);
+        if (target.exists()) {
+            if (target.isDirectory()) {
+                target = new File(target, source.getName());
+            }
+            delete(target);
+        }
         if (!source.renameTo(target)) {
             InputStream is = null;
             try {

@@ -10,9 +10,12 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+
 import net.isger.util.Asserts;
 import net.isger.util.Callable;
 import net.isger.util.Reflects;
+import net.isger.util.Strings;
 import net.isger.util.hitch.Director;
 import net.isger.util.reflect.conversion.Conversion;
 
@@ -139,7 +142,18 @@ public class Converter {
         }
         /* 字符串转换 */
         if (value instanceof String) {
-            return Reflects.newInstance((String) value);
+            if (Strings.isEmpty(value)) {
+                return defaultValue(type);
+            }
+            Class<?> clazz = Reflects.getClass((String) value);
+            if (clazz != null) {
+                return Reflects.newInstance(clazz);
+            }
+            value = new Gson().fromJson((String) value, Object.class);
+        }
+        /* 字符串赋值 */
+        if (rawClass == String.class) {
+            return new Gson().toJson(value);
         }
         /* 键值对转换 */
         if (value instanceof Map) {
@@ -149,10 +163,6 @@ public class Converter {
                 config.put(Reflects.KEY_CLASS, rawClass);
             }
             return Reflects.newInstance(config, assembler);
-        }
-        /* 字符串赋值 */
-        if (rawClass == String.class) {
-            return String.valueOf(value);
         }
         throw Asserts.state("Unsupported convert to %s from %s",
                 Reflects.getName(rawClass), srcClass.getName());
