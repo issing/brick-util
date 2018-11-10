@@ -595,7 +595,6 @@ public class Reflects {
             return result;
         }
         result = new LinkedHashMap<String, List<BoundField>>();
-        String name;
         Mode ignoreMode;
         BoundField boundField;
         List<BoundField> boundFields;
@@ -610,13 +609,6 @@ public class Reflects {
                         && Helpers.toAppend(result, boundField.getName(),
                                 boundField)) {
                     boundFields.add(boundField);
-                }
-            }
-            // 导入别名字段（候选）
-            for (BoundField field : boundFields) {
-                name = field.getAlias();
-                if (name != null) {
-                    Helpers.toAppend(result, name, field);
                 }
             }
             pending = pending.getSuperclass();
@@ -811,8 +803,9 @@ public class Reflects {
         String path = clazz.getName().replaceAll("[.]", "/");
         String name = clazz.getSimpleName();
         Properties props = new Properties();
-        Helpers.load(props, path.substring(0, path.length() - name.length())
-                + ".ignoreMode");
+        Helpers.load(props, false,
+                path.substring(0, path.length() - name.length())
+                        + ".ignoreMode");
         Helpers.load(props, path + ".ignoreMode");
         String modeName = props.getProperty("this");
         if (Mode.EXCLUDE_NAME.equals(modeName)) {

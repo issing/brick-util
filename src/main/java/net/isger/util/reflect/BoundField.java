@@ -7,12 +7,16 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Map;
 
 import javax.inject.Inject;
+
+import com.google.gson.Gson;
 
 import net.isger.util.Asserts;
 import net.isger.util.Callable;
 import net.isger.util.Reflects;
+import net.isger.util.Sqls;
 import net.isger.util.Strings;
 import net.isger.util.anno.Affix;
 import net.isger.util.anno.Alias;
@@ -34,6 +38,7 @@ public class BoundField {
 
     private boolean infect;
 
+    @SuppressWarnings("unchecked")
     public BoundField(Field field) {
         TypeToken<?> declaring = TypeToken.get(field.getDeclaringClass());
         this.token = TypeToken.get(Reflects.getResolveType(declaring.getType(),
@@ -41,13 +46,20 @@ public class BoundField {
         this.field = field;
         this.field.setAccessible(true);
         this.name = field.getName();
-        Alias alias = field.getAnnotation(Alias.class);
-        if (alias != null) {
-            this.alias = Strings.empty(alias.value());
-        }
         Affix affix = field.getAnnotation(Affix.class);
         if (affix != null) {
             this.affix = Strings.empty(affix.value());
+        }
+        Alias alias = field.getAnnotation(Alias.class);
+        if (alias != null) {
+            this.alias = Strings.empty(alias.value());
+        } else if (Strings.isNotEmpty(this.affix)) {
+            try {
+                Map<String, Object> config = (Map<String, Object>) new Gson()
+                        .fromJson(this.affix, Object.class);
+                this.alias = Sqls.toFieldName((String) config.get("name"));
+            } catch (Exception e) {
+            }
         }
         this.inject = field.getAnnotation(Inject.class) != null;
         this.infect = field.getAnnotation(Infect.class) != null;
@@ -95,8 +107,12 @@ public class BoundField {
                 if (rawClass.isInstance(value)) {
                     value = resolve(rawClass, token.getType(), value);
                 } else {
-                    value = Converter.convert(token.getType(), value,
-                            assembler);
+                    try {
+                        value = Converter.convert(token.getType(), value,
+                                assembler);
+                    } catch (Exception e) {
+                        value = Converter.defaultValue(token.getType());
+                    }
                 }
                 field.set(instance, value);
             }

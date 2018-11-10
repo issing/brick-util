@@ -170,7 +170,7 @@ public class Converter {
 
     public static Object defaultValue(Type type) {
         Class<?> rawClass = Reflects.getRawClass(type);
-        if (rawClass.isPrimitive()) {
+        if (rawClass.isPrimitive() && rawClass != Void.TYPE) {
             if (Boolean.TYPE == rawClass) {
                 return false;
             }

@@ -27,6 +27,9 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.isger.util.anno.Alias;
 
 /**
@@ -36,6 +39,8 @@ import net.isger.util.anno.Alias;
  *
  */
 public class Helpers {
+
+    public static final Logger LOG;
 
     public static final int SEED_DIGIT = 0;
 
@@ -61,6 +66,7 @@ public class Helpers {
     private final static Map<Character, Integer> DIGIT_INDECES;
 
     static {
+        LOG = LoggerFactory.getLogger(Helpers.class);
         DIGIT_INDECES = new HashMap<Character, Integer>();
         for (int i = 0; i < MAX_RADIX; i++) {
             DIGIT_INDECES.put(CODES[i], (int) i);
@@ -249,7 +255,7 @@ public class Helpers {
         try {
             return toHex(Securities.toDigest("MD5", value));
         } catch (Exception e) {
-            throw Asserts.state("Failure to make MD5 for [{}] - {}", value,
+            throw Asserts.state("Failure to make MD5 for [%s] - %s", value,
                     e.getMessage());
         }
     }
@@ -458,6 +464,9 @@ public class Helpers {
     }
 
     public static Properties load(Properties props, boolean isXML, URL url) {
+        if (url == null) {
+            return props;
+        }
         InputStream in = null;
         try {
             in = url.openStream();
@@ -467,6 +476,7 @@ public class Helpers {
                 props.load(in);
             }
         } catch (Exception e) {
+            LOG.warn("Failed to load properties [{}]", url, e);
         } finally {
             Files.close(in);
         }
@@ -486,20 +496,18 @@ public class Helpers {
     }
 
     public static boolean hasAliasName(Class<?> clazz) {
-        Alias alias = clazz.getAnnotation(Alias.class);
-        boolean result = alias != null;
-        if (result) {
-            result = Strings.isNotEmpty(alias.value());
-        }
-        return result;
+        return Strings
+                .isNotEmpty(getAliasName(clazz.getAnnotation(Alias.class)))
+                || Strings.isNotEmpty(getAliasName(
+                        clazz.getAnnotation(javax.inject.Named.class)));
     }
 
     public static boolean hasAliasName(Annotation[] annos) {
         boolean result = false;
-        if (annos != null && annos.length > 0) {
+        if (annos != null) {
             for (Annotation anno : annos) {
-                if (anno instanceof Alias) {
-                    result = Strings.isNotEmpty(((Alias) anno).value());
+                if (Strings.isNotEmpty(getAliasName(anno))) {
+                    result = true;
                     break;
                 }
             }
@@ -508,14 +516,15 @@ public class Helpers {
     }
 
     public static String getAliasName(Annotation[] annos) {
-        if (annos != null && annos.length > 0) {
+        String name = null;
+        if (annos != null) {
             for (Annotation anno : annos) {
-                if (anno instanceof Alias) {
-                    return ((Alias) anno).value();
+                if (Strings.isNotEmpty(name = getAliasName(anno))) {
+                    break;
                 }
             }
         }
-        return null;
+        return name;
     }
 
     public static String getAliasName(Class<?> clazz) {
@@ -530,7 +539,9 @@ public class Helpers {
             String value) {
         String name;
         if (hasAliasName(clazz)) {
-            name = clazz.getAnnotation(Alias.class).value().trim();
+            name = Strings.empty(getAliasName(clazz.getAnnotation(Alias.class)),
+                    getAliasName(
+                            clazz.getAnnotation(javax.inject.Named.class)));
         } else if (Strings.isNotEmpty(value)) {
             name = value.trim();
         } else {
@@ -542,6 +553,16 @@ public class Helpers {
         }
         return Strings.isEmpty(mask) ? name
                 : Strings.replaceIgnoreCase(name, mask);
+    }
+
+    private static String getAliasName(Annotation anno) {
+        String name = null;
+        if (anno instanceof Alias) {
+            name = ((Alias) anno).value();
+        } else if (anno instanceof javax.inject.Named) {
+            name = ((javax.inject.Named) anno).value();
+        }
+        return name;
     }
 
     /**
@@ -824,6 +845,21 @@ public class Helpers {
             namespace = namespace.substring(index + 1);
         }
         return params.get(namespace);
+    }
+
+    public static Object toArray(Object source) {
+        if (source == null) {
+            return null;
+        } else if (source instanceof Collection) {
+            Collection<?> collection = (Collection<?>) source;
+            return collection.toArray(new Object[collection.size()]);
+        }
+        Class<?> sourceClass = source.getClass();
+        if (sourceClass.isArray()) {
+            return source;
+        } else {
+            return new Object[] { source };
+        }
     }
 
     public static Object newArray(Object source) {
@@ -1123,7 +1159,8 @@ public class Helpers {
         if (limit <= 0) {
             limit = 64;
         }
-        return Strings.isNotEmpty(value) && value.matches(REGEX_CODE)
+        return Strings.isNotEmpty(value)
+                && value.toUpperCase().matches(REGEX_CODE)
                 && value.length() < limit;
     }
 
