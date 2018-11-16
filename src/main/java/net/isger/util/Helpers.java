@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -1121,6 +1122,46 @@ public class Helpers {
             Thread.sleep(ms, ns);
         } catch (InterruptedException e) {
         }
+    }
+
+    /**
+     * 获取地址
+     *
+     * @return
+     * @throws Exception
+     */
+    public static InetAddress getAddress() {
+        try {
+            InetAddress candidateAddress = null;
+            // 遍历网络接口
+            for (Enumeration<NetworkInterface> ifaces = NetworkInterface
+                    .getNetworkInterfaces(); ifaces.hasMoreElements();) {
+                NetworkInterface iface = ifaces.nextElement();
+                // 遍历接口IP地址
+                for (Enumeration<InetAddress> inetAddrs = iface
+                        .getInetAddresses(); inetAddrs.hasMoreElements();) {
+                    InetAddress inetAddr = (InetAddress) inetAddrs
+                            .nextElement();
+                    // 排除loopback类型地址
+                    if (!inetAddr.isLoopbackAddress()) {
+                        if (inetAddr.isSiteLocalAddress()) {
+                            // 返回site-local地址
+                            return inetAddr;
+                        } else if (candidateAddress == null) {
+                            // 记录候选地址
+                            candidateAddress = inetAddr;
+                        }
+                    }
+                }
+            }
+            if (candidateAddress != null) {
+                return candidateAddress;
+            }
+            // 默认本机地址方案
+            return InetAddress.getLocalHost();
+        } catch (Exception e) {
+        }
+        return null;
     }
 
     /**

@@ -13,6 +13,15 @@ public class Asserts {
     private Asserts() {
     }
 
+    public static void isFalse(boolean expression) {
+        isFalse(expression, "The expression must be false");
+    }
+
+    public static void isFalse(boolean expression, String message,
+            Object... args) {
+        isTrue(!expression, message, args);
+    }
+
     public static void isTrue(boolean expression) {
         isTrue(expression, "The expression must be true");
     }
@@ -33,14 +42,24 @@ public class Asserts {
     }
 
     public static <T extends Object> T isNotNull(T value) {
-        isNotNull(value, "The argument not be null");
-        return value;
+        return isNotNull(value, "The argument not be null");
     }
 
     public static <T extends Object> T isNotNull(T value, String message,
             Object... args) {
-        throwArgument(value != null, message, args);
+        throwArgument(value != null, message,
+                (Object[]) Helpers.newArray(value, args));
         return value;
+    }
+
+    public static <T extends Object> String isEmpty(T value) {
+        return isEmpty(value, "The argument must be null or empty");
+    }
+
+    public static <T extends Object> String isEmpty(T value, String message,
+            Object... args) {
+        throwArgument(Strings.isEmpty(value), message, args);
+        return "";
     }
 
     public static <T extends Object> String isNotEmpty(T value) {
@@ -49,8 +68,9 @@ public class Asserts {
 
     public static <T extends Object> String isNotEmpty(T value, String message,
             Object... args) {
-        throwArgument(Strings.isNotEmpty(value), message, args);
-        return value.toString().trim();
+        throwArgument(Strings.isNotEmpty(value), message,
+                (Object[]) Helpers.newArray(value, args));
+        return Strings.empty(value.toString());
     }
 
     public static String isNotContains(String source, String value) {
@@ -142,7 +162,8 @@ public class Asserts {
     public static Throwable getCause(Object[] args) {
         return args != null && args.length > 0
                 && (args[args.length - 1] instanceof Throwable)
-                        ? (Throwable) args[args.length - 1] : null;
+                        ? (Throwable) args[args.length - 1]
+                        : null;
     }
 
 }
