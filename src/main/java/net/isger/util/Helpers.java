@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1109,8 +1110,8 @@ public class Helpers {
         return args;
     }
 
-    public static void sleep(int ns) {
-        sleep(0, ns);
+    public static void sleep(int s) {
+        sleep(TimeUnit.SECONDS.toMillis(s), 0);
     }
 
     public static void sleep(long ms) {
@@ -1118,9 +1119,11 @@ public class Helpers {
     }
 
     public static void sleep(long ms, int ns) {
-        try {
-            Thread.sleep(ms, ns);
-        } catch (InterruptedException e) {
+        if (ms > 0 && ns > 0) {
+            try {
+                Thread.sleep(ms, ns);
+            } catch (InterruptedException e) {
+            }
         }
     }
 

@@ -32,12 +32,13 @@ public class Asserts {
     }
 
     public static <T extends Object> T isNull(T value) {
-        return isNull(value, "The argument must be null");
+        return isNull(value, "The argument [%s] must be null");
     }
 
     public static <T extends Object> T isNull(T value, String message,
             Object... args) {
-        throwArgument(value == null, message, args);
+        throwArgument(value == null, message,
+                (Object[]) Helpers.newArray(value, args));
         return value;
     }
 
@@ -47,18 +48,18 @@ public class Asserts {
 
     public static <T extends Object> T isNotNull(T value, String message,
             Object... args) {
-        throwArgument(value != null, message,
-                (Object[]) Helpers.newArray(value, args));
+        throwArgument(value != null, message, args);
         return value;
     }
 
     public static <T extends Object> String isEmpty(T value) {
-        return isEmpty(value, "The argument must be null or empty");
+        return isEmpty(value, "The argument [%s] must be null or empty");
     }
 
     public static <T extends Object> String isEmpty(T value, String message,
             Object... args) {
-        throwArgument(Strings.isEmpty(value), message, args);
+        throwArgument(Strings.isEmpty(value), message,
+                (Object[]) Helpers.newArray(value, args));
         return "";
     }
 
@@ -68,8 +69,7 @@ public class Asserts {
 
     public static <T extends Object> String isNotEmpty(T value, String message,
             Object... args) {
-        throwArgument(Strings.isNotEmpty(value), message,
-                (Object[]) Helpers.newArray(value, args));
+        throwArgument(Strings.isNotEmpty(value), message, args);
         return Strings.empty(value.toString());
     }
 

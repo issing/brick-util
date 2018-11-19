@@ -1,6 +1,7 @@
 package net.isger.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -226,7 +227,12 @@ public class Securities {
     public static KeyStore getKeyStore(String algorithm, String path,
             char[] password) throws Exception {
         KeyStore keyStore = KeyStore.getInstance(algorithm); // , "BC");
-        keyStore.load(Reflects.getResourceAsStream(path), password);
+        InputStream is = Reflects.getResourceAsStream(path);
+        try {
+            keyStore.load(is, password);
+        } finally {
+            Files.close(is);
+        }
         return keyStore;
     }
 
@@ -384,9 +390,14 @@ public class Securities {
      * @throws Exception
      */
     public static Certificate getCertificate(String path) throws Exception {
-        return (X509Certificate) CertificateFactory.getInstance("X.509")
-                // , "BC")
-                .generateCertificate(Reflects.getResourceAsStream(path));
+        InputStream is = Reflects.getResourceAsStream(path);
+        try {
+            return (X509Certificate) CertificateFactory.getInstance("X.509")
+                    // , "BC")
+                    .generateCertificate(is);
+        } finally {
+            Files.close(is);
+        }
     }
 
     /**
