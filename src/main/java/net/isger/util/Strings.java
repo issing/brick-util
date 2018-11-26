@@ -426,8 +426,8 @@ public class Strings {
             String beginSeal, String endSeal, Object[] values, int beginIndex,
             int count) {
         separator = Helpers.coalesce(separator, "");
-        beginSeal = Strings.empty(beginSeal);
-        endSeal = Strings.empty(endSeal);
+        beginSeal = Helpers.coalesce(beginSeal, "");
+        endSeal = Helpers.coalesce(endSeal, "");
         beginIndex = Math.max(beginIndex, 0);
         count = Math.min(beginIndex + count, values.length);
         if (beginIndex < count) {
