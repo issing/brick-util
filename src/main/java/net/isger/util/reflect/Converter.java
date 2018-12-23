@@ -10,10 +10,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-
 import net.isger.util.Asserts;
 import net.isger.util.Callable;
+import net.isger.util.Helpers;
 import net.isger.util.Reflects;
 import net.isger.util.Strings;
 import net.isger.util.hitch.Director;
@@ -149,11 +148,11 @@ public class Converter {
             if (clazz != null) {
                 return Reflects.newInstance(clazz);
             }
-            value = new Gson().fromJson((String) value, Object.class);
+            value = Helpers.fromJson((String) value);
         }
         /* 字符串赋值 */
         if (rawClass == String.class) {
-            return new Gson().toJson(value);
+            return Helpers.toJson(value);
         }
         /* 键值对转换 */
         if (value instanceof Map) {

@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+
 import net.isger.util.anno.Alias;
 
 /**
@@ -67,12 +69,15 @@ public class Helpers {
 
     private final static Map<Character, Integer> DIGIT_INDECES;
 
+    private static final Gson GSON;
+
     static {
         LOG = LoggerFactory.getLogger(Helpers.class);
         DIGIT_INDECES = new HashMap<Character, Integer>();
         for (int i = 0; i < MAX_RADIX; i++) {
             DIGIT_INDECES.put(CODES[i], (int) i);
         }
+        GSON = new Gson();
     }
 
     private Helpers() {
@@ -158,6 +163,22 @@ public class Helpers {
         return negative ? result : -result;
     }
 
+    public static String toJson(Object instance) {
+        return GSON.toJson(instance);
+    }
+
+    public static Object fromJson(String json) {
+        return fromJson(json, Object.class);
+    }
+
+    public static <T> T fromJson(String json, Class<T> clazz) {
+        try {
+            return GSON.fromJson(json, clazz);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /**
      * 转换布尔值
      * 
@@ -167,7 +188,10 @@ public class Helpers {
     public static boolean toBoolean(Object value) {
         return value != null && (value instanceof Boolean ? (boolean) value
                 : Boolean.parseBoolean(value.toString())
-                        || (toInt(value, 0) != 0));
+                        || (toInt(value, 0) != 0)
+                        || "t".equalsIgnoreCase(value.toString())
+                        || "y".equalsIgnoreCase(value.toString())
+                        || "yes".equalsIgnoreCase(value.toString()));
     }
 
     /**

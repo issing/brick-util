@@ -14,7 +14,7 @@ public class Numbers {
             if (value instanceof Number) {
                 return ((Number) value).longValue();
             }
-            return Long.parseLong(value.toString());
+            return Double.valueOf(value.toString()).longValue();
         } catch (Throwable e) {
             return def;
         }
@@ -29,7 +29,7 @@ public class Numbers {
             if (value instanceof Number) {
                 return ((Number) value).intValue();
             }
-            return Integer.parseInt(value.toString());
+            return Double.valueOf(value.toString()).intValue();
         } catch (Throwable e) {
             return def;
         }

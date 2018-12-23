@@ -11,10 +11,9 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import com.google.gson.Gson;
-
 import net.isger.util.Asserts;
 import net.isger.util.Callable;
+import net.isger.util.Helpers;
 import net.isger.util.Reflects;
 import net.isger.util.Sqls;
 import net.isger.util.Strings;
@@ -55,8 +54,8 @@ public class BoundField {
             this.alias = Strings.empty(alias.value());
         } else if (Strings.isNotEmpty(this.affix)) {
             try {
-                Map<String, Object> config = (Map<String, Object>) new Gson()
-                        .fromJson(this.affix, Object.class);
+                Map<String, Object> config = (Map<String, Object>) Helpers
+                        .fromJson(this.affix);
                 this.alias = Sqls.toFieldName((String) config.get("name"));
             } catch (Exception e) {
             }
