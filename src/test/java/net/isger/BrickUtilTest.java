@@ -38,7 +38,7 @@ public class BrickUtilTest extends TestCase {
         testBean.test("test.name", "test.password");
         assertTrue(true);
 
-        Map<String, Object> values = new HashMap<>();
+        Map<String, Object> values = new HashMap<String, Object>();
         values.put("value", "a");
         values.put("a.value", "a.a");
         System.out.println(Reflects.newInstance(A.class, values).a.value);

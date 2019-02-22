@@ -40,57 +40,13 @@ public class Sqls {
     }
 
     /**
-     * 转换为Java约定字段命名
-     * 
-     * @param columnName
-     * @return
-     */
-    public static String toFieldName(String columnName) {
-        char[] chs = columnName.toLowerCase().toCharArray();
-        StringBuffer fieldName = new StringBuffer(chs.length);
-        boolean hasUpper = false;
-        for (char ch : chs) {
-            // 跳过“_”符号，并设置接下来其它字符为大写
-            if (ch == '_') {
-                hasUpper = true;
-                continue;
-            } else if (hasUpper) {
-                ch = Character.toUpperCase(ch);
-                hasUpper = false; // 重置大写状态
-            }
-            fieldName.append(ch);
-        }
-        return fieldName.toString();
-    }
-
-    /**
-     * 转换为SQL约定列命名
-     * 
-     * @param fieldName
-     * @return
-     */
-    public static String toColumnName(String fieldName) {
-        // 去除所有“_”符号
-        char[] chs = fieldName.replaceAll("[_]", "").toCharArray();
-        StringBuffer columnName = new StringBuffer(chs.length + 16);
-        for (char ch : chs) {
-            // 遇大写字母前加“_”符号
-            if (Character.isUpperCase(ch)) {
-                columnName.append('_');
-            }
-            columnName.append(Character.toLowerCase(ch));
-        }
-        return columnName.toString();
-    }
-
-    /**
      * 转换为SQL约定表命名
      * 
      * @param tableName
      * @return
      */
     public static String toTableName(String tableName) {
-        tableName = toColumnName(tableName);
+        tableName = Helpers.toColumnName(tableName);
         if (!Strings.startWithIgnoreCase(tableName, "t[_]")) {
             tableName = "t_" + tableName;
         }
@@ -162,7 +118,7 @@ public class Sqls {
             int count = metaData.getColumnCount();
             columns = new String[count];
             for (int i = 0; i < count;) {
-                columns[i] = toFieldName(getColumnName(metaData, ++i));
+                columns[i] = Helpers.toFieldName(getColumnName(metaData, ++i));
             }
             Object[] info = null;
             while (resultSet.next()) {
@@ -210,7 +166,7 @@ public class Sqls {
                 .values()) {
             field = fields.get(0);
             column = Strings.empty(field.getAlias(),
-                    Sqls.toColumnName(field.getName()));
+                    Helpers.toColumnName(field.getName()));
             value = field.getValue(bean);
             if (value != null) {
                 columns.add(column);

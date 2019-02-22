@@ -15,7 +15,6 @@ import net.isger.util.Asserts;
 import net.isger.util.Callable;
 import net.isger.util.Helpers;
 import net.isger.util.Reflects;
-import net.isger.util.Sqls;
 import net.isger.util.Strings;
 import net.isger.util.anno.Affix;
 import net.isger.util.anno.Alias;
@@ -56,7 +55,7 @@ public class BoundField {
             try {
                 Map<String, Object> config = (Map<String, Object>) Helpers
                         .fromJson(this.affix);
-                this.alias = Sqls.toFieldName((String) config.get("name"));
+                this.alias = Helpers.toFieldName((String) config.get("name"));
             } catch (Exception e) {
             }
         }

@@ -59,6 +59,9 @@ public class Reflects {
     /** 包装类型集合 */
     private static final Map<Class<?>, Class<?>> WRAP_TYPES;
 
+    /** 原始类型集合 */
+    private static final Map<Class<?>, Class<?>> PRIMITIVE_TYPES;
+
     private static final Logger LOG;
 
     /** 类字段缓存 */
@@ -78,6 +81,17 @@ public class Reflects {
         WRAP_TYPES.put(Long.TYPE, Long.class);
         WRAP_TYPES.put(Float.TYPE, Float.class);
         WRAP_TYPES.put(Double.TYPE, Double.class);
+
+        PRIMITIVE_TYPES = new HashMap<Class<?>, Class<?>>();
+        PRIMITIVE_TYPES.put(Void.class, Void.TYPE);
+        PRIMITIVE_TYPES.put(Boolean.class, Boolean.TYPE);
+        PRIMITIVE_TYPES.put(Byte.class, Byte.TYPE);
+        PRIMITIVE_TYPES.put(Character.class, Character.TYPE);
+        PRIMITIVE_TYPES.put(Short.class, Short.TYPE);
+        PRIMITIVE_TYPES.put(Integer.class, Integer.TYPE);
+        PRIMITIVE_TYPES.put(Long.class, Long.TYPE);
+        PRIMITIVE_TYPES.put(Float.class, Float.TYPE);
+        PRIMITIVE_TYPES.put(Double.class, Double.TYPE);
 
         LOG = LoggerFactory.getLogger(Reflects.class);
 
@@ -440,6 +454,13 @@ public class Reflects {
             wrap = primitive;
         }
         return wrap;
+    }
+
+    public static Class<?> getPrimitiveClass(Class<?> wrap) {
+        if (wrap.isPrimitive()) {
+            return wrap;
+        }
+        return PRIMITIVE_TYPES.get(wrap);
     }
 
     /**
@@ -1018,6 +1039,9 @@ public class Reflects {
             } else {
                 field.setValue(instance, UNKNOWN, fieldAssembler);
             }
+        }
+        if (instance instanceof Extendable) {
+            ((Extendable) instance).setExtends(params);
         }
         return instance;
     }

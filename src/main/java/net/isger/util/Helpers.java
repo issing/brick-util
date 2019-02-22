@@ -196,6 +196,16 @@ public class Helpers {
 
     /**
      * 转换整形
+     *
+     * @param value
+     * @return
+     */
+    public static int toInt(Object value) {
+        return toInt(value, 0);
+    }
+
+    /**
+     * 转换整形
      * 
      * @param value
      * @param def
@@ -211,6 +221,45 @@ public class Helpers {
             }
         }
         return def;
+    }
+
+    /**
+     * 转换长整形
+     *
+     * @param value
+     * @return
+     */
+    public static long toLong(Object value) {
+        return toLong(value, 0);
+    }
+
+    /**
+     * 转换长整形
+     * 
+     * @param value
+     * @param def
+     * @return
+     */
+    public static long toLong(Object value, long def) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        } else if (value != null) {
+            try {
+                def = Double.valueOf(value.toString()).longValue();
+            } catch (Exception e) {
+            }
+        }
+        return def;
+    }
+
+    /**
+     * 转换双精度
+     *
+     * @param value
+     * @return
+     */
+    public static double toDouble(Object value) {
+        return toDouble(value, 0);
     }
 
     /**
@@ -572,7 +621,7 @@ public class Helpers {
             name = value.trim();
         } else {
             name = clazz.getSimpleName();
-            if (Sqls.toColumnName(name).startsWith("i_")) {
+            if (Helpers.toColumnName(name).startsWith("i_")) {
                 name = name.substring(1);
             }
             name = name.toLowerCase();
@@ -1335,6 +1384,50 @@ public class Helpers {
     public static int toInt(int radix, String value, int beginIndex,
             int endIndex) {
         return Integer.parseInt(value.substring(beginIndex, endIndex), radix);
+    }
+
+    /**
+     * 转换为字段命名
+     * 
+     * @param columnName
+     * @return
+     */
+    public static String toFieldName(String columnName) {
+        char[] chs = columnName.toLowerCase().toCharArray();
+        StringBuffer fieldName = new StringBuffer(chs.length);
+        boolean hasUpper = false;
+        for (char ch : chs) {
+            // 跳过“_”符号，并设置接下来其它字符为大写
+            if (ch == '_') {
+                hasUpper = true;
+                continue;
+            } else if (hasUpper) {
+                ch = Character.toUpperCase(ch);
+                hasUpper = false; // 重置大写状态
+            }
+            fieldName.append(ch);
+        }
+        return fieldName.toString();
+    }
+
+    /**
+     * 转换为列命名
+     * 
+     * @param fieldName
+     * @return
+     */
+    public static String toColumnName(String fieldName) {
+        // 去除所有“_”符号
+        char[] chs = fieldName.replaceAll("[_]", "").toCharArray();
+        StringBuffer columnName = new StringBuffer(chs.length + 16);
+        for (char ch : chs) {
+            // 遇大写字母前加“_”符号
+            if (Character.isUpperCase(ch)) {
+                columnName.append('_');
+            }
+            columnName.append(Character.toLowerCase(ch));
+        }
+        return columnName.toString();
     }
 
     public static int hashCode(Object instance) {
