@@ -530,8 +530,9 @@ public class Sqls {
         }
         /* 配置语句 */
         String sql = sqls.getProperty(id);
-        Asserts.throwState(Strings.isNotEmpty(sql),
-                "Not found the sql [%s] in the [%s.sql.xml] file", id, name);
-        return Strings.format(sql, args);
+        if (Strings.isNotEmpty(sql)) {
+            sql = Strings.format(sql, args);
+        }
+        return sql;
     }
 }
