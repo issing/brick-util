@@ -300,7 +300,8 @@ public class Strings {
      */
     public static String join(boolean isCompact, String separator,
             String beginSeal, String endSeal, Collection<?> values) {
-        return join(isCompact, separator, beginSeal, endSeal, values.toArray());
+        return join(isCompact, separator, beginSeal, endSeal,
+                values == null ? null : values.toArray());
     }
 
     /**
@@ -408,7 +409,7 @@ public class Strings {
     public static String join(boolean isCompact, String separator, String seal,
             Object[] values, int beginIndex) {
         return join(isCompact, separator, seal, seal, values, beginIndex,
-                values.length);
+                values == null ? -1 : values.length);
     }
 
     /**
@@ -429,8 +430,9 @@ public class Strings {
         beginSeal = Helpers.coalesce(beginSeal, "");
         endSeal = Helpers.coalesce(endSeal, "");
         beginIndex = Math.max(beginIndex, 0);
-        count = Math.min(beginIndex + count, values.length);
-        if (beginIndex < count) {
+        count = Math.min(beginIndex + count,
+                values == null ? -1 : values.length);
+        if (beginIndex < count && values != null && beginIndex >= 0) {
             StringBuffer buffer = new StringBuffer(count-- * 32);
             int amount = beginIndex - 1;
             while (++amount < count) {

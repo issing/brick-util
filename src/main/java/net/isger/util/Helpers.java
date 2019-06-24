@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 
 import net.isger.util.anno.Alias;
+import net.isger.util.anno.Order;
 
 /**
  * 帮助工具
@@ -58,8 +61,7 @@ public class Helpers {
 
     private static final char[] CODES = TABLE_RADIX.toCharArray();
 
-    private static final int[][] CODES_LIMITS = { { 0, 10 }, { 10, 26 },
-            { 36, 26 }, { 0, 16 }, { 0, 36 }, { 10, 52 }, { 0, 62 } };
+    private static final int[][] CODES_LIMITS = { { 0, 10 }, { 10, 26 }, { 36, 26 }, { 0, 16 }, { 0, 36 }, { 10, 52 }, { 0, 62 } };
 
     /** 最大进制数 */
     public static final int MAX_RADIX = CODES.length;
@@ -127,8 +129,7 @@ public class Helpers {
             value = value.toLowerCase();
         }
         if (count == 0) {
-            throw new NumberFormatException("Failure to parse \"" + value
-                    + "\" using " + radix + " radix");
+            throw new NumberFormatException("Failure to parse \"" + value + "\" using " + radix + " radix");
         }
         long limit = -Long.MAX_VALUE;
         Integer digit;
@@ -140,8 +141,7 @@ public class Helpers {
                 negative = true;
                 limit = Long.MIN_VALUE;
             } else if (v != '+' || count == 1) {
-                throw new NumberFormatException("Failure to parse \"" + value
-                        + "\" using " + radix + " radix");
+                throw new NumberFormatException("Failure to parse \"" + value + "\" using " + radix + " radix");
             }
             amount++;
         }
@@ -150,13 +150,11 @@ public class Helpers {
         while (amount < count) {
             digit = DIGIT_INDECES.get(value.charAt(amount++));
             if (digit == null || digit < 0 || result < multmin) {
-                throw new NumberFormatException("Failure to parse \"" + value
-                        + "\" using " + radix + " radix");
+                throw new NumberFormatException("Failure to parse \"" + value + "\" using " + radix + " radix");
             }
             result *= radix;
             if (result < limit + digit) {
-                throw new NumberFormatException("Failure to parse \"" + value
-                        + "\" using " + radix + " radix");
+                throw new NumberFormatException("Failure to parse \"" + value + "\" using " + radix + " radix");
             }
             result -= digit;
         }
@@ -187,11 +185,7 @@ public class Helpers {
      */
     public static boolean toBoolean(Object value) {
         return value != null && (value instanceof Boolean ? (boolean) value
-                : Boolean.parseBoolean(value.toString())
-                        || (toInt(value, 0) != 0)
-                        || "t".equalsIgnoreCase(value.toString())
-                        || "y".equalsIgnoreCase(value.toString())
-                        || "yes".equalsIgnoreCase(value.toString()));
+                : Boolean.parseBoolean(value.toString()) || (toInt(value, 0) != 0) || "t".equalsIgnoreCase(value.toString()) || "y".equalsIgnoreCase(value.toString()) || "yes".equalsIgnoreCase(value.toString()));
     }
 
     /**
@@ -330,8 +324,7 @@ public class Helpers {
         try {
             return toHex(Securities.toDigest("MD5", value));
         } catch (Exception e) {
-            throw Asserts.state("Failure to make MD5 for [%s] - %s", value,
-                    e.getMessage());
+            throw Asserts.state("Failure to make MD5 for [%s] - %s", value, e.getMessage());
         }
     }
 
@@ -439,8 +432,7 @@ public class Helpers {
     public static int getRandom(int limit) {
         UUID uuid = UUID.randomUUID();
         Random random = new Random(uuid.getMostSignificantBits());
-        int seed = Math.abs(
-                (int) (uuid.getLeastSignificantBits() % Integer.MAX_VALUE));
+        int seed = Math.abs((int) (uuid.getLeastSignificantBits() % Integer.MAX_VALUE));
         int result;
         while ((result = random.nextInt(seed)) < 0) {
             continue;
@@ -472,8 +464,7 @@ public class Helpers {
         return getPropertiesURL(isXML, null, name);
     }
 
-    public static URL getPropertiesURL(boolean isXML, Object source,
-            String name) {
+    public static URL getPropertiesURL(boolean isXML, Object source, String name) {
         URL url = Reflects.getResource(source, name);
         if (url == null) {
             if (isXML) {
@@ -505,8 +496,7 @@ public class Helpers {
         return getProperties(isXML, getPropertiesURL(isXML, name));
     }
 
-    public static Properties getProperties(boolean isXML, Object source,
-            String name) {
+    public static Properties getProperties(boolean isXML, Object source, String name) {
         return getProperties(isXML, getPropertiesURL(isXML, source, name));
     }
 
@@ -523,18 +513,15 @@ public class Helpers {
         return load(load(props, false, name), true, name);
     }
 
-    public static Properties load(Properties props, Object source,
-            String name) {
+    public static Properties load(Properties props, Object source, String name) {
         return load(load(props, false, source, name), true, source, name);
     }
 
-    public static Properties load(Properties props, boolean isXML,
-            String name) {
+    public static Properties load(Properties props, boolean isXML, String name) {
         return load(props, isXML, getPropertiesURL(isXML, name));
     }
 
-    public static Properties load(Properties props, boolean isXML,
-            Object source, String name) {
+    public static Properties load(Properties props, boolean isXML, Object source, String name) {
         return load(props, isXML, getPropertiesURL(isXML, source, name));
     }
 
@@ -570,11 +557,51 @@ public class Helpers {
         });
     }
 
+    public static int getOrder(Object instance) {
+        Integer order;
+        getOrder: {
+            Annotation[] annos;
+            if (instance instanceof Class) {
+                annos = ((Class<?>) instance).getDeclaredAnnotations();
+            } else if (instance instanceof Method) {
+                annos = ((Method) instance).getDeclaredAnnotations();
+            } else if (instance != null) {
+                annos = instance.getClass().getDeclaredAnnotations();
+            } else {
+                order = Order.LOW_PRECEDENCE;
+                break getOrder;
+            }
+            order = getOrder(annos);
+        }
+        return order;
+    }
+
+    public static int getOrder(Annotation[] annos) {
+        Integer order;
+        getOrder: {
+            if (annos != null) {
+                for (Annotation anno : annos) {
+                    order = getOrder(anno);
+                    if (order != null) {
+                        break getOrder;
+                    }
+                }
+            }
+            order = Order.LOW_PRECEDENCE;
+        }
+        return order;
+    }
+
+    private static Integer getOrder(Annotation anno) {
+        Integer order = null;
+        if (anno instanceof Order) {
+            order = ((Order) anno).value();
+        }
+        return order;
+    }
+
     public static boolean hasAliasName(Class<?> clazz) {
-        return Strings
-                .isNotEmpty(getAliasName(clazz.getAnnotation(Alias.class)))
-                || Strings.isNotEmpty(getAliasName(
-                        clazz.getAnnotation(javax.inject.Named.class)));
+        return Strings.isNotEmpty(getAliasName(clazz.getAnnotation(Alias.class))) || Strings.isNotEmpty(getAliasName(clazz.getAnnotation(javax.inject.Named.class)));
     }
 
     public static boolean hasAliasName(Annotation[] annos) {
@@ -610,13 +637,10 @@ public class Helpers {
         return getAliasName(clazz, mask, null);
     }
 
-    public static String getAliasName(Class<?> clazz, String mask,
-            String value) {
+    public static String getAliasName(Class<?> clazz, String mask, String value) {
         String name;
         if (hasAliasName(clazz)) {
-            name = Strings.empty(getAliasName(clazz.getAnnotation(Alias.class)),
-                    getAliasName(
-                            clazz.getAnnotation(javax.inject.Named.class)));
+            name = Strings.empty(getAliasName(clazz.getAnnotation(Alias.class)), getAliasName(clazz.getAnnotation(javax.inject.Named.class)));
         } else if (Strings.isNotEmpty(value)) {
             name = value.trim();
         } else {
@@ -626,8 +650,7 @@ public class Helpers {
             }
             name = name.toLowerCase();
         }
-        return Strings.isEmpty(mask) ? name
-                : Strings.replaceIgnoreCase(name, mask);
+        return Strings.isEmpty(mask) ? name : Strings.replaceIgnoreCase(name, mask);
     }
 
     private static String getAliasName(Annotation anno) {
@@ -665,11 +688,9 @@ public class Helpers {
      * @param values
      * @return
      */
-    public static <T> Map<String, List<T>> toUnmodifiable(
-            Map<String, List<T>> values) {
+    public static <T> Map<String, List<T>> toUnmodifiable(Map<String, List<T>> values) {
         for (Entry<String, List<T>> entry : values.entrySet()) {
-            values.put(entry.getKey(),
-                    Collections.unmodifiableList(entry.getValue()));
+            values.put(entry.getKey(), Collections.unmodifiableList(entry.getValue()));
         }
         return Collections.unmodifiableMap(values);
     }
@@ -681,8 +702,7 @@ public class Helpers {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> toHierarchical(
-            Map<String, Object> values) {
+    public static Map<String, Object> toHierarchical(Map<String, Object> values) {
         Map<String, Object> result = new HashMap<String, Object>();
         int index;
         String key;
@@ -740,8 +760,7 @@ public class Helpers {
      * @param value
      * @return
      */
-    public static <K, T> boolean toAppend(Map<K, List<T>> values, K name,
-            T value) {
+    public static <K, T> boolean toAppend(Map<K, List<T>> values, K name, T value) {
         return toAppend(values, name, value, true);
     }
 
@@ -754,8 +773,7 @@ public class Helpers {
      * @param repeat
      * @return
      */
-    public static <K, T> boolean toAppend(Map<K, List<T>> values, K name,
-            T value, boolean repeat) {
+    public static <K, T> boolean toAppend(Map<K, List<T>> values, K name, T value, boolean repeat) {
         return toAppends(values, name, Arrays.asList(value), repeat) > 0;
     }
 
@@ -767,8 +785,7 @@ public class Helpers {
      * @param value
      * @return
      */
-    public static <K, T> int toAppends(Map<K, List<T>> values, K name,
-            Collection<T> value) {
+    public static <K, T> int toAppends(Map<K, List<T>> values, K name, Collection<T> value) {
         return toAppends(values, name, value, true);
     }
 
@@ -780,14 +797,12 @@ public class Helpers {
      * @param value
      * @return
      */
-    public static <K, T> int toAppends(Map<K, List<T>> values, K name,
-            Collection<T> value, boolean repeat) {
+    public static <K, T> int toAppends(Map<K, List<T>> values, K name, Collection<T> value, boolean repeat) {
         List<T> container = values.get(name);
         if (container == null) {
             values.put(name, container = new ArrayList<T>());
         }
-        return repeat ? (container.addAll(value) ? value.size() : 0)
-                : add(container, value);
+        return repeat ? (container.addAll(value) ? value.size() : 0) : add(container, value);
     }
 
     public static boolean contains(List<?> a, List<?> b) {
@@ -894,8 +909,7 @@ public class Helpers {
     }
 
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> getMap(Map<String, Object> params,
-            String namespace) {
+    public static Map<String, Object> getMap(Map<String, Object> params, String namespace) {
         if (Strings.isNotEmpty(namespace)) {
             params = Helpers.toHierarchical(params);
             Object value;
@@ -912,8 +926,7 @@ public class Helpers {
         return params;
     }
 
-    public static Object getInstance(Map<String, Object> params,
-            String namespace) {
+    public static Object getInstance(Map<String, Object> params, String namespace) {
         int index = namespace.lastIndexOf(".");
         if (index > 0) {
             params = getMap(params, namespace.substring(0, index));
@@ -999,18 +1012,13 @@ public class Helpers {
             resultType = Object.class;
         }
         if (!(sourceType.isArray() || targetType.isArray())) {
-            Object result = Array.newInstance(resultType,
-                    sourceCount + targetCount);
-            for (Object[] current : new Object[][] {
-                    { sourceType, source, 0, sourceCount },
-                    { targetType, target, sourceCount, targetCount } }) {
+            Object result = Array.newInstance(resultType, sourceCount + targetCount);
+            for (Object[] current : new Object[][] { { sourceType, source, 0, sourceCount }, { targetType, target, sourceCount, targetCount } }) {
                 if (resultType.isAssignableFrom((Class<?>) current[0])) {
-                    System.arraycopy(current[1], 0, result,
-                            (Integer) current[2], (Integer) current[3]);
+                    System.arraycopy(current[1], 0, result, (Integer) current[2], (Integer) current[3]);
                 } else {
                     for (int i = 0; i < (Integer) current[3]; i++) {
-                        Array.set(result, i + (Integer) current[2],
-                                Array.get(current[1], i));
+                        Array.set(result, i + (Integer) current[2], Array.get(current[1], i));
                     }
                 }
             }
@@ -1019,8 +1027,7 @@ public class Helpers {
         return newArray(resultType, source, sourceCount, target, targetCount);
     }
 
-    public static Object newArray(Class<?> resultType, Object source,
-            int sourceCount, Object target, int targetCount) {
+    public static Object newArray(Class<?> resultType, Object source, int sourceCount, Object target, int targetCount) {
         Object overValue;
         int loopCount;
         int resultCount;
@@ -1036,8 +1043,7 @@ public class Helpers {
         Object result = Array.newInstance(resultType, resultCount);
         int amount = 0;
         do {
-            Array.set(result, amount, newArray(Array.get(source, amount),
-                    Array.get(target, amount)));
+            Array.set(result, amount, newArray(Array.get(source, amount), Array.get(target, amount)));
         } while (++amount < loopCount);
         while (amount < resultCount) {
             Array.set(result, amount, Array.get(overValue, amount));
@@ -1046,8 +1052,7 @@ public class Helpers {
         return result;
     }
 
-    public static Object newArray(Class<?> resultType, Object source,
-            int sourceCount) {
+    public static Object newArray(Class<?> resultType, Object source, int sourceCount) {
         Object result = Array.newInstance(resultType, sourceCount);
         int amount = 0;
         do {
@@ -1081,9 +1086,7 @@ public class Helpers {
                     }
                 });
                 // 行填充
-                for (int j = (result instanceof Object[])
-                        ? ((Object[]) result).length
-                        : 1; j < grid.size(); j++) {
+                for (int j = (result instanceof Object[]) ? ((Object[]) result).length : 1; j < grid.size(); j++) {
                     grid.get(j).add(null);
                 }
             }
@@ -1102,9 +1105,7 @@ public class Helpers {
                 });
 
                 // 行填充
-                int count = (result instanceof Object[])
-                        ? ((Object[]) result).length
-                        : 1;
+                int count = (result instanceof Object[]) ? ((Object[]) result).length : 1;
                 if (count > colCount) {
                     for (int j = 0; j < i; j++) {
                         for (int k = colCount; k < count; k++) {
@@ -1157,8 +1158,7 @@ public class Helpers {
                             container.add(pending);
                         }
                     }
-                    value = container.size() < 2 ? compact(container)
-                            : container.toArray();
+                    value = container.size() < 2 ? compact(container) : container.toArray();
                 }
             }
         }
@@ -1210,14 +1210,11 @@ public class Helpers {
         try {
             InetAddress candidateAddress = null;
             // 遍历网络接口
-            for (Enumeration<NetworkInterface> ifaces = NetworkInterface
-                    .getNetworkInterfaces(); ifaces.hasMoreElements();) {
+            for (Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements();) {
                 NetworkInterface iface = ifaces.nextElement();
                 // 遍历接口IP地址
-                for (Enumeration<InetAddress> inetAddrs = iface
-                        .getInetAddresses(); inetAddrs.hasMoreElements();) {
-                    InetAddress inetAddr = (InetAddress) inetAddrs
-                            .nextElement();
+                for (Enumeration<InetAddress> inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements();) {
+                    InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
                     // 排除loopback类型地址
                     if (!inetAddr.isLoopbackAddress()) {
                         if (inetAddr.isSiteLocalAddress()) {
@@ -1276,9 +1273,7 @@ public class Helpers {
         if (limit <= 0) {
             limit = 64;
         }
-        return Strings.isNotEmpty(value)
-                && value.toUpperCase().matches(REGEX_CODE)
-                && value.length() < limit;
+        return Strings.isNotEmpty(value) && value.toUpperCase().matches(REGEX_CODE) && value.length() < limit;
     }
 
     public static boolean isMultiple(Object instance) {
@@ -1293,8 +1288,7 @@ public class Helpers {
      * @param args
      * @return
      */
-    public static <T extends Object> Object each(Object instance,
-            Callable<T> callable, Object... args) {
+    public static <T extends Object> Object each(Object instance, Callable<T> callable, Object... args) {
         return each(false, instance, callable, args);
     }
 
@@ -1308,8 +1302,7 @@ public class Helpers {
      * @param args
      * @return
      */
-    public static <T extends Object> Object each(boolean multipled,
-            Object instance, Callable<T> callable, Object... args) {
+    public static <T extends Object> Object each(boolean multipled, Object instance, Callable<T> callable, Object... args) {
         boolean isMultiple = true;
         int size;
         if (instance instanceof Collection) {
@@ -1381,8 +1374,7 @@ public class Helpers {
         return toInt(10, value, beginIndex, endIndex);
     }
 
-    public static int toInt(int radix, String value, int beginIndex,
-            int endIndex) {
+    public static int toInt(int radix, String value, int beginIndex, int endIndex) {
         return Integer.parseInt(value.substring(beginIndex, endIndex), radix);
     }
 
@@ -1445,6 +1437,15 @@ public class Helpers {
         StringWriter writer = new StringWriter();
         cause.printStackTrace(new PrintWriter(writer, true));
         return writer.getBuffer().toString();
+    }
+
+    public static <T> List<T> sort(List<T> instances) {
+        Collections.sort(instances, new Comparator<T>() {
+            public int compare(T a, T b) {
+                return Integer.compare(getOrder(a), getOrder(b));
+            }
+        });
+        return instances;
     }
 
 }
