@@ -80,14 +80,12 @@ public class BaseLoader implements Loader {
         Class<?> clazz;
         Class<?> targetClass = this.getTargetClass();
         String className;
-        if (res != null && Strings
-                .isNotEmpty(className = (String) res.get(PARAM_CLASS))) {
+        if (res != null && Strings.isNotEmpty(className = (String) res.get(PARAM_CLASS))) {
             /* 使用配置实现类 */
             try {
                 clazz = Class.forName(className);
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException(
-                        "Not found class " + className);
+                throw new IllegalArgumentException("Not found class " + className);
             }
         } else {
             clazz = getImplementClass();
@@ -141,8 +139,7 @@ public class BaseLoader implements Loader {
         Object instance;
         for (Object config : res) {
             // 阻止列表集合无限嵌套
-            instance = config instanceof Collection ? create(config)
-                    : load(config);
+            instance = config instanceof Collection ? create(config) : load(config);
             if (instance instanceof Collection) {
                 result.addAll((Collection<?>) instance);
             } else {

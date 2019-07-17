@@ -39,8 +39,7 @@ public class BoundField {
     @SuppressWarnings("unchecked")
     public BoundField(Field field) {
         TypeToken<?> declaring = TypeToken.get(field.getDeclaringClass());
-        this.token = TypeToken.get(Reflects.getResolveType(declaring.getType(),
-                declaring.getRawClass(), field.getGenericType()));
+        this.token = TypeToken.get(Reflects.getResolveType(declaring.getType(), declaring.getRawClass(), field.getGenericType()));
         this.field = field;
         this.field.setAccessible(true);
         this.name = field.getName();
@@ -53,8 +52,7 @@ public class BoundField {
             this.alias = Strings.empty(alias.value());
         } else if (Strings.isNotEmpty(this.affix)) {
             try {
-                Map<String, Object> config = (Map<String, Object>) Helpers
-                        .fromJson(this.affix);
+                Map<String, Object> config = (Map<String, Object>) Helpers.fromJson(this.affix);
                 this.alias = Helpers.toFieldName((String) config.get("name"));
             } catch (Exception e) {
             }
@@ -106,8 +104,7 @@ public class BoundField {
                     value = resolve(rawClass, token.getType(), value);
                 } else {
                     try {
-                        value = Converter.convert(token.getType(), value,
-                                assembler);
+                        value = Converter.convert(token.getType(), value, assembler);
                     } catch (Exception e) {
                         value = Converter.defaultValue(token.getType());
                     }
@@ -115,8 +112,7 @@ public class BoundField {
                 field.set(instance, value);
             }
         } catch (Throwable e) {
-            throw Asserts.state("Failure to setting field '%s' of %s: %s",
-                    getName(), field.getDeclaringClass(), value, e);
+            throw Asserts.state("Failure to setting field '%s' of %s: %s", getName(), field.getDeclaringClass(), value, e);
         }
     }
 
@@ -128,24 +124,19 @@ public class BoundField {
             int size = Array.getLength(value);
             Object array = Array.newInstance(rawClass, size);
             for (int i = 0; i < size; i++) {
-                Array.set(array, i,
-                        resolve(rawClass, resolveType, Array.get(value, i)));
+                Array.set(array, i, resolve(rawClass, resolveType, Array.get(value, i)));
             }
             value = array;
-        } else if (Collection.class.isAssignableFrom(rawClass)
-                && (value instanceof Collection)) {
+        } else if (Collection.class.isAssignableFrom(rawClass) && (value instanceof Collection)) {
             ParameterizedType paramType = (ParameterizedType) resolveType;
-            Collection<Object> resolve = (Collection<Object>) Reflects
-                    .newInstance(rawClass);
+            Collection<Object> resolve = (Collection<Object>) Reflects.newInstance(rawClass);
             resolveType = paramType.getActualTypeArguments()[0];
             rawClass = Reflects.getClass(resolveType);
             for (Object instance : (Collection<?>) value) {
-                resolve.add(resolve(rawClass,
-                        paramType.getActualTypeArguments()[0], instance));
+                resolve.add(resolve(rawClass, paramType.getActualTypeArguments()[0], instance));
             }
             value = resolve;
-        } else if (resolveType instanceof Class
-                && (!((Class<?>) resolveType).isInstance(value))) {
+        } else if (resolveType instanceof Class && (!((Class<?>) resolveType).isInstance(value))) {
             value = Converter.convert((Class<?>) resolveType, value);
         }
         return value;
@@ -165,9 +156,7 @@ public class BoundField {
 
     public String toString() {
         int mod = field.getModifiers();
-        return (((mod == 0) ? "" : (Modifier.toString(mod) + " ")) + token + " "
-                + Reflects.getName(field.getDeclaringClass()) + "."
-                + getName());
+        return (((mod == 0) ? "" : (Modifier.toString(mod) + " ")) + token + " " + Reflects.getName(field.getDeclaringClass()) + "." + getName());
     }
 
 }

@@ -21,6 +21,20 @@ public class Strings {
     }
 
     /**
+     * 去头尾空串
+     *
+     * @param value
+     * @return
+     */
+    public static String trim(Object value) {
+        if (value instanceof String) {
+            return ((String) value).replaceFirst("^[\\s ]+", "").replaceFirst("[\\s ]+$", "");
+        } else {
+            return Strings.empty(value);
+        }
+    }
+
+    /**
      * 空字符串
      * 
      * @param value
@@ -58,7 +72,7 @@ public class Strings {
      * @return
      */
     public static String empty(Object value, String def) {
-        return isEmpty(value) ? def : value.toString().trim();
+        return isEmpty(value) ? def : trim(value.toString());
     }
 
     /**
@@ -69,8 +83,7 @@ public class Strings {
      * @return
      */
     public static boolean matchsIgnoreCase(String value, String regex) {
-        return Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(value)
-                .matches();
+        return Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(value).matches();
     }
 
     /**
@@ -136,8 +149,7 @@ public class Strings {
      * @param content
      * @return
      */
-    public static String replaceIgnoreCase(String value, String regex,
-            String content) {
+    public static String replaceIgnoreCase(String value, String regex, String content) {
         Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
         return pattern.matcher(value).replaceAll(content);
     }
@@ -151,17 +163,11 @@ public class Strings {
      * @return
      * @throws UnsupportedEncodingException
      */
-    public static String toCharset(byte[] data, String sourceCharset,
-            String targetCharset) throws UnsupportedEncodingException {
+    public static String toCharset(byte[] data, String sourceCharset, String targetCharset) throws UnsupportedEncodingException {
         if (isEmpty(sourceCharset) || sourceCharset.equals(targetCharset)) {
             return new String(data, targetCharset);
         }
-        return new String(
-                Charset.forName(targetCharset)
-                        .encode(Charset.forName(sourceCharset)
-                                .decode(ByteBuffer.wrap(data)))
-                        .array(),
-                targetCharset);
+        return new String(Charset.forName(targetCharset).encode(Charset.forName(sourceCharset).decode(ByteBuffer.wrap(data))).array(), targetCharset);
     }
 
     /**
@@ -204,8 +210,7 @@ public class Strings {
      * @param callable
      * @return
      */
-    public static Object[] each(String value, String token,
-            Callable<Object> callable) {
+    public static Object[] each(String value, String token, Callable<Object> callable) {
         return each(new StringTokenizer(value, token), callable);
     }
 
@@ -216,8 +221,7 @@ public class Strings {
      * @param callable
      * @return
      */
-    public static Object[] each(StringTokenizer tokenizer,
-            Callable<Object> callable) {
+    public static Object[] each(StringTokenizer tokenizer, Callable<Object> callable) {
         List<Object> result = new ArrayList<Object>();
         while (tokenizer.hasMoreTokens()) {
             result.add(callable.call(tokenizer.nextToken()));
@@ -269,8 +273,7 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String join(boolean isCompact, String separator,
-            Collection<?> values) {
+    public static String join(boolean isCompact, String separator, Collection<?> values) {
         return join(isCompact, separator, null, values);
     }
 
@@ -283,8 +286,7 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String join(boolean isCompact, String separator, String seal,
-            Collection<?> values) {
+    public static String join(boolean isCompact, String separator, String seal, Collection<?> values) {
         return join(isCompact, separator, seal, seal, values);
     }
 
@@ -298,10 +300,8 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String join(boolean isCompact, String separator,
-            String beginSeal, String endSeal, Collection<?> values) {
-        return join(isCompact, separator, beginSeal, endSeal,
-                values == null ? null : values.toArray());
+    public static String join(boolean isCompact, String separator, String beginSeal, String endSeal, Collection<?> values) {
+        return join(isCompact, separator, beginSeal, endSeal, values == null ? null : values.toArray());
     }
 
     /**
@@ -333,8 +333,7 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String join(boolean isCompact, String separator,
-            Object[] values) {
+    public static String join(boolean isCompact, String separator, Object[] values) {
         return join(isCompact, separator, values, 0);
     }
 
@@ -347,8 +346,7 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String join(boolean isCompact, String separator, String seal,
-            Object[] values) {
+    public static String join(boolean isCompact, String separator, String seal, Object[] values) {
         return join(isCompact, separator, seal, values, 0);
     }
 
@@ -362,10 +360,8 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String join(boolean isCompact, String separator,
-            String beginSeal, String endSeal, Object[] values) {
-        return join(isCompact, separator, beginSeal, endSeal, values, 0,
-                values.length);
+    public static String join(boolean isCompact, String separator, String beginSeal, String endSeal, Object[] values) {
+        return join(isCompact, separator, beginSeal, endSeal, values, 0, values.length);
     }
 
     /**
@@ -376,8 +372,7 @@ public class Strings {
      * @param beginIndex
      * @return
      */
-    public static String join(boolean isCompact, Object[] values,
-            int beginIndex) {
+    public static String join(boolean isCompact, Object[] values, int beginIndex) {
         return join(isCompact, "", values, beginIndex);
     }
 
@@ -390,8 +385,7 @@ public class Strings {
      * @param beginIndex
      * @return
      */
-    public static String join(boolean isCompact, String separator,
-            Object[] values, int beginIndex) {
+    public static String join(boolean isCompact, String separator, Object[] values, int beginIndex) {
         return join(isCompact, separator, "", values, beginIndex);
     }
 
@@ -403,13 +397,10 @@ public class Strings {
      * @param seal
      * @param values
      * @param beginIndex
-     * @param count
      * @return
      */
-    public static String join(boolean isCompact, String separator, String seal,
-            Object[] values, int beginIndex) {
-        return join(isCompact, separator, seal, seal, values, beginIndex,
-                values == null ? -1 : values.length);
+    public static String join(boolean isCompact, String separator, String seal, Object[] values, int beginIndex) {
+        return join(isCompact, separator, seal, seal, values, beginIndex, values == null ? -1 : values.length);
     }
 
     /**
@@ -421,17 +412,15 @@ public class Strings {
      * @param values
      * @param beginIndex
      * @param count
+     * @param callable
      * @return
      */
-    public static String join(boolean isCompact, String separator,
-            String beginSeal, String endSeal, Object[] values, int beginIndex,
-            int count) {
+    public static String join(boolean isCompact, String separator, String beginSeal, String endSeal, Object[] values, int beginIndex, int count) {
         separator = Helpers.coalesce(separator, "");
         beginSeal = Helpers.coalesce(beginSeal, "");
         endSeal = Helpers.coalesce(endSeal, "");
         beginIndex = Math.max(beginIndex, 0);
-        count = Math.min(beginIndex + count,
-                values == null ? -1 : values.length);
+        count = Math.min(beginIndex + count, values == null ? -1 : values.length);
         if (beginIndex < count && values != null && beginIndex >= 0) {
             StringBuffer buffer = new StringBuffer(count-- * 32);
             int amount = beginIndex - 1;
@@ -442,8 +431,7 @@ public class Strings {
                     }
                     buffer.append("null");
                 } else {
-                    buffer.append(beginSeal).append(values[amount])
-                            .append(endSeal);
+                    buffer.append(beginSeal).append(values[amount]).append(endSeal);
                 }
                 buffer.append(separator);
             }

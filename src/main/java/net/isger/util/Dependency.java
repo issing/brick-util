@@ -18,8 +18,10 @@ public class Dependency {
 
     private List<Object> nodes;
 
+    /** 正向依赖集合 */
     private Map<Object, List<Object>> dependencies;
 
+    /** 反向依赖集合 */
     private Map<Object, List<Object>> bedependencies;
 
     public Dependency() {
@@ -41,14 +43,12 @@ public class Dependency {
     public void addNode(Object node, List<Object> dependencies) {
         if (dependencies == null) {
             dependencies = new ArrayList<Object>();
-        } else if (dependencies.contains(node)) {
-            throw new IllegalArgumentException(
-                    "(X) Dependencies cannot contain itself [" + node + "]");
+        } else {
+            Asserts.throwArgument(!dependencies.contains(node), "Dependencies cannot contain itself [%s]", node);
         }
-        dependencies = Helpers.getMerge(this.dependencies.get(node),
-                dependencies);
-        this.addDependencies(node, dependencies);
-        this.setDependencies(node, dependencies);
+        dependencies = Helpers.getMerge(this.dependencies.get(node), dependencies);
+        addDependencies(node, dependencies);
+        setDependencies(node, dependencies);
     }
 
     /**
@@ -63,8 +63,7 @@ public class Dependency {
         for (Object dependency : dependencies) {
             bedependencies = this.bedependencies.get(dependency);
             if (bedependencies == null) {
-                this.bedependencies.put(dependency,
-                        bedependencies = new ArrayList<Object>());
+                this.bedependencies.put(dependency, bedependencies = new ArrayList<Object>());
             } else if (bedependencies.contains(node)) {
                 continue;
             }
@@ -98,36 +97,32 @@ public class Dependency {
      * @param node
      */
     private void setNode(Object node) {
-        if (!this.nodes.contains(node)) {
-            this.nodes.add(node);
+        if (!nodes.contains(node)) {
+            nodes.add(node);
         }
         List<Object> bedependencies = this.bedependencies.get(node);
         if (bedependencies != null) {
             for (Object bedependency : bedependencies) {
-                setDependencies(bedependency,
-                        this.dependencies.get(bedependency));
+                setDependencies(bedependency, this.dependencies.get(bedependency));
             }
         }
-        this.stays.remove(node);
+        stays.remove(node);
     }
 
     private void addStay(Object node) {
-        if (this.stayings.contains(node)) {
-            throw new IllegalStateException("(X) Found the self-devourer: "
-                    + this.stayings + " -> " + node);
-        }
-        this.stayings.add(node);
-        this.nodes.remove(node);
-        if (!this.stays.contains(node)) {
-            this.stays.add(node);
+        Asserts.throwState(!stayings.contains(node), "Found the self-devourer: %s -> %s", stayings, node);
+        stayings.add(node);
+        nodes.remove(node);
+        if (!stays.contains(node)) {
+            stays.add(node);
         }
         List<Object> bedependencies = this.bedependencies.get(node);
         if (bedependencies != null) {
             for (Object bedependency : bedependencies) {
-                this.addStay(bedependency);
+                addStay(bedependency);
             }
         }
-        this.stayings.remove(node);
+        stayings.remove(node);
     }
 
 }

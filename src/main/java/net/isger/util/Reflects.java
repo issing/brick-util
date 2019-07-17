@@ -109,16 +109,14 @@ public class Reflects {
      * @return
      */
     public static String getName(Type type) {
-        return type instanceof Class ? ((Class<?>) type).getName()
-                : type.toString();
+        return type instanceof Class ? ((Class<?>) type).getName() : type.toString();
     }
 
     public static GenericArrayType newArrayType(Type componentType) {
         return new GenericArrayTypeImpl(componentType);
     }
 
-    public static ParameterizedType newParamType(Type ownerType, Type rawType,
-            Type... arguments) {
+    public static ParameterizedType newParamType(Type ownerType, Type rawType, Type... arguments) {
         return new ParameterizedTypeImpl(ownerType, rawType, arguments);
     }
 
@@ -127,8 +125,7 @@ public class Reflects {
     }
 
     public static WildcardType newLowerType(Type bound) {
-        return new WildcardTypeImpl(new Type[] { Object.class },
-                new Type[] { bound });
+        return new WildcardTypeImpl(new Type[] { Object.class }, new Type[] { bound });
     }
 
     /**
@@ -140,21 +137,16 @@ public class Reflects {
     public static Type toCanonicalize(Type type) {
         if (type instanceof Class) {
             Class<?> pending = (Class<?>) type;
-            return pending.isArray()
-                    ? new GenericArrayTypeImpl(
-                            toCanonicalize(pending.getComponentType()))
-                    : pending;
+            return pending.isArray() ? new GenericArrayTypeImpl(toCanonicalize(pending.getComponentType())) : pending;
         } else if (type instanceof ParameterizedType) {
             ParameterizedType pending = (ParameterizedType) type;
-            return new ParameterizedTypeImpl(pending.getOwnerType(),
-                    pending.getRawType(), pending.getActualTypeArguments());
+            return new ParameterizedTypeImpl(pending.getOwnerType(), pending.getRawType(), pending.getActualTypeArguments());
         } else if (type instanceof GenericArrayType) {
             GenericArrayType pending = (GenericArrayType) type;
             return new GenericArrayTypeImpl(pending.getGenericComponentType());
         } else if (type instanceof WildcardType) {
             WildcardType pending = (WildcardType) type;
-            return new WildcardTypeImpl(pending.getUpperBounds(),
-                    pending.getLowerBounds());
+            return new WildcardTypeImpl(pending.getUpperBounds(), pending.getLowerBounds());
         } else {
             return type;
         }
@@ -168,41 +160,32 @@ public class Reflects {
      * @param resolveType
      * @return
      */
-    public static Type getResolveType(Type contextType, Class<?> rawClass,
-            Type resolveType) {
+    public static Type getResolveType(Type contextType, Class<?> rawClass, Type resolveType) {
         do {
             if (resolveType instanceof TypeVariable) {
                 TypeVariable<?> typeVariable = (TypeVariable<?>) resolveType;
-                resolveType = getResolveType(contextType, rawClass,
-                        typeVariable);
+                resolveType = getResolveType(contextType, rawClass, typeVariable);
                 if (resolveType == typeVariable) {
                     return resolveType;
                 }
-            } else if (resolveType instanceof Class
-                    && ((Class<?>) resolveType).isArray()) {
+            } else if (resolveType instanceof Class && ((Class<?>) resolveType).isArray()) {
                 Class<?> original = (Class<?>) resolveType;
                 Type componentType = original.getComponentType();
-                Type newComponentType = getResolveType(contextType, rawClass,
-                        componentType);
-                return componentType == newComponentType ? original
-                        : newArrayType(newComponentType);
+                Type newComponentType = getResolveType(contextType, rawClass, componentType);
+                return componentType == newComponentType ? original : newArrayType(newComponentType);
             } else if (resolveType instanceof GenericArrayType) {
                 GenericArrayType original = (GenericArrayType) resolveType;
                 Type componentType = original.getGenericComponentType();
-                Type newComponentType = getResolveType(contextType, rawClass,
-                        componentType);
-                return componentType == newComponentType ? original
-                        : newArrayType(newComponentType);
+                Type newComponentType = getResolveType(contextType, rawClass, componentType);
+                return componentType == newComponentType ? original : newArrayType(newComponentType);
             } else if (resolveType instanceof ParameterizedType) {
                 ParameterizedType original = (ParameterizedType) resolveType;
                 Type ownerType = original.getOwnerType();
-                Type newOwnerType = getResolveType(contextType, rawClass,
-                        ownerType);
+                Type newOwnerType = getResolveType(contextType, rawClass, ownerType);
                 boolean changed = newOwnerType != ownerType;
                 Type[] args = original.getActualTypeArguments();
                 for (int t = 0, length = args.length; t < length; t++) {
-                    Type resolvedTypeArgument = getResolveType(contextType,
-                            rawClass, args[t]);
+                    Type resolvedTypeArgument = getResolveType(contextType, rawClass, args[t]);
                     if (resolvedTypeArgument != args[t]) {
                         if (!changed) {
                             args = args.clone();
@@ -211,23 +194,18 @@ public class Reflects {
                         args[t] = resolvedTypeArgument;
                     }
                 }
-                return changed
-                        ? newParamType(newOwnerType, original.getRawType(),
-                                args)
-                        : original;
+                return changed ? newParamType(newOwnerType, original.getRawType(), args) : original;
             } else if (resolveType instanceof WildcardType) {
                 WildcardType original = (WildcardType) resolveType;
                 Type[] originalLowerBound = original.getLowerBounds();
                 Type[] originalUpperBound = original.getUpperBounds();
                 if (originalLowerBound.length == 1) {
-                    Type lowerBound = getResolveType(contextType, rawClass,
-                            originalLowerBound[0]);
+                    Type lowerBound = getResolveType(contextType, rawClass, originalLowerBound[0]);
                     if (lowerBound != originalLowerBound[0]) {
                         return newLowerType(lowerBound);
                     }
                 } else if (originalUpperBound.length == 1) {
-                    Type upperBound = getResolveType(contextType, rawClass,
-                            originalUpperBound[0]);
+                    Type upperBound = getResolveType(contextType, rawClass, originalUpperBound[0]);
                     if (upperBound != originalUpperBound[0]) {
                         return newUpperType(upperBound);
                     }
@@ -248,20 +226,16 @@ public class Reflects {
      * @param resolveType
      * @return
      */
-    private static Type getResolveType(Type contextType, Class<?> rawClass,
-            TypeVariable<?> resolveType) {
+    private static Type getResolveType(Type contextType, Class<?> rawClass, TypeVariable<?> resolveType) {
         GenericDeclaration declaring = resolveType.getGenericDeclaration();
         if (!(declaring instanceof Class)) {
             return resolveType;
         }
-        contextType = Reflects.getSuperType(contextType, rawClass,
-                (Class<?>) declaring);
+        contextType = Reflects.getSuperType(contextType, rawClass, (Class<?>) declaring);
         if (contextType instanceof ParameterizedType) {
-            int index = Helpers.getIndex(declaring.getTypeParameters(),
-                    resolveType);
+            int index = Helpers.getIndex(declaring.getTypeParameters(), resolveType);
             Asserts.throwArgument(index != -1, "No such %s", resolveType);
-            return ((ParameterizedType) contextType)
-                    .getActualTypeArguments()[index];
+            return ((ParameterizedType) contextType).getActualTypeArguments()[index];
         }
         return resolveType;
     }
@@ -274,8 +248,7 @@ public class Reflects {
      * @param resolveClass
      * @return
      */
-    public static Type getSuperType(Type contextType, Class<?> rawClass,
-            Class<?> resolveClass) {
+    public static Type getSuperType(Type contextType, Class<?> rawClass, Class<?> resolveClass) {
         if (resolveClass == rawClass) {
             return contextType;
         }
@@ -286,8 +259,7 @@ public class Reflects {
                 if (interfaces[i] == resolveClass) {
                     return rawClass.getGenericInterfaces()[i];
                 } else if (resolveClass.isAssignableFrom(interfaces[i])) {
-                    return getSuperType(rawClass.getGenericInterfaces()[i],
-                            interfaces[i], resolveClass);
+                    return getSuperType(rawClass.getGenericInterfaces()[i], interfaces[i], resolveClass);
                 }
             }
         }
@@ -298,8 +270,7 @@ public class Reflects {
                 if (rawSuper == resolveClass) {
                     return rawClass.getGenericSuperclass();
                 } else if (resolveClass.isAssignableFrom(rawSuper)) {
-                    return getSuperType(rawClass.getGenericSuperclass(),
-                            rawSuper, resolveClass);
+                    return getSuperType(rawClass.getGenericSuperclass(), rawSuper, resolveClass);
                 }
                 rawClass = rawSuper;
             }
@@ -314,9 +285,7 @@ public class Reflects {
      * @return
      */
     public static Type getComponentType(Type type) {
-        return type instanceof GenericArrayType
-                ? ((GenericArrayType) type).getGenericComponentType()
-                : ((Class<?>) type).getComponentType();
+        return type instanceof GenericArrayType ? ((GenericArrayType) type).getGenericComponentType() : ((Class<?>) type).getComponentType();
     }
 
     /**
@@ -326,9 +295,7 @@ public class Reflects {
      * @return
      */
     public static Type getActualType(Type type) {
-        return type instanceof ParameterizedType
-                ? ((ParameterizedType) type).getActualTypeArguments()[0]
-                : getRawClass(type);
+        return type instanceof ParameterizedType ? ((ParameterizedType) type).getActualTypeArguments()[0] : getRawClass(type);
     }
 
     /**
@@ -346,19 +313,15 @@ public class Reflects {
             Asserts.throwArgument(rawType instanceof Class);
             return (Class<?>) rawType;
         } else if (type instanceof GenericArrayType) {
-            Type componentType = ((GenericArrayType) type)
-                    .getGenericComponentType();
+            Type componentType = ((GenericArrayType) type).getGenericComponentType();
             return Array.newInstance(getRawClass(componentType), 0).getClass();
         } else if (type instanceof TypeVariable) {
             return Object.class;
         } else if (type instanceof WildcardType) {
             return getRawClass(((WildcardType) type).getUpperBounds()[0]);
         } else {
-            String className = type == null ? "null"
-                    : type.getClass().getName();
-            throw Asserts.argument(
-                    "Expected a Class, ParameterizedType, or GenericArrayType, but <%s> is of type %s",
-                    type, className);
+            String className = type == null ? "null" : type.getClass().getName();
+            throw Asserts.argument("Expected a Class, ParameterizedType, or GenericArrayType, but <%s> is of type %s", type, className);
         }
     }
 
@@ -435,8 +398,7 @@ public class Reflects {
         }
         Class<?> result = null;
         try {
-            result = (classLoader != null ? classLoader.loadClass(name)
-                    : Class.forName(name));
+            result = (classLoader != null ? classLoader.loadClass(name) : Class.forName(name));
         } catch (Exception ex) {
         }
         return result;
@@ -481,8 +443,7 @@ public class Reflects {
      * @param container
      * @param clazz
      */
-    private static void appendInterfaces(List<Class<?>> container,
-            Class<?> clazz) {
+    private static void appendInterfaces(List<Class<?>> container, Class<?> clazz) {
         if (clazz != null) {
             if (clazz.isInterface()) {
                 container.add(clazz);
@@ -611,8 +572,7 @@ public class Reflects {
     public static Map<String, List<BoundField>> getBoundFields(Class<?> clazz) {
         Map<String, List<BoundField>> result = FIELDS.get(clazz);
         // 跳过接口以及原始数据类型（不继承Object类）
-        if (result != null || clazz.isInterface()
-                || !Object.class.isAssignableFrom(clazz)) {
+        if (result != null || clazz.isInterface() || !Object.class.isAssignableFrom(clazz)) {
             return result;
         }
         result = new LinkedHashMap<String, List<BoundField>>();
@@ -626,9 +586,7 @@ public class Reflects {
             // 导入声明字段（字段名优先）
             boundFields = new ArrayList<BoundField>();
             for (Field field : pending.getDeclaredFields()) {
-                if ((boundField = createBoundField(field, ignoreMode)) != null
-                        && Helpers.toAppend(result, boundField.getName(),
-                                boundField)) {
+                if ((boundField = createBoundField(field, ignoreMode)) != null && Helpers.toAppend(result, boundField.getName(), boundField)) {
                     boundFields.add(boundField);
                 }
             }
@@ -665,8 +623,7 @@ public class Reflects {
     private static BoundField createBoundField(Field field, Mode mode) {
         int mod = field.getModifiers();
         // 忽略静态、终态、暂态、瞬态
-        if (Modifier.isStatic(mod) || Modifier.isFinal(mod)
-                || Modifier.isTransient(mod) || Modifier.isVolatile(mod)) {
+        if (Modifier.isStatic(mod) || Modifier.isFinal(mod) || Modifier.isTransient(mod) || Modifier.isVolatile(mod)) {
             return null;
         }
         Ignore ignore = field.getAnnotation(Ignore.class);
@@ -682,8 +639,7 @@ public class Reflects {
      * @param clazz
      * @return
      */
-    public static Map<String, List<BoundMethod>> getBoundMethods(
-            Class<?> clazz) {
+    public static Map<String, List<BoundMethod>> getBoundMethods(Class<?> clazz) {
         Map<String, List<BoundMethod>> result = METHODS.get(clazz);
         // 跳过接口以及原始数据类型（不继承Object类）
         if (result != null || !Object.class.isAssignableFrom(clazz)) {
@@ -701,12 +657,7 @@ public class Reflects {
             // 导入声明方法（方法名优先）
             boundMethods = new ArrayList<BoundMethod>();
             for (Method method : type.getDeclaredMethods()) {
-                if ((boundMethod = createBoundMethod(method,
-                        ignoreMode)) != null
-                        && Helpers.toAppend(result, boundMethod.getName(),
-                                boundMethod)
-                        && Helpers.toAppend(result, boundMethod.getMethodDesc(),
-                                boundMethod)) {
+                if ((boundMethod = createBoundMethod(method, ignoreMode)) != null && Helpers.toAppend(result, boundMethod.getName(), boundMethod) && Helpers.toAppend(result, boundMethod.getMethodDesc(), boundMethod)) {
                     boundMethods.add(boundMethod);
                 }
             }
@@ -737,8 +688,7 @@ public class Reflects {
         return bounds == null ? null : bounds.get(0);
     }
 
-    public static <T extends Annotation> List<BoundMethod> getBoundMethods(
-            Class<?> clazz, Class<T> anno) {
+    public static <T extends Annotation> List<BoundMethod> getBoundMethods(Class<?> clazz, Class<T> anno) {
         List<BoundMethod> result = new ArrayList<BoundMethod>();
         for (List<BoundMethod> bounds : getBoundMethods(clazz).values()) {
             result.addAll(getBoundMethods(bounds, anno));
@@ -746,8 +696,7 @@ public class Reflects {
         return result;
     }
 
-    private static <T extends Annotation> List<BoundMethod> getBoundMethods(
-            List<BoundMethod> bounds, Class<T> anno) {
+    private static <T extends Annotation> List<BoundMethod> getBoundMethods(List<BoundMethod> bounds, Class<T> anno) {
         List<BoundMethod> methods = new ArrayList<BoundMethod>();
         for (BoundMethod bound : bounds) {
             if (bound.getAnnotation(anno) != null) {
@@ -757,8 +706,7 @@ public class Reflects {
         return methods;
     }
 
-    public static <T extends Annotation> BoundMethod getBoundMethod(
-            Class<?> clazz, Class<T> anno) {
+    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> clazz, Class<T> anno) {
         BoundMethod method = null;
         for (List<BoundMethod> bounds : getBoundMethods(clazz).values()) {
             if ((method = getBoundMethod(bounds, anno)) != null) {
@@ -768,8 +716,7 @@ public class Reflects {
         return method;
     }
 
-    public static <T extends Annotation> BoundMethod getBoundMethod(
-            Class<?> clazz, String name, Class<T> anno) {
+    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> clazz, String name, Class<T> anno) {
         List<BoundMethod> bounds = getBoundMethods(clazz).get(name);
         if (bounds != null) {
             return getBoundMethod(bounds, anno);
@@ -777,8 +724,7 @@ public class Reflects {
         return null;
     }
 
-    private static <T extends Annotation> BoundMethod getBoundMethod(
-            List<BoundMethod> bounds, Class<T> anno) {
+    private static <T extends Annotation> BoundMethod getBoundMethod(List<BoundMethod> bounds, Class<T> anno) {
         for (BoundMethod bound : bounds) {
             if (bound.getAnnotation(anno) != null) {
                 return bound;
@@ -824,9 +770,7 @@ public class Reflects {
         String path = clazz.getName().replaceAll("[.]", "/");
         String name = clazz.getSimpleName();
         Properties props = new Properties();
-        Helpers.load(props, false,
-                path.substring(0, path.length() - name.length())
-                        + ".ignoreMode");
+        Helpers.load(props, false, path.substring(0, path.length() - name.length()) + ".ignoreMode");
         Helpers.load(props, path + ".ignoreMode");
         String modeName = props.getProperty("this");
         if (Mode.EXCLUDE_NAME.equals(modeName)) {
@@ -866,15 +810,13 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static Object newInstance(Map<String, Object> params,
-            Callable<?> assembler) {
+    public static Object newInstance(Map<String, Object> params, Callable<?> assembler) {
         Object type = params.get(KEY_CLASS);
         if (type == null) {
             return params;
         }
         params.remove(KEY_CLASS);
-        Class<?> clazz = type instanceof Class ? (Class<?>) type
-                : getClass((String) type);
+        Class<?> clazz = type instanceof Class ? (Class<?>) type : getClass((String) type);
         Asserts.isNotNull(clazz, "Cannot instantiation type " + type);
         return newInstance(clazz, params, assembler);
     }
@@ -899,8 +841,7 @@ public class Reflects {
      * @param params
      * @return
      */
-    public static <T> T newInstance(Class<T> clazz,
-            Map<String, Object> params) {
+    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params) {
         return newInstance(clazz, params, (Callable<?>) null);
     }
 
@@ -912,8 +853,7 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params,
-            Callable<?> assembler) {
+    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params, Callable<?> assembler) {
         T instance = newInstance(clazz);
         if (params != null && params.size() > 0) {
             toInstance(instance, params, assembler);
@@ -928,8 +868,7 @@ public class Reflects {
      * @param namespace
      * @return
      */
-    public static Object newInstance(Map<String, Object> params,
-            String namespace) {
+    public static Object newInstance(Map<String, Object> params, String namespace) {
         return newInstance(Helpers.getMap(params, namespace));
     }
 
@@ -941,8 +880,7 @@ public class Reflects {
      * @param namespace
      * @return
      */
-    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params,
-            String namespace) {
+    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params, String namespace) {
         return Reflects.newInstance(clazz, Helpers.getMap(params, namespace));
     }
 
@@ -1007,8 +945,7 @@ public class Reflects {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static <T> T toInstance(T instance, Map<String, Object> params,
-            final Callable<?> assembler) {
+    public static <T> T toInstance(T instance, Map<String, Object> params, final Callable<?> assembler) {
         if (instance instanceof Map) {
             ((Map<String, Object>) instance).putAll(params);
             return instance;
@@ -1016,25 +953,20 @@ public class Reflects {
         final Map<String, Object> values = Helpers.toHierarchical(params);
         String fieldName;
         BoundField field;
-        Map<String, List<BoundField>> fields = getBoundFields(
-                instance.getClass());
-        Callable<?> fieldAssembler = assembler == null
-                ? new Callable<Object>() {
-                    public Object call(Object... args) {
-                        return args[2]; // 直接返回字段实例
-                    }
-                }
-                : new Callable<Object>() {
-                    public Object call(Object... args) {
-                        return assembler.call(
-                                (Object[]) Helpers.newArray(args, values));
-                    }
-                };
+        Map<String, List<BoundField>> fields = getBoundFields(instance.getClass());
+        Callable<?> fieldAssembler = assembler == null ? new Callable<Object>() {
+            public Object call(Object... args) {
+                return args[2]; // 直接返回字段实例
+            }
+        } : new Callable<Object>() {
+            public Object call(Object... args) {
+                return assembler.call((Object[]) Helpers.newArray(args, values));
+            }
+        };
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             fieldName = entry.getKey();
             field = entry.getValue().get(0);
-            if (values.containsKey(fieldName)
-                    || values.containsKey(fieldName = field.getAlias())) {
+            if (values.containsKey(fieldName) || values.containsKey(fieldName = field.getAlias())) {
                 field.setValue(instance, values.get(fieldName), fieldAssembler);
             } else {
                 field.setValue(instance, UNKNOWN, fieldAssembler);
@@ -1070,9 +1002,7 @@ public class Reflects {
      * @return
      */
     public static <T> T toBean(Class<T> clazz, Object[] grid) {
-        Object[] values = grid[1] instanceof Object[][]
-                ? ((Object[][]) grid[1])[0]
-                : (Object[]) grid[1];
+        Object[] values = grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0] : (Object[]) grid[1];
         return toBean(clazz, (Object[]) grid[0], values);
     }
 
@@ -1084,8 +1014,7 @@ public class Reflects {
      * @param values
      * @return
      */
-    public static <T> T toBean(Class<T> clazz, Object[] columns,
-            Object[] values) {
+    public static <T> T toBean(Class<T> clazz, Object[] columns, Object[] values) {
         return toBean(clazz, columns, values, null);
     }
 
@@ -1099,8 +1028,7 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static <T> T toBean(Class<T> clazz, Object[] columns,
-            Object[] values, Callable<?> assembler) {
+    public static <T> T toBean(Class<T> clazz, Object[] columns, Object[] values, Callable<?> assembler) {
         return Reflects.newInstance(clazz, toMap(columns, values), assembler);
     }
 
@@ -1115,11 +1043,9 @@ public class Reflects {
         Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             try {
-                values.put(entry.getKey(),
-                        entry.getValue().get(0).getValue(bean));
+                values.put(entry.getKey(), entry.getValue().get(0).getValue(bean));
             } catch (Exception e) {
-                LOG.warn("Failure getting field [{}] value.", entry.getKey(),
-                        e);
+                LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
             }
         }
         return values;
@@ -1132,9 +1058,7 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object[] grid) {
-        Object[] values = grid[1] instanceof Object[][]
-                ? ((Object[][]) grid[1])[0]
-                : (Object[]) grid[1];
+        Object[] values = grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0] : (Object[]) grid[1];
         return toMap((Object[]) grid[0], values);
     }
 
@@ -1173,8 +1097,7 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static <T> List<T> toList(Class<T> clazz, Object[] grid,
-            Callable<?> assembler) {
+    public static <T> List<T> toList(Class<T> clazz, Object[] grid, Callable<?> assembler) {
         List<T> result = new ArrayList<T>();
         Object[] columns = (Object[]) grid[0];
         Object gridValue = grid[1];
@@ -1196,8 +1119,7 @@ public class Reflects {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static <T> List<T> toList(Class<T> clazz,
-            List<Map<String, Object>> values) {
+    public static <T> List<T> toList(Class<T> clazz, List<Map<String, Object>> values) {
         return toList(clazz, values, new Callable<T>() {
             public T call(Object... args) {
                 return (T) args[1];
@@ -1213,14 +1135,12 @@ public class Reflects {
      * @param interceptor
      * @return
      */
-    public static <T> List<T> toList(Class<T> clazz,
-            List<Map<String, Object>> values, Callable<T> interceptor) {
+    public static <T> List<T> toList(Class<T> clazz, List<Map<String, Object>> values, Callable<T> interceptor) {
         List<T> result = new ArrayList<T>(values.size());
         int step = 0;
         T instance;
         for (Map<String, Object> value : values) {
-            instance = interceptor.call(step++, newInstance(clazz, value),
-                    result);
+            instance = interceptor.call(step++, newInstance(clazz, value), result);
             if (instance != null) {
                 result.add(instance);
             }
@@ -1245,10 +1165,8 @@ public class Reflects {
      * @param values
      * @return
      */
-    public static List<Map<String, Object>> toList(Object[] columns,
-            Object[][] values) {
-        List<Map<String, Object>> result = new ArrayList<Map<String, Object>>(
-                values.length);
+    public static List<Map<String, Object>> toList(Object[] columns, Object[][] values) {
+        List<Map<String, Object>> result = new ArrayList<Map<String, Object>>(values.length);
         for (Object[] value : values) {
             result.add(toMap(columns, value));
         }
@@ -1273,26 +1191,21 @@ public class Reflects {
             }
             ParameterizedType pa = (ParameterizedType) source;
             ParameterizedType pb = (ParameterizedType) target;
-            return Helpers.equals(pa.getOwnerType(), pb.getOwnerType())
-                    && pa.getRawType().equals(pb.getRawType())
-                    && Arrays.equals(pa.getActualTypeArguments(),
-                            pb.getActualTypeArguments());
+            return Helpers.equals(pa.getOwnerType(), pb.getOwnerType()) && pa.getRawType().equals(pb.getRawType()) && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());
         } else if (source instanceof GenericArrayType) {
             if (!(target instanceof GenericArrayType)) {
                 return false;
             }
             GenericArrayType ga = (GenericArrayType) source;
             GenericArrayType gb = (GenericArrayType) target;
-            return equals(ga.getGenericComponentType(),
-                    gb.getGenericComponentType());
+            return equals(ga.getGenericComponentType(), gb.getGenericComponentType());
         } else if (source instanceof WildcardType) {
             if (!(target instanceof WildcardType)) {
                 return false;
             }
             WildcardType wa = (WildcardType) source;
             WildcardType wb = (WildcardType) target;
-            return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())
-                    && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());
+            return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds()) && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());
 
         } else if (source instanceof TypeVariable) {
             if (!(target instanceof TypeVariable)) {
@@ -1300,8 +1213,7 @@ public class Reflects {
             }
             TypeVariable<?> va = (TypeVariable<?>) source;
             TypeVariable<?> vb = (TypeVariable<?>) target;
-            return va.getGenericDeclaration() == vb.getGenericDeclaration()
-                    && va.getName().equals(vb.getName());
+            return va.getGenericDeclaration() == vb.getGenericDeclaration() && va.getName().equals(vb.getName());
         } else {
             return false;
         }
@@ -1312,8 +1224,7 @@ public class Reflects {
      * 
      * @author issing
      */
-    private static final class ParameterizedTypeImpl
-            implements ParameterizedType, Serializable {
+    private static final class ParameterizedTypeImpl implements ParameterizedType, Serializable {
         private static final long serialVersionUID = 5081438518083630676L;
 
         private final Type ownerType;
@@ -1322,17 +1233,13 @@ public class Reflects {
 
         private final Type[] typeArguments;
 
-        public ParameterizedTypeImpl(Type ownerType, Type rawType,
-                Type... typeArguments) {
+        public ParameterizedTypeImpl(Type ownerType, Type rawType, Type... typeArguments) {
             if (rawType instanceof Class<?>) {
                 Class<?> rawClass = (Class<?>) rawType;
-                Asserts.throwArgument(ownerType != null
-                        || rawClass.getEnclosingClass() == null);
-                Asserts.throwArgument(ownerType == null
-                        || rawClass.getEnclosingClass() != null);
+                Asserts.throwArgument(ownerType != null || rawClass.getEnclosingClass() == null);
+                Asserts.throwArgument(ownerType == null || rawClass.getEnclosingClass() != null);
             }
-            this.ownerType = ownerType == null ? null
-                    : Reflects.toCanonicalize(ownerType);
+            this.ownerType = ownerType == null ? null : Reflects.toCanonicalize(ownerType);
             this.rawType = Reflects.toCanonicalize(rawType);
             this.typeArguments = typeArguments.clone();
             for (int i = 0; i < this.typeArguments.length; i++) {
@@ -1355,18 +1262,15 @@ public class Reflects {
         }
 
         public boolean equals(Object other) {
-            return other instanceof ParameterizedType
-                    && Reflects.equals(this, (ParameterizedType) other);
+            return other instanceof ParameterizedType && Reflects.equals(this, (ParameterizedType) other);
         }
 
         public int hashCode() {
-            return Arrays.hashCode(typeArguments) ^ rawType.hashCode()
-                    ^ Helpers.hashCode(ownerType);
+            return Arrays.hashCode(typeArguments) ^ rawType.hashCode() ^ Helpers.hashCode(ownerType);
         }
 
         public String toString() {
-            StringBuilder stringBuilder = new StringBuilder(
-                    30 * (typeArguments.length + 1));
+            StringBuilder stringBuilder = new StringBuilder(30 * (typeArguments.length + 1));
             stringBuilder.append(getName(rawType));
             if (typeArguments.length == 0) {
                 return stringBuilder.toString();
@@ -1384,8 +1288,7 @@ public class Reflects {
      * 
      * @author issing
      */
-    private static final class GenericArrayTypeImpl
-            implements GenericArrayType, Serializable {
+    private static final class GenericArrayTypeImpl implements GenericArrayType, Serializable {
         private static final long serialVersionUID = -1183771465139410856L;
 
         private final Type componentType;
@@ -1399,8 +1302,7 @@ public class Reflects {
         }
 
         public boolean equals(Object o) {
-            return o instanceof GenericArrayType
-                    && Reflects.equals(this, (GenericArrayType) o);
+            return o instanceof GenericArrayType && Reflects.equals(this, (GenericArrayType) o);
         }
 
         public int hashCode() {
@@ -1417,8 +1319,7 @@ public class Reflects {
      * 
      * @author issing
      */
-    private static final class WildcardTypeImpl
-            implements WildcardType, Serializable {
+    private static final class WildcardTypeImpl implements WildcardType, Serializable {
         private static final long serialVersionUID = 8303914422137884485L;
 
         private final Type upperBound;
@@ -1447,18 +1348,15 @@ public class Reflects {
         }
 
         public Type[] getLowerBounds() {
-            return lowerBound != null ? new Type[] { lowerBound }
-                    : EMPTY_TYPE_ARRAY;
+            return lowerBound != null ? new Type[] { lowerBound } : EMPTY_TYPE_ARRAY;
         }
 
         public boolean equals(Object other) {
-            return other instanceof WildcardType
-                    && Reflects.equals(this, (WildcardType) other);
+            return other instanceof WildcardType && Reflects.equals(this, (WildcardType) other);
         }
 
         public int hashCode() {
-            return (lowerBound != null ? 31 + lowerBound.hashCode() : 1)
-                    ^ (31 + upperBound.hashCode());
+            return (lowerBound != null ? 31 + lowerBound.hashCode() : 1) ^ (31 + upperBound.hashCode());
         }
 
         public String toString() {
