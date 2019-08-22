@@ -93,21 +93,23 @@ public class Sqls {
      * 
      * @param resultSet
      *            数据库查询结果集
-     * @return <b>网格数据结构： </b><br/>
-     *         第一个元素：<code>String[]</code>（列名数组）<br/>
-     *         第二个元素：<code>Object[][]</code>（数据二维数组）<br/>
-     *         <b>例如：</b><br/>
-     *         第一个元素: <code>String[]{"column1", "column2"}</code><br/>
-     *         第二个元素: <code>Object[][]{{"data1", 1}, {"data2", 2}}</code><br/>
-     *         <b>图示：</b>
+     * @return
      * 
      *         <pre>
-     *         +-----------------------+
-     *         |  column1  |  column2  |
-     *         +-----------------------+
-     *         |   data1   |     1     |
-     *         |   data2   |     2     |
-     *         +-----------------------+
+     * 网格数据结构：
+     *    第一个元素：String[]（列名数组）
+     *    第二个元素：Object[]（数据二维数组）
+     *      
+     *    例如：
+     *       第一个元素: String[]{"column1", "column2"}
+     *       第二个元素: Object[][]{{"data1", 1}, {"data2", 2}}
+     *    图示：       
+     *       +-----------------------+
+     *       |  column1  |  column2  |
+     *       +-----------------------+
+     *       |   data1   |     1     |
+     *       |   data2   |     2     |
+     *       +-----------------------+
      *         </pre>
      */
     public static Object[] getGridData(ResultSet resultSet) {
@@ -131,8 +133,7 @@ public class Sqls {
         } catch (SQLException e) {
             throw new IllegalStateException(e);
         }
-        return new Object[] { columns,
-                result.toArray(new Object[result.size()][]) };
+        return new Object[] { columns, result.toArray(new Object[result.size()][]) };
     }
 
     /**
@@ -140,21 +141,23 @@ public class Sqls {
      * 
      * @param bean
      *            实例对象
-     * @return<b>网格数据结构： </b><br/>
-     *                   第一个元素：<code>String[]</code>（列名数组）<br/>
-     *                   第二个元素：<code>Object[]</code>（数据一维数组）<br/>
-     *                   <b>例如：</b><br/>
-     *                   第一个元素: <code>String[]{"column1", "column2"}</code><br/>
-     *                   第二个元素: <code>Object[]{"data1", 1}</code><br/>
-     *                   <b>图示：</b>
+     * @return
      * 
-     *                   <pre>
-     *         +-----------------------+
-     *         |  column1  |  column2  |
-     *         +-----------------------+
-     *         |   data1   |     1     |
-     *         +-----------------------+
-     *                   </pre>
+     *         <pre>
+     * 网格数据结构：
+     *    第一个元素：String[]（列名数组）
+     *    第二个元素：Object[]（数据一维数组）
+     *      
+     *    例如：
+     *       第一个元素: String[]{"column1", "column2"}
+     *       第二个元素: Object[]{"data1", 1}
+     *    图示：       
+     *       +-----------------------+
+     *       |  column1  |  column2  |
+     *       +-----------------------+
+     *       |   data1   |     1     |
+     *       +-----------------------+
+     *         </pre>
      */
     public static Object[] getGridData(Object bean) {
         String column;
@@ -162,19 +165,16 @@ public class Sqls {
         List<String> columns = new ArrayList<String>();
         List<Object> row = new ArrayList<Object>();
         BoundField field;
-        for (List<BoundField> fields : Reflects.getBoundFields(bean.getClass())
-                .values()) {
+        for (List<BoundField> fields : Reflects.getBoundFields(bean.getClass()).values()) {
             field = fields.get(0);
-            column = Strings.empty(field.getAlias(),
-                    Helpers.toColumnName(field.getName()));
+            column = Strings.empty(field.getAlias(), Helpers.toColumnName(field.getName()));
             value = field.getValue(bean);
             if (value != null) {
                 columns.add(column);
                 row.add(value);
             }
         }
-        return new Object[] { columns.toArray(new String[columns.size()]),
-                row.toArray() };
+        return new Object[] { columns.toArray(new String[columns.size()]), row.toArray() };
     }
 
     /**
@@ -185,8 +185,7 @@ public class Sqls {
      * @return
      * @throws SQLException
      */
-    private static String getColumnName(ResultSetMetaData metaData, int index)
-            throws SQLException {
+    private static String getColumnName(ResultSetMetaData metaData, int index) throws SQLException {
         String name = metaData.getColumnName(index);
         if (Strings.isEmpty(name)) {
             name = metaData.getColumnLabel(index);
@@ -202,8 +201,7 @@ public class Sqls {
      * @return
      * @throws RuntimeException
      */
-    public static Object modify(SqlEntry entry, Connection conn)
-            throws RuntimeException {
+    public static Object modify(SqlEntry entry, Connection conn) throws RuntimeException {
         String sql = entry.getSql();
         Object values = entry.getValues();
         if (values instanceof Object[][]) {
@@ -222,13 +220,11 @@ public class Sqls {
      * @param args
      * @return
      */
-    public static int[] modify(Class<?> clazz, String id, Object[][] values,
-            Connection conn, Object... args) {
+    public static int[] modify(Class<?> clazz, String id, Object[][] values, Connection conn, Object... args) {
         return modify(clazz, null, id, values, conn, args);
     }
 
-    public static int[] modify(Class<?> clazz, String dialectName, String id,
-            Object[][] values, Connection conn, Object... args) {
+    public static int[] modify(Class<?> clazz, String dialectName, String id, Object[][] values, Connection conn, Object... args) {
         return modify(getSQL(clazz, dialectName, id, args), values, conn);
     }
 
@@ -261,8 +257,7 @@ public class Sqls {
      * @param args
      * @return
      */
-    public static int modify(Class<?> clazz, String id, Object[] values,
-            Connection conn, Object... args) {
+    public static int modify(Class<?> clazz, String id, Object[] values, Connection conn, Object... args) {
         return modify(getSQL(clazz, id, args), values, conn);
     }
 
@@ -304,8 +299,7 @@ public class Sqls {
      * @return
      * @throws RuntimeException
      */
-    public static Object[] query(SqlEntry entry, Connection conn)
-            throws RuntimeException {
+    public static Object[] query(SqlEntry entry, Connection conn) throws RuntimeException {
         return query(entry.getSql(), entry.getValues(), conn);
     }
 
@@ -319,13 +313,11 @@ public class Sqls {
      * @param args
      * @return
      */
-    public static Object[] query(Class<?> clazz, String id, Object[] values,
-            Connection conn, Object... args) {
+    public static Object[] query(Class<?> clazz, String id, Object[] values, Connection conn, Object... args) {
         return query(clazz, null, id, values, conn, args);
     }
 
-    public static Object[] query(Class<?> clazz, String dialectName, String id,
-            Object[] values, Connection conn, Object... args) {
+    public static Object[] query(Class<?> clazz, String dialectName, String id, Object[] values, Connection conn, Object... args) {
         return query(getSQL(clazz, dialectName, id, args), values, conn);
     }
 
@@ -370,8 +362,7 @@ public class Sqls {
      * @param conn
      * @return
      */
-    private static PreparedStatement getStatement(String sql, Object[] values,
-            Connection conn) {
+    private static PreparedStatement getStatement(String sql, Object[] values, Connection conn) {
         if (LOG.isDebugEnabled()) {
             LOG.info("Preparing statement: {}", sql);
         }
@@ -390,8 +381,7 @@ public class Sqls {
      * @param conn
      * @return
      */
-    private static PreparedStatement getStatement(String sql, Object[][] values,
-            Connection conn) {
+    private static PreparedStatement getStatement(String sql, Object[][] values, Connection conn) {
         if (LOG.isDebugEnabled()) {
             LOG.info("Preparing batch statement: {}", sql);
         }
@@ -416,13 +406,11 @@ public class Sqls {
      * @return
      * @throws SQLException
      */
-    private static PreparedStatement prepare(PreparedStatement stat,
-            Object[] values) throws SQLException {
+    private static PreparedStatement prepare(PreparedStatement stat, Object[] values) throws SQLException {
         Object value;
         int size = values == null ? 0 : values.length;
         try {
-            size = Math.min(size,
-                    stat.getParameterMetaData().getParameterCount());
+            size = Math.min(size, stat.getParameterMetaData().getParameterCount());
         } catch (Exception e) {
         }
         if (LOG.isDebugEnabled() && size > 0) {
@@ -438,8 +426,7 @@ public class Sqls {
         while (amount < size) {
             if ((value = values[amount++]) instanceof Date) {
                 stat.setObject(amount, new Timestamp(((Date) value).getTime()));
-            } else if (value instanceof Number || value instanceof Boolean
-                    || value instanceof String) {
+            } else if (value instanceof Number || value instanceof Boolean || value instanceof String) {
                 stat.setObject(amount, value);
             } else {
                 stat.setObject(amount, Helpers.toJson(value));
@@ -511,8 +498,7 @@ public class Sqls {
      * @param args
      * @return
      */
-    public static String getSQL(Class<?> clazz, String dialectName, String id,
-            Object... args) {
+    public static String getSQL(Class<?> clazz, String dialectName, String id, Object... args) {
         String name = clazz.getName().replaceAll("[.]", "/");
         /* 缓存配置 */
         Properties sqls = CACHE_SQLS.get(name);
@@ -520,12 +506,10 @@ public class Sqls {
             sqls = Helpers.getProperties(clazz, name + ".sql");
             /* 方言配置 */
             if (Strings.isNotEmpty(dialectName)) {
-                sqls = Helpers.load(sqls, clazz,
-                        name + "$" + dialectName.trim().toLowerCase() + ".sql");
+                sqls = Helpers.load(sqls, clazz, name + "$" + dialectName.trim().toLowerCase() + ".sql");
             }
             // 配置文件中必须包含配置语句
-            Asserts.throwState(sqls != null, "Not found the [%s.sql.xml] file",
-                    name);
+            Asserts.throwState(sqls != null, "Not found the [%s.sql.xml] file", name);
             CACHE_SQLS.put(name, sqls);
         }
         /* 配置语句 */

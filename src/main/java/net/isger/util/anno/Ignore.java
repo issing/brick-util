@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 忽略注解
+ * 忽略
  * 
  * @author issing
  * 

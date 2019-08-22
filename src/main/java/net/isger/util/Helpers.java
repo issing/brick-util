@@ -12,7 +12,6 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -184,8 +183,7 @@ public class Helpers {
      * @return
      */
     public static boolean toBoolean(Object value) {
-        return value != null && (value instanceof Boolean ? (boolean) value
-                : Boolean.parseBoolean(value.toString()) || (toInt(value, 0) != 0) || "t".equalsIgnoreCase(value.toString()) || "y".equalsIgnoreCase(value.toString()) || "yes".equalsIgnoreCase(value.toString()));
+        return value != null && (value instanceof Boolean ? (boolean) value : toInt(value) != 0 || Strings.equalsIgnoreCase(value.toString(), "t", "true", "y", "yes"));
     }
 
     /**
@@ -538,7 +536,7 @@ public class Helpers {
                 props.load(in);
             }
         } catch (Exception e) {
-            LOG.warn("Failed to load properties [{}]", url, e);
+            LOG.warn("(!) Failed to load properties [{}] {}- {}", url, isXML ? "from XML " : "", e.getMessage());
         } finally {
             Files.close(in);
         }
@@ -1192,7 +1190,7 @@ public class Helpers {
     }
 
     public static void sleep(long ms, int ns) {
-        if (ms > 0 && ns > 0) {
+        if (ms > 0 || ns > 0) {
             try {
                 Thread.sleep(ms, ns);
             } catch (InterruptedException e) {
@@ -1207,34 +1205,50 @@ public class Helpers {
      * @throws Exception
      */
     public static InetAddress getAddress() {
+        InetAddress address = null;
         try {
-            InetAddress candidateAddress = null;
+            Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
             // 遍历网络接口
-            for (Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements();) {
-                NetworkInterface iface = ifaces.nextElement();
-                // 遍历接口IP地址
-                for (Enumeration<InetAddress> inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements();) {
-                    InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
-                    // 排除loopback类型地址
-                    if (!inetAddr.isLoopbackAddress()) {
-                        if (inetAddr.isSiteLocalAddress()) {
-                            // 返回site-local地址
-                            return inetAddr;
-                        } else if (candidateAddress == null) {
-                            // 记录候选地址
-                            candidateAddress = inetAddr;
-                        }
-                    }
+            while (ifaces.hasMoreElements()) {
+                address = getAddress(ifaces.nextElement(), address);
+                if (address != null && address.isSiteLocalAddress()) {
+                    return address;
                 }
             }
-            if (candidateAddress != null) {
-                return candidateAddress;
+            // 默认本机地址
+            if (address == null) {
+                address = InetAddress.getLocalHost();
             }
-            // 默认本机地址方案
-            return InetAddress.getLocalHost();
         } catch (Exception e) {
         }
-        return null;
+        return address;
+    }
+
+    public static InetAddress getAddress(String host) {
+        InetAddress address = null;
+        try {
+            address = getAddress(NetworkInterface.getByInetAddress(InetAddress.getByName(host)), getAddress());
+        } catch (Exception e) {
+        }
+        return address;
+    }
+
+    private static InetAddress getAddress(NetworkInterface iface, InetAddress candidateAddress) {
+        // 遍历接口IP地址
+        for (Enumeration<InetAddress> inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements();) {
+            InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
+            // 排除loopback类型地址
+            if (!inetAddr.isLoopbackAddress()) {
+                if (inetAddr.isSiteLocalAddress()) {
+                    // 返回site-local地址
+                    return inetAddr;
+                } else if (candidateAddress == null) {
+                    // 记录候选地址
+                    candidateAddress = inetAddr;
+                }
+            }
+        }
+        return candidateAddress;
     }
 
     /**
@@ -1255,14 +1269,8 @@ public class Helpers {
      * @return
      */
     public static SocketAddress getAddress(String host, int port) {
-        if (Strings.isNotEmpty(host)) {
-            try {
-                return new InetSocketAddress(InetAddress.getByName(host), port);
-            } catch (UnknownHostException e) {
-                return null;
-            }
-        }
-        return new InetSocketAddress(port);
+        InetAddress address = getAddress(host);
+        return address == null ? null : new InetSocketAddress(address, port);
     }
 
     public static boolean isCode(String value) {

@@ -130,6 +130,20 @@ public class Strings {
         return new String(source).equals(new String(target));
     }
 
+    public static boolean equalsIgnoreCase(String source, Object... targets) {
+        if (targets != null) {
+            for (Object target : targets) {
+                if (target == null) {
+                    continue;
+                }
+                if (source.equalsIgnoreCase(String.valueOf(target))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * 忽略大小写替换
      * 
