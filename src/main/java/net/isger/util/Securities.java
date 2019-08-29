@@ -73,40 +73,23 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore createSuite(String type, String root,
-            String intermediate, String entity, char[] password,
-            String algorithm, String issuer, long period) throws Exception {
+    public static KeyStore createSuite(String type, String root, String intermediate, String entity, char[] password, String algorithm, String issuer, long period) throws Exception {
         /* 创建密钥库 */
         KeyStore store = KeyStore.getInstance(type);
         store.load(null, null);
         /* 创建根凭证 */
         KeyPair rkp = createKeyPair(algorithm);
-        X500PrivateCredential rootCredential = createCredential(root,
-                rkp.getPrivate(),
-                createRoot("CN=" + root + "," + issuer, period, 1, rkp));
+        X500PrivateCredential rootCredential = createCredential(root, rkp.getPrivate(), createRoot("CN=" + root + "," + issuer, period, 1, rkp));
         /* 创建中级凭证 */
         KeyPair ikp = createKeyPair(algorithm);
-        X500PrivateCredential interCredential = createCredential(intermediate,
-                ikp.getPrivate(),
-                createIntermediate("CN=" + intermediate + "," + issuer, period,
-                        1, ikp.getPublic(), rootCredential.getPrivateKey(),
-                        rootCredential.getCertificate()));
+        X500PrivateCredential interCredential = createCredential(intermediate, ikp.getPrivate(), createIntermediate("CN=" + intermediate + "," + issuer, period, 1, ikp.getPublic(), rootCredential.getPrivateKey(), rootCredential.getCertificate()));
         /* 创建实体凭证 */
         KeyPair ekp = createKeyPair(algorithm);
-        X500PrivateCredential entityCredential = createCredential(entity,
-                ekp.getPrivate(),
-                createEntity("CN=" + entity + "," + issuer, period, 1,
-                        ekp.getPublic(), interCredential.getPrivateKey(),
-                        interCredential.getCertificate()));
+        X500PrivateCredential entityCredential = createCredential(entity, ekp.getPrivate(), createEntity("CN=" + entity + "," + issuer, period, 1, ekp.getPublic(), interCredential.getPrivateKey(), interCredential.getCertificate()));
         /* 设置凭证入口 */
-        store.setCertificateEntry(rootCredential.getAlias(),
-                rootCredential.getCertificate());
+        store.setCertificateEntry(rootCredential.getAlias(), rootCredential.getCertificate());
         /* 设置秘钥入口 */
-        store.setKeyEntry(entityCredential.getAlias(),
-                entityCredential.getPrivateKey(), password,
-                new Certificate[] { entityCredential.getCertificate(),
-                        interCredential.getCertificate(),
-                        rootCredential.getCertificate() });
+        store.setKeyEntry(entityCredential.getAlias(), entityCredential.getPrivateKey(), password, new Certificate[] { entityCredential.getCertificate(), interCredential.getCertificate(), rootCredential.getCertificate() });
         return store;
     }
 
@@ -120,8 +103,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore createKeyStore(String name, String password,
-            String issuer, long period) throws Exception {
+    public static KeyStore createKeyStore(String name, String password, String issuer, long period) throws Exception {
         return createKeyStore(name, password, issuer, period, createKeyPair());
     }
 
@@ -136,10 +118,8 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore createKeyStore(String algorithm, String name,
-            String password, String issuer, long period) throws Exception {
-        return createKeyStore(algorithm, name, password, issuer, period,
-                createKeyPair());
+    public static KeyStore createKeyStore(String algorithm, String name, String password, String issuer, long period) throws Exception {
+        return createKeyStore(algorithm, name, password, issuer, period, createKeyPair());
     }
 
     /**
@@ -153,10 +133,8 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore createKeyStore(String name, String password,
-            String issuer, long period, KeyPair keyPair) throws Exception {
-        return createKeyStore(name, password, keyPair.getPrivate(),
-                createRoot(issuer, period, 1, keyPair));
+    public static KeyStore createKeyStore(String name, String password, String issuer, long period, KeyPair keyPair) throws Exception {
+        return createKeyStore(name, password, keyPair.getPrivate(), createRoot(issuer, period, 1, keyPair));
     }
 
     /**
@@ -171,11 +149,8 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore createKeyStore(String algorithm, String name,
-            String password, String issuer, long period, KeyPair keyPair)
-            throws Exception {
-        return createKeyStore(algorithm, name, password, keyPair.getPrivate(),
-                createRoot(issuer, period, 1, keyPair));
+    public static KeyStore createKeyStore(String algorithm, String name, String password, String issuer, long period, KeyPair keyPair) throws Exception {
+        return createKeyStore(algorithm, name, password, keyPair.getPrivate(), createRoot(issuer, period, 1, keyPair));
     }
 
     /**
@@ -188,8 +163,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore createKeyStore(String name, String password, Key key,
-            Certificate... certificates) throws Exception {
+    public static KeyStore createKeyStore(String name, String password, Key key, Certificate... certificates) throws Exception {
         return createKeyStore("PKCS12", name, password, key, certificates);
     }
 
@@ -204,14 +178,10 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore createKeyStore(String algorithm, String name,
-            String password, Key key, Certificate... certificates)
-            throws Exception {
+    public static KeyStore createKeyStore(String algorithm, String name, String password, Key key, Certificate... certificates) throws Exception {
         KeyStore keyStore = KeyStore.getInstance(algorithm);
         keyStore.load(null, null);
-        keyStore.setKeyEntry(name, key,
-                Strings.isEmpty(password) ? null : password.toCharArray(),
-                certificates);
+        keyStore.setKeyEntry(name, key, Strings.isEmpty(password) ? null : password.toCharArray(), certificates);
         return keyStore;
     }
 
@@ -224,8 +194,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyStore getKeyStore(String algorithm, String path,
-            char[] password) throws Exception {
+    public static KeyStore getKeyStore(String algorithm, String path, char[] password) throws Exception {
         KeyStore keyStore = KeyStore.getInstance(algorithm); // , "BC");
         InputStream is = Reflects.getResourceAsStream(path);
         try {
@@ -244,8 +213,7 @@ public class Securities {
      * @param cert
      * @return
      */
-    public static X500PrivateCredential createCredential(String name,
-            PrivateKey key, X509Certificate cert) {
+    public static X500PrivateCredential createCredential(String name, PrivateKey key, X509Certificate cert) {
         return new X500PrivateCredential(cert, key, name);
     }
 
@@ -258,15 +226,10 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static X509Certificate createRoot(String issuer, long period,
-            long serial, KeyPair keyPair) throws Exception {
+    public static X509Certificate createRoot(String issuer, long period, long serial, KeyPair keyPair) throws Exception {
         Date notBefore = new Date();
-        X509v1CertificateBuilder builder = new JcaX509v1CertificateBuilder(
-                new X500Name(issuer), BigInteger.valueOf(serial), notBefore,
-                Dates.getDate(notBefore, period), new X500Name(issuer),
-                keyPair.getPublic());
-        return getCertificate(
-                builder.build(createSigner(keyPair.getPrivate())));
+        X509v1CertificateBuilder builder = new JcaX509v1CertificateBuilder(new X500Name(issuer), BigInteger.valueOf(serial), notBefore, Dates.getDate(notBefore, period), new X500Name(issuer), keyPair.getPublic());
+        return getCertificate(builder.build(createSigner(keyPair.getPrivate())));
     }
 
     /**
@@ -278,16 +241,10 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static Certificate createRoot(String issuer, long period,
-            AsymmetricCipherKeyPair keyPair) throws Exception {
+    public static Certificate createRoot(String issuer, long period, AsymmetricCipherKeyPair keyPair) throws Exception {
         Date notBefore = new Date();
-        X509v1CertificateBuilder builder = new X509v1CertificateBuilder(
-                new X500Name(issuer), BigInteger.valueOf(1), notBefore,
-                Dates.getDate(notBefore, period), new X500Name(issuer),
-                SubjectPublicKeyInfoFactory
-                        .createSubjectPublicKeyInfo(keyPair.getPublic()));
-        return getCertificate(builder.build(createSigner(keyPair))
-                .toASN1Structure().getEncoded());
+        X509v1CertificateBuilder builder = new X509v1CertificateBuilder(new X500Name(issuer), BigInteger.valueOf(1), notBefore, Dates.getDate(notBefore, period), new X500Name(issuer), SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(keyPair.getPublic()));
+        return getCertificate(builder.build(createSigner(keyPair)).toASN1Structure().getEncoded());
     }
 
     /**
@@ -302,24 +259,12 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static X509Certificate createIntermediate(String subject,
-            long period, long serial, PublicKey inKey, PrivateKey caKey,
-            X509Certificate caCert) throws Exception {
+    public static X509Certificate createIntermediate(String subject, long period, long serial, PublicKey inKey, PrivateKey caKey, X509Certificate caCert) throws Exception {
         Date notBefore = new Date();
-        X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
-                caCert.getSubjectX500Principal(), BigInteger.valueOf(serial),
-                notBefore, Dates.getDate(notBefore, period),
-                new X500Principal(subject), inKey);
+        X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(caCert.getSubjectX500Principal(), BigInteger.valueOf(serial), notBefore, Dates.getDate(notBefore, period), new X500Principal(subject), inKey);
         JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
-        builder.addExtension(Extension.authorityKeyIdentifier, false,
-                extUtils.createAuthorityKeyIdentifier(caCert))
-                .addExtension(Extension.subjectKeyIdentifier, false,
-                        extUtils.createSubjectKeyIdentifier(inKey))
-                .addExtension(Extension.basicConstraints, true,
-                        new BasicConstraints(0))
-                .addExtension(Extension.keyUsage, true,
-                        new KeyUsage(KeyUsage.digitalSignature
-                                | KeyUsage.keyCertSign | KeyUsage.cRLSign));
+        builder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCert)).addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(inKey)).addExtension(Extension.basicConstraints, true, new BasicConstraints(0)).addExtension(Extension.keyUsage, true,
+                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyCertSign | KeyUsage.cRLSign));
         return getCertificate(builder.build(createSigner(caKey)));
     }
 
@@ -335,23 +280,12 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static X509Certificate createEntity(String subject, long period,
-            long serail, PublicKey entityKey, PrivateKey caKey,
-            X509Certificate caCert, Extension... extensions) throws Exception {
+    public static X509Certificate createEntity(String subject, long period, long serail, PublicKey entityKey, PrivateKey caKey, X509Certificate caCert, Extension... extensions) throws Exception {
         Date notBefore = new Date();
-        X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
-                caCert.getSubjectX500Principal(), BigInteger.valueOf(serail),
-                notBefore, Dates.getDate(notBefore, period),
-                new X500Principal(subject), entityKey);
+        X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(caCert.getSubjectX500Principal(), BigInteger.valueOf(serail), notBefore, Dates.getDate(notBefore, period), new X500Principal(subject), entityKey);
         JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
-        builder.addExtension(Extension.authorityKeyIdentifier, false,
-                extUtils.createAuthorityKeyIdentifier(caCert))
-                .addExtension(Extension.subjectKeyIdentifier, false,
-                        extUtils.createSubjectKeyIdentifier(entityKey))
-                .addExtension(Extension.basicConstraints, true,
-                        new BasicConstraints(false))
-                .addExtension(Extension.keyUsage, true, new KeyUsage(
-                        KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
+        builder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCert)).addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(entityKey)).addExtension(Extension.basicConstraints, true, new BasicConstraints(false)).addExtension(Extension.keyUsage, true,
+                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
         return getCertificate(builder.build(createSigner(caKey)));
     }
 
@@ -362,8 +296,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static X509Certificate getCertificate(X509CertificateHolder holder)
-            throws Exception {
+    public static X509Certificate getCertificate(X509CertificateHolder holder) throws Exception {
         return new JcaX509CertificateConverter()
                 // .setProvider("BC")
                 .getCertificate(holder);
@@ -409,10 +342,8 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static PrivateKey getPrivateKey(KeyStore store, String name,
-            String password) throws Exception {
-        return (PrivateKey) store.getKey(name,
-                Strings.isEmpty(password) ? null : password.toCharArray());
+    public static PrivateKey getPrivateKey(KeyStore store, String name, String password) throws Exception {
+        return (PrivateKey) store.getKey(name, Strings.isEmpty(password) ? null : password.toCharArray());
     }
 
     /**
@@ -422,8 +353,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static PublicKey getPublicKey(Certificate certificate)
-            throws Exception {
+    public static PublicKey getPublicKey(Certificate certificate) throws Exception {
         return certificate.getPublicKey();
     }
 
@@ -435,10 +365,8 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static PublicKey createPublicKey(String algorithm, KeySpec keySpec)
-            throws Exception {
-        return KeyFactory.getInstance(algorithm)
-                // , "BC")
+    public static PublicKey createPublicKey(String algorithm, KeySpec keySpec) throws Exception {
+        return KeyFactory.getInstance(algorithm) // , "BC")
                 .generatePublic(keySpec);
     }
 
@@ -450,10 +378,8 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static PrivateKey createPrivateKey(String algorithm, KeySpec keySpec)
-            throws Exception {
-        return KeyFactory.getInstance(algorithm)
-                // , "BC")
+    public static PrivateKey createPrivateKey(String algorithm, KeySpec keySpec) throws Exception {
+        return KeyFactory.getInstance(algorithm) // , "BC")
                 .generatePrivate(keySpec);
     }
 
@@ -501,8 +427,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static SecretKey createSecretKey(String algorithm, byte[] data)
-            throws Exception {
+    public static SecretKey createSecretKey(String algorithm, byte[] data) throws Exception {
         return new SecretKeySpec(data, algorithm);
     }
 
@@ -535,10 +460,8 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static KeyPair createKeyPair(String algorithm, int keySize)
-            throws Exception {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm);
-        // , "BC");
+    public static KeyPair createKeyPair(String algorithm, int keySize) throws Exception {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm); // "BC");
         kpg.initialize(keySize, new SecureRandom());
         return kpg.generateKeyPair();
     }
@@ -550,8 +473,7 @@ public class Securities {
      */
     public static AsymmetricCipherKeyPair createACKeyPair() {
         RSAKeyPairGenerator kpg = new RSAKeyPairGenerator();
-        RSAKeyGenerationParameters param = new RSAKeyGenerationParameters(
-                BigInteger.valueOf(3), new SecureRandom(), 2048, 24);
+        RSAKeyGenerationParameters param = new RSAKeyGenerationParameters(BigInteger.valueOf(3), new SecureRandom(), 2048, 24);
         kpg.init(param);
         return kpg.generateKeyPair();
     }
@@ -562,8 +484,7 @@ public class Securities {
      * @param keyPair
      * @return
      */
-    public static ContentSigner createSigner(AsymmetricCipherKeyPair keyPair)
-            throws Exception {
+    public static ContentSigner createSigner(AsymmetricCipherKeyPair keyPair) throws Exception {
         return createSigner("SHA1withRSA", keyPair);
     }
 
@@ -575,14 +496,10 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static ContentSigner createSigner(String algorithm,
-            AsymmetricCipherKeyPair keyPair) throws Exception {
-        AlgorithmIdentifier sigAlg = new DefaultDigestAlgorithmIdentifierFinder()
-                .find(algorithm);
-        AlgorithmIdentifier digAlg = new DefaultDigestAlgorithmIdentifierFinder()
-                .find(sigAlg);
-        return new BcRSAContentSignerBuilder(sigAlg, digAlg)
-                .build(keyPair.getPrivate());
+    public static ContentSigner createSigner(String algorithm, AsymmetricCipherKeyPair keyPair) throws Exception {
+        AlgorithmIdentifier sigAlg = new DefaultDigestAlgorithmIdentifierFinder().find(algorithm);
+        AlgorithmIdentifier digAlg = new DefaultDigestAlgorithmIdentifierFinder().find(sigAlg);
+        return new BcRSAContentSignerBuilder(sigAlg, digAlg).build(keyPair.getPrivate());
     }
 
     /**
@@ -604,8 +521,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static ContentSigner createSigner(String algorithm, PrivateKey key)
-            throws Exception {
+    public static ContentSigner createSigner(String algorithm, PrivateKey key) throws Exception {
         return new JcaContentSignerBuilder(algorithm)// .setProvider("BC")
                 .build(key);
     }
@@ -618,8 +534,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toEncrypt(Certificate certificate, byte[] data)
-            throws Exception {
+    public static byte[] toEncrypt(Certificate certificate, byte[] data) throws Exception {
         return toEncrypt(getPublicKey(certificate), data);
     }
 
@@ -631,8 +546,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toDecrypt(Certificate certificate, byte[] data)
-            throws Exception {
+    public static byte[] toDecrypt(Certificate certificate, byte[] data) throws Exception {
         return toDecrypt(getPublicKey(certificate), data);
     }
 
@@ -645,8 +559,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toEncrypt(KeyStore keyStore, String name, byte[] data)
-            throws Exception {
+    public static byte[] toEncrypt(KeyStore keyStore, String name, byte[] data) throws Exception {
         return toEncrypt(getPrivateKey(keyStore, name, null), data);
     }
 
@@ -660,8 +573,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toEncrypt(KeyStore keyStore, String name,
-            String password, byte[] data) throws Exception {
+    public static byte[] toEncrypt(KeyStore keyStore, String name, String password, byte[] data) throws Exception {
         return toEncrypt(getPrivateKey(keyStore, name, password), data);
     }
 
@@ -675,8 +587,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toDecrypt(KeyStore keyStore, String name,
-            String password, byte[] data) throws Exception {
+    public static byte[] toDecrypt(KeyStore keyStore, String name, String password, byte[] data) throws Exception {
         return toDecrypt(getPrivateKey(keyStore, name, password), data);
     }
 
@@ -713,8 +624,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toCipher(int mode, Key key, byte[] data)
-            throws Exception {
+    public static byte[] toCipher(int mode, Key key, byte[] data) throws Exception {
         Cipher cipher = Cipher.getInstance(key.getAlgorithm()); // , "BC");
         cipher.init(mode, key);
         return cipher.doFinal(data);
@@ -729,8 +639,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toMac(String algorithm, byte[] key, byte[] data)
-            throws Exception {
+    public static byte[] toMac(String algorithm, byte[] key, byte[] data) throws Exception {
         SecretKey secretKey = createSecretKey(algorithm, key);
         Mac mac = Mac.getInstance(secretKey.getAlgorithm()); // , "BC");
         mac.init(secretKey);
@@ -759,8 +668,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toDigest(String algorithm, byte[] data)
-            throws Exception {
+    public static byte[] toDigest(String algorithm, byte[] data) throws Exception {
         MessageDigest digest = MessageDigest.getInstance(algorithm); // , "BC");
         digest.update(data);
         return digest.digest();
@@ -775,8 +683,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static byte[] toSign(String algorithm, PrivateKey key, byte[] data)
-            throws Exception {
+    public static byte[] toSign(String algorithm, PrivateKey key, byte[] data) throws Exception {
         Signature signature = Signature.getInstance(algorithm);
         signature.initSign(key);
         signature.update(data);
@@ -792,8 +699,7 @@ public class Securities {
      * @return
      * @throws Exception
      */
-    public static boolean toVerify(PublicKey key, byte[] data, byte[] sign)
-            throws Exception {
+    public static boolean toVerify(PublicKey key, byte[] data, byte[] sign) throws Exception {
         Signature signature = Signature.getInstance(key.getAlgorithm());
         signature.initVerify(key);
         signature.update(data);
