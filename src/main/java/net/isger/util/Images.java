@@ -54,16 +54,12 @@ public class Images {
         return getQrcodeImage(content, DEFAULT_WIDTH, DEFAULT_HEIGHT, logo);
     }
 
-    public static BufferedImage getQrcodeImage(String content, int width,
-            int height, Image logo) {
-        return getQrcodeImage(content, width, height, ErrorCorrectionLevel.M,
-                logo);
+    public static BufferedImage getQrcodeImage(String content, int width, int height, Image logo) {
+        return getQrcodeImage(content, width, height, ErrorCorrectionLevel.M, logo);
     }
 
-    public static BufferedImage getQrcodeImage(String content, int width,
-            int height, ErrorCorrectionLevel level, Image logo) {
-        BufferedImage image = toImage(
-                createQrcode(content, width, height, level));
+    public static BufferedImage getQrcodeImage(String content, int width, int height, ErrorCorrectionLevel level, Image logo) {
+        BufferedImage image = toImage(createQrcode(content, width, height, level));
         if (logo != null) {
             drawLogo(image, logo);
         }
@@ -74,15 +70,13 @@ public class Images {
         return toInputStream(getQrcodeImage(content));
     }
 
-    public static BitMatrix createQrcode(String content, int width, int height,
-            ErrorCorrectionLevel level) {
+    public static BitMatrix createQrcode(String content, int width, int height, ErrorCorrectionLevel level) {
         HashMap<EncodeHintType, Object> hints = new HashMap<EncodeHintType, Object>();
         hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
         hints.put(EncodeHintType.ERROR_CORRECTION, level);
         BitMatrix matrix = null;
         try {
-            matrix = new MultiFormatWriter().encode(content,
-                    BarcodeFormat.QR_CODE, width, height, hints);
+            matrix = new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, width, height, hints);
         } catch (WriterException e) {
         }
         return matrix;
@@ -91,8 +85,7 @@ public class Images {
     public static BufferedImage toImage(BitMatrix matrix) {
         int width = matrix.getWidth();
         int height = matrix.getHeight();
-        BufferedImage image = new BufferedImage(width, height,
-                BufferedImage.TYPE_BYTE_BINARY);
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_BINARY);
         int onColor = 0xFF000000;
         int offColor = 0xFFFFFFFF;
         for (int x = 0; x < width; x++) {
@@ -107,8 +100,7 @@ public class Images {
         return toInputStream(image, DEFAULT_FORMAT);
     }
 
-    public static InputStream toInputStream(RenderedImage image,
-            String format) {
+    public static InputStream toInputStream(RenderedImage image, String format) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageOutputStream ios;
         try {
@@ -123,13 +115,11 @@ public class Images {
         return toFile(image, DEFAULT_FORMAT, imagePath);
     }
 
-    public static File toFile(BufferedImage image, String format,
-            String imagePath) {
+    public static File toFile(BufferedImage image, String format, String imagePath) {
         return toFile(image, format, new File(imagePath));
     }
 
-    public static File toFile(BufferedImage image, String format,
-            File imageFile) {
+    public static File toFile(BufferedImage image, String format, File imageFile) {
         try {
             if (ImageIO.write(image, format, imageFile)) {
                 return imageFile;

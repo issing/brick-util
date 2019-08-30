@@ -74,27 +74,23 @@ public class BoundMethod {
             if (cause instanceof RuntimeException) {
                 throw (RuntimeException) cause;
             }
-            throw new IllegalStateException(
-                    "Failure to invoke method " + getName(), cause);
+            throw new IllegalStateException("Failure to invoke method " + getName(), cause);
         }
     }
 
     public static String makeMethodDesc(Method method) {
-        return makeMethodDesc(method.getName(), method.getReturnType(),
-                method.getParameterTypes());
+        return makeMethodDesc(method.getName(), method.getReturnType(), method.getParameterTypes());
     }
 
     public static String makeMethodDesc(String name) {
         return makeMethodDesc(name, Void.TYPE);
     }
 
-    public static String makeMethodDesc(String name, Class<?> resultType,
-            Class<?>... argTypes) {
+    public static String makeMethodDesc(String name, Class<?> resultType, Class<?>... argTypes) {
         if (resultType == null || resultType == Void.class) {
             resultType = Void.TYPE;
         }
-        return isMethodDesc(name) ? name
-                : name + TYPE.getMethDesc(resultType, argTypes);
+        return isMethodDesc(name) ? name : name + TYPE.getMethDesc(resultType, argTypes);
     }
 
     public static boolean matches(String methodName, String name) {

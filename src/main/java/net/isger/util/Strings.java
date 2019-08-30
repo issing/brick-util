@@ -435,7 +435,7 @@ public class Strings {
         endSeal = Helpers.coalesce(endSeal, "");
         beginIndex = Math.max(beginIndex, 0);
         count = Math.min(beginIndex + count, values == null ? -1 : values.length);
-        if (beginIndex < count && values != null && beginIndex >= 0) {
+        if (beginIndex < count) {
             StringBuffer buffer = new StringBuffer(count-- * 32);
             int amount = beginIndex - 1;
             while (++amount < count) {

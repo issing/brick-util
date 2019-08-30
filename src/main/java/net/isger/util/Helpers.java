@@ -56,9 +56,9 @@ public class Helpers {
 
     private static final String REGEX_CODE = "[A-Z0-9]+(\\-[A-Z0-9]+)*";
 
-    private static final String TABLE_RADIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String CODE_RADIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    private static final char[] CODES = TABLE_RADIX.toCharArray();
+    private static final char[] CODES = CODE_RADIX.toCharArray();
 
     private static final int[][] CODES_LIMITS = { { 0, 10 }, { 10, 26 }, { 36, 26 }, { 0, 16 }, { 0, 36 }, { 10, 52 }, { 0, 62 } };
 
@@ -72,8 +72,12 @@ public class Helpers {
 
     private static final Gson GSON;
 
+    /** 属性配置缓存 */
+    private final static Map<String, Properties> CACHE_PROPERTIES;
+
     static {
         LOG = LoggerFactory.getLogger(Helpers.class);
+        CACHE_PROPERTIES = new HashMap<String, Properties>();
         DIGIT_INDECES = new HashMap<Character, Integer>();
         for (int i = 0; i < MAX_RADIX; i++) {
             DIGIT_INDECES.put(CODES[i], (int) i);
@@ -309,7 +313,7 @@ public class Helpers {
     }
 
     public static byte toRadix(char value) {
-        return (byte) TABLE_RADIX.indexOf(value);
+        return (byte) CODE_RADIX.indexOf(value);
     }
 
     /**
@@ -352,10 +356,8 @@ public class Helpers {
         buffer.append(getDigits(leastBits >> 48, 4));
         buffer.append(getDigits(leastBits, 12));
         synchronized (UUID_LOCKED) {
-            buffer.append(CODES[uuidSearial]);
-            if (++uuidSearial >= MAX_RADIX) {
-                uuidSearial = 0;
-            }
+            buffer.append(CODES[uuidSearial++]);
+            uuidSearial %= MAX_RADIX;
         }
         return buffer.toString();
     }
@@ -555,6 +557,37 @@ public class Helpers {
         });
     }
 
+    public static String getProperty(Class<?> clazz, String id, Object... args) {
+        return getProperty(clazz, null, id, args);
+    }
+
+    public static String getProperty(Class<?> clazz, String dialect, String id, Object... args) {
+        return getProperty(null, clazz, dialect, id, args);
+    }
+
+    public static String getProperty(String suffix, Class<?> clazz, String dialect, String id, Object... args) {
+        String name = clazz.getName().replaceAll("[.]", "/");
+        String dialectName = Strings.join(true, ".", new Object[] { Strings.join(true, "$", new Object[] { name, dialect }), suffix });
+        /* 缓存配置 */
+        Properties properties = CACHE_PROPERTIES.get(dialectName);
+        if (properties == null) {
+            properties = Helpers.getProperties(clazz, Strings.join(true, ".", new Object[] { name, suffix })); // 通用配置
+            /* 方言配置 */
+            if (Strings.isNotEmpty(dialect)) {
+                properties = Helpers.load(properties, clazz, dialectName);
+            }
+            // 配置文件中必须包含配置语句
+            Asserts.throwState(properties != null, "Not found the [%s] file", dialectName);
+            CACHE_PROPERTIES.put(dialectName, properties);
+        }
+        /* 配置属性 */
+        String value = properties.getProperty(id);
+        if (Strings.isNotEmpty(value)) {
+            value = Strings.format(value, args);
+        }
+        return value;
+    }
+
     public static int getOrder(Object instance) {
         Integer order;
         getOrder: {
@@ -602,6 +635,10 @@ public class Helpers {
         return Strings.isNotEmpty(getAliasName(clazz.getAnnotation(Alias.class))) || Strings.isNotEmpty(getAliasName(clazz.getAnnotation(javax.inject.Named.class)));
     }
 
+    public static boolean hasAliasName(Method method) {
+        return Strings.isNotEmpty(getAliasName(method.getAnnotation(Alias.class))) || Strings.isNotEmpty(getAliasName(method.getAnnotation(javax.inject.Named.class)));
+    }
+
     public static boolean hasAliasName(Annotation[] annos) {
         boolean result = false;
         if (annos != null) {
@@ -645,6 +682,23 @@ public class Helpers {
             name = clazz.getSimpleName();
             if (Helpers.toColumnName(name).startsWith("i_")) {
                 name = name.substring(1);
+            }
+            name = name.toLowerCase();
+        }
+        return Strings.isEmpty(mask) ? name : Strings.replaceIgnoreCase(name, mask);
+    }
+
+    public static String getAliasName(Method method, String mask, String value) {
+        String name;
+        if (hasAliasName(method)) {
+            name = Strings.empty(getAliasName(method.getAnnotation(Alias.class)), getAliasName(method.getAnnotation(javax.inject.Named.class)));
+        } else if (Strings.isNotEmpty(value)) {
+            name = value.trim();
+        } else {
+            name = method.getName();
+            String columnName = Helpers.toColumnName(name);
+            if (Strings.startWithIgnoreCase(columnName, "set_|get_")) {
+                name = name.substring(3);
             }
             name = name.toLowerCase();
         }

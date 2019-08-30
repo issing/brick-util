@@ -9,10 +9,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +28,8 @@ public class Sqls {
 
     private static final Logger LOG;
 
-    /** SQL配置集合 */
-    private final static Map<String, Properties> CACHE_SQLS;
-
     static {
         LOG = LoggerFactory.getLogger(Sqls.class);
-        CACHE_SQLS = new HashMap<String, Properties>();
     }
 
     /**
@@ -493,30 +486,12 @@ public class Sqls {
      * 获取语句
      * 
      * @param clazz
-     * @param dialectName
+     * @param dialect
      * @param id
      * @param args
      * @return
      */
-    public static String getSQL(Class<?> clazz, String dialectName, String id, Object... args) {
-        String name = clazz.getName().replaceAll("[.]", "/");
-        /* 缓存配置 */
-        Properties sqls = CACHE_SQLS.get(name);
-        if (sqls == null) {
-            sqls = Helpers.getProperties(clazz, name + ".sql");
-            /* 方言配置 */
-            if (Strings.isNotEmpty(dialectName)) {
-                sqls = Helpers.load(sqls, clazz, name + "$" + dialectName.trim().toLowerCase() + ".sql");
-            }
-            // 配置文件中必须包含配置语句
-            Asserts.throwState(sqls != null, "Not found the [%s.sql.xml] file", name);
-            CACHE_SQLS.put(name, sqls);
-        }
-        /* 配置语句 */
-        String sql = sqls.getProperty(id);
-        if (Strings.isNotEmpty(sql)) {
-            sql = Strings.format(sql, args);
-        }
-        return sql;
+    public static String getSQL(Class<?> clazz, String dialect, String id, Object... args) {
+        return Helpers.getProperty("sql", clazz, dialect, id, args);
     }
 }
