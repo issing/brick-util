@@ -2,8 +2,15 @@ package net.isger.util;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.HeadlessException;
 import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.Transparency;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayInputStream;
@@ -11,6 +18,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 import javax.imageio.ImageIO;
@@ -34,16 +43,49 @@ public class Images {
     private Images() {
     }
 
-    public static BufferedImage getImage(String imagePath) {
-        return getImage(new File(imagePath));
+    public static Image getImage(URL url) {
+        return Toolkit.getDefaultToolkit().getImage(url);
     }
 
-    public static BufferedImage getImage(File imageFile) {
+    public static BufferedImage toBufferedImage(Image image) {
+        if (image instanceof BufferedImage) {
+            return (BufferedImage) image;
+        }
+        // 加载所有像素
+        BufferedImage result = null;
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        try {
+            // 创建缓冲图像
+            GraphicsDevice gs = ge.getDefaultScreenDevice();
+            GraphicsConfiguration gc = gs.getDefaultConfiguration();
+            result = gc.createCompatibleImage(image.getWidth(null), image.getHeight(null), Transparency.BITMASK);
+        } catch (HeadlessException e) {
+            e.printStackTrace();
+        }
+        if (result == null) {
+            result = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+        }
+        // 绘制原图至缓冲
+        Graphics g = result.createGraphics();
+        g.drawImage(image, 0, 0, null);
+        g.dispose();
+        return result;
+    }
+
+    public static BufferedImage getBufferedImage(String imagePath) {
+        return getBufferedImage(new File(imagePath));
+    }
+
+    public static BufferedImage getBufferedImage(File imageFile) {
         try {
             return ImageIO.read(imageFile);
         } catch (IOException e) {
             return null;
         }
+    }
+
+    public static InputStream getQrcodeStream(String content) {
+        return toInputStream(getQrcodeImage(content));
     }
 
     public static BufferedImage getQrcodeImage(final String content) {
@@ -59,30 +101,26 @@ public class Images {
     }
 
     public static BufferedImage getQrcodeImage(String content, int width, int height, ErrorCorrectionLevel level, Image logo) {
-        BufferedImage image = toImage(createQrcode(content, width, height, level));
+        BufferedImage image = toBufferedImage(createMatrix(content, width, height, level, BarcodeFormat.QR_CODE));
         if (logo != null) {
             drawLogo(image, logo);
         }
         return image;
     }
 
-    public static InputStream getQrcodeStream(String content) {
-        return toInputStream(getQrcodeImage(content));
-    }
-
-    public static BitMatrix createQrcode(String content, int width, int height, ErrorCorrectionLevel level) {
+    public static BitMatrix createMatrix(String content, int width, int height, ErrorCorrectionLevel level, BarcodeFormat format) {
         HashMap<EncodeHintType, Object> hints = new HashMap<EncodeHintType, Object>();
-        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+        hints.put(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
         hints.put(EncodeHintType.ERROR_CORRECTION, level);
         BitMatrix matrix = null;
         try {
-            matrix = new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, width, height, hints);
+            matrix = new MultiFormatWriter().encode(content, format, width, height, hints);
         } catch (WriterException e) {
         }
         return matrix;
     }
 
-    public static BufferedImage toImage(BitMatrix matrix) {
+    public static BufferedImage toBufferedImage(BitMatrix matrix) {
         int width = matrix.getWidth();
         int height = matrix.getHeight();
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_BINARY);
@@ -102,24 +140,26 @@ public class Images {
 
     public static InputStream toInputStream(RenderedImage image, String format) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageOutputStream ios;
+        ImageOutputStream ios = null;
         try {
             ios = ImageIO.createImageOutputStream(baos);
             ImageIO.write(image, format, ios);
         } catch (IOException e) {
+        } finally {
+            Files.close(ios);
         }
         return new ByteArrayInputStream(baos.toByteArray());
     }
 
-    public static File toFile(BufferedImage image, String imagePath) {
+    public static File toFile(RenderedImage image, String imagePath) {
         return toFile(image, DEFAULT_FORMAT, imagePath);
     }
 
-    public static File toFile(BufferedImage image, String format, String imagePath) {
+    public static File toFile(RenderedImage image, String format, String imagePath) {
         return toFile(image, format, new File(imagePath));
     }
 
-    public static File toFile(BufferedImage image, String format, File imageFile) {
+    public static File toFile(RenderedImage image, String format, File imageFile) {
         try {
             if (ImageIO.write(image, format, imageFile)) {
                 return imageFile;
@@ -130,10 +170,9 @@ public class Images {
     }
 
     public static void drawLogo(BufferedImage image, Image logo) {
+        Graphics2D g = image.createGraphics();
         try {
-            Graphics2D g = image.createGraphics();
-
-            // 大头贴
+            // 尺寸
             int width = image.getWidth() / 5;
             int height = image.getHeight() / 5;
             int x = (image.getWidth() - width) / 2;
@@ -141,12 +180,12 @@ public class Images {
             // 绘制图
             g.drawImage(logo, x, y, width, height, null);
             // 画边框
-            g.setStroke(new BasicStroke(5));
+            g.setStroke(new BasicStroke(3));
             g.setColor(Color.WHITE);
-            g.drawRect(x, y, width, height);
-
-            g.dispose();
+            g.drawRoundRect(x, y, width, height, 3, 3);
         } catch (Exception e) {
+        } finally {
+            g.dispose();
         }
     }
 

@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -631,12 +632,8 @@ public class Helpers {
         return order;
     }
 
-    public static boolean hasAliasName(Class<?> clazz) {
-        return Strings.isNotEmpty(getAliasName(clazz.getAnnotation(Alias.class))) || Strings.isNotEmpty(getAliasName(clazz.getAnnotation(javax.inject.Named.class)));
-    }
-
-    public static boolean hasAliasName(Method method) {
-        return Strings.isNotEmpty(getAliasName(method.getAnnotation(Alias.class))) || Strings.isNotEmpty(getAliasName(method.getAnnotation(javax.inject.Named.class)));
+    public static boolean hasAliasName(AnnotatedElement element) {
+        return Strings.isNotEmpty(getAliasName(element.getAnnotation(Alias.class))) || Strings.isNotEmpty(getAliasName(element.getAnnotation(javax.inject.Named.class)));
     }
 
     public static boolean hasAliasName(Annotation[] annos) {
@@ -673,34 +670,34 @@ public class Helpers {
     }
 
     public static String getAliasName(Class<?> clazz, String mask, String value) {
-        String name;
-        if (hasAliasName(clazz)) {
-            name = Strings.empty(getAliasName(clazz.getAnnotation(Alias.class)), getAliasName(clazz.getAnnotation(javax.inject.Named.class)));
-        } else if (Strings.isNotEmpty(value)) {
-            name = value.trim();
-        } else {
-            name = clazz.getSimpleName();
-            if (Helpers.toColumnName(name).startsWith("i_")) {
-                name = name.substring(1);
-            }
-            name = name.toLowerCase();
-        }
-        return Strings.isEmpty(mask) ? name : Strings.replaceIgnoreCase(name, mask);
+        return getAliasName(clazz, mask, value, clazz.getSimpleName(), Helpers.wraps("i_", 1));
+    }
+
+    public static String getAliasName(Method method) {
+        return getAliasName(method, null, null);
+    }
+
+    public static String getAliasName(Method method, String mask) {
+        return getAliasName(method, mask, null);
     }
 
     public static String getAliasName(Method method, String mask, String value) {
-        String name;
-        if (hasAliasName(method)) {
-            name = Strings.empty(getAliasName(method.getAnnotation(Alias.class)), getAliasName(method.getAnnotation(javax.inject.Named.class)));
+        return getAliasName(method, mask, value, method.getName(), Helpers.wraps("set_|get_", 3), Helpers.wraps("is_", 2));
+    }
+
+    private static String getAliasName(AnnotatedElement element, String mask, String value, String name, Object[]... covers) {
+        if (hasAliasName(element)) {
+            name = Strings.empty(getAliasName(element.getAnnotation(Alias.class)), getAliasName(element.getAnnotation(javax.inject.Named.class)));
         } else if (Strings.isNotEmpty(value)) {
             name = value.trim();
         } else {
-            name = method.getName();
-            String columnName = Helpers.toColumnName(name);
-            if (Strings.startWithIgnoreCase(columnName, "set_|get_")) {
-                name = name.substring(3);
+            for (Object[] cover : covers) {
+                if (Strings.startWithIgnoreCase(Strings.toColumnName(name), (String) cover[0])) {
+                    name = name.substring((Integer) cover[1]);
+                    break;
+                }
             }
-            name = name.toLowerCase();
+            name = Strings.toLower(name);
         }
         return Strings.isEmpty(mask) ? name : Strings.replaceIgnoreCase(name, mask);
     }
@@ -713,6 +710,14 @@ public class Helpers {
             name = ((javax.inject.Named) anno).value();
         }
         return name;
+    }
+
+    public static boolean isEmpty(Map<?, ?> values) {
+        return values != null && values.isEmpty();
+    }
+
+    public static boolean isEmpty(Collection<?> values) {
+        return values != null && values.isEmpty();
     }
 
     /**
@@ -1438,50 +1443,6 @@ public class Helpers {
 
     public static int toInt(int radix, String value, int beginIndex, int endIndex) {
         return Integer.parseInt(value.substring(beginIndex, endIndex), radix);
-    }
-
-    /**
-     * 转换为字段命名
-     * 
-     * @param columnName
-     * @return
-     */
-    public static String toFieldName(String columnName) {
-        char[] chs = columnName.toLowerCase().toCharArray();
-        StringBuffer fieldName = new StringBuffer(chs.length);
-        boolean hasUpper = false;
-        for (char ch : chs) {
-            // 跳过“_”符号，并设置接下来其它字符为大写
-            if (ch == '_') {
-                hasUpper = true;
-                continue;
-            } else if (hasUpper) {
-                ch = Character.toUpperCase(ch);
-                hasUpper = false; // 重置大写状态
-            }
-            fieldName.append(ch);
-        }
-        return fieldName.toString();
-    }
-
-    /**
-     * 转换为列命名
-     * 
-     * @param fieldName
-     * @return
-     */
-    public static String toColumnName(String fieldName) {
-        // 去除所有“_”符号
-        char[] chs = fieldName.replaceAll("[_]", "").toCharArray();
-        StringBuffer columnName = new StringBuffer(chs.length + 16);
-        for (char ch : chs) {
-            // 遇大写字母前加“_”符号
-            if (Character.isUpperCase(ch)) {
-                columnName.append('_');
-            }
-            columnName.append(Character.toLowerCase(ch));
-        }
-        return columnName.toString();
     }
 
     public static int hashCode(Object instance) {

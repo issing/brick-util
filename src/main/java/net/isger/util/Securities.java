@@ -263,8 +263,7 @@ public class Securities {
         Date notBefore = new Date();
         X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(caCert.getSubjectX500Principal(), BigInteger.valueOf(serial), notBefore, Dates.getDate(notBefore, period), new X500Principal(subject), inKey);
         JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
-        builder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCert)).addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(inKey)).addExtension(Extension.basicConstraints, true, new BasicConstraints(0)).addExtension(Extension.keyUsage, true,
-                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyCertSign | KeyUsage.cRLSign));
+        builder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCert)).addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(inKey)).addExtension(Extension.basicConstraints, true, new BasicConstraints(0)).addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyCertSign | KeyUsage.cRLSign));
         return getCertificate(builder.build(createSigner(caKey)));
     }
 
@@ -284,8 +283,7 @@ public class Securities {
         Date notBefore = new Date();
         X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(caCert.getSubjectX500Principal(), BigInteger.valueOf(serail), notBefore, Dates.getDate(notBefore, period), new X500Principal(subject), entityKey);
         JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
-        builder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCert)).addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(entityKey)).addExtension(Extension.basicConstraints, true, new BasicConstraints(false)).addExtension(Extension.keyUsage, true,
-                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
+        builder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCert)).addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(entityKey)).addExtension(Extension.basicConstraints, true, new BasicConstraints(false)).addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
         return getCertificate(builder.build(createSigner(caKey)));
     }
 
@@ -416,7 +414,7 @@ public class Securities {
      * @throws Exception
      */
     public static SecretKey createSecretKey(byte[] data) throws Exception {
-        return new SecretKeySpec(data, "HmacMD5");
+        return createSecretKey("HmacMD5", data);
     }
 
     /**
@@ -600,7 +598,20 @@ public class Securities {
      * @throws Exception
      */
     public static byte[] toEncrypt(Key key, byte[] data) throws Exception {
-        return toCipher(Cipher.ENCRYPT_MODE, key, data);
+        return toEncrypt(key, data, null);
+    }
+
+    /**
+     * 数据加密
+     *
+     * @param key
+     * @param data
+     * @param initializer
+     * @return
+     * @throws Exception
+     */
+    public static byte[] toEncrypt(Key key, byte[] data, Callable<Void> initializer) throws Exception {
+        return toCipher(Cipher.ENCRYPT_MODE, key, data, initializer);
     }
 
     /**
@@ -612,7 +623,20 @@ public class Securities {
      * @throws Exception
      */
     public static byte[] toDecrypt(Key key, byte[] data) throws Exception {
-        return toCipher(Cipher.DECRYPT_MODE, key, data);
+        return toDecrypt(key, data, null);
+    }
+
+    /**
+     * 数据解密
+     *
+     * @param key
+     * @param data
+     * @param initializer
+     * @return
+     * @throws Exception
+     */
+    public static byte[] toDecrypt(Key key, byte[] data, Callable<Void> initializer) throws Exception {
+        return toCipher(Cipher.DECRYPT_MODE, key, data, initializer);
     }
 
     /**
@@ -625,8 +649,26 @@ public class Securities {
      * @throws Exception
      */
     public static byte[] toCipher(int mode, Key key, byte[] data) throws Exception {
+        return toCipher(mode, key, data, null);
+    }
+
+    /**
+     * 数据密文
+     *
+     * @param mode
+     * @param key
+     * @param data
+     * @param initializer
+     * @return
+     * @throws Exception
+     */
+    public static byte[] toCipher(int mode, Key key, byte[] data, Callable<Void> initializer) throws Exception {
         Cipher cipher = Cipher.getInstance(key.getAlgorithm()); // , "BC");
-        cipher.init(mode, key);
+        if (initializer == null) {
+            cipher.init(mode, key);
+        } else {
+            initializer.call(cipher, mode, key);
+        }
         return cipher.doFinal(data);
     }
 

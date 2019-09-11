@@ -21,20 +21,6 @@ public class Strings {
     }
 
     /**
-     * 去头尾空串
-     *
-     * @param value
-     * @return
-     */
-    public static String trim(Object value) {
-        if (value instanceof String) {
-            return ((String) value).replaceFirst("^[\\s ]+", "").replaceFirst("[\\s ]+$", "");
-        } else {
-            return Strings.empty(value);
-        }
-    }
-
-    /**
      * 空字符串
      * 
      * @param value
@@ -51,7 +37,21 @@ public class Strings {
      * @return
      */
     public static boolean isNotEmpty(Object value) {
-        return !isEmpty(value);
+        return value != null && !value.toString().matches("^[\\s ]*$");
+    }
+
+    /**
+     * 去头尾空串
+     *
+     * @param value
+     * @return
+     */
+    public static String trim(Object value) {
+        if (value instanceof String) {
+            return ((String) value).replaceFirst("^[\\s ]+", "").replaceFirst("[\\s ]+$", "");
+        } else {
+            return Strings.empty(value);
+        }
     }
 
     /**
@@ -130,13 +130,17 @@ public class Strings {
         return new String(source).equals(new String(target));
     }
 
+    /**
+     * 忽略大小写
+     *
+     * @param source
+     * @param targets
+     * @return
+     */
     public static boolean equalsIgnoreCase(String source, Object... targets) {
-        if (targets != null) {
+        if (source != null && targets != null) {
             for (Object target : targets) {
-                if (target == null) {
-                    continue;
-                }
-                if (source.equalsIgnoreCase(String.valueOf(target))) {
+                if (target != null && source.equalsIgnoreCase(String.valueOf(target))) {
                     return true;
                 }
             }
@@ -214,6 +218,50 @@ public class Strings {
             value = new String(cs);
         }
         return value;
+    }
+
+    /**
+     * 转换为字段命名
+     * 
+     * @param columnName
+     * @return
+     */
+    public static String toFieldName(String columnName) {
+        char[] chs = columnName.toLowerCase().toCharArray();
+        StringBuffer fieldName = new StringBuffer(chs.length);
+        boolean hasUpper = false;
+        for (char ch : chs) {
+            // 跳过“_”符号，并设置接下来其它字符为大写
+            if (ch == '_') {
+                hasUpper = true;
+                continue;
+            } else if (hasUpper) {
+                ch = Character.toUpperCase(ch);
+                hasUpper = false; // 重置大写状态
+            }
+            fieldName.append(ch);
+        }
+        return fieldName.toString();
+    }
+
+    /**
+     * 转换为列命名
+     * 
+     * @param fieldName
+     * @return
+     */
+    public static String toColumnName(String fieldName) {
+        // 去除所有“_”符号
+        char[] chs = toLower(fieldName.replaceAll("[_]", "")).toCharArray();
+        StringBuffer columnName = new StringBuffer(chs.length + 16);
+        for (char ch : chs) {
+            // 遇大写字母前加“_”符号
+            if (Character.isUpperCase(ch)) {
+                columnName.append('_');
+            }
+            columnName.append(Character.toLowerCase(ch));
+        }
+        return columnName.toString();
     }
 
     /**
@@ -324,7 +372,7 @@ public class Strings {
      * @param values
      * @return
      */
-    public static String join(Object[] values) {
+    public static String join(String... values) {
         return join(false, values);
     }
 

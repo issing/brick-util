@@ -53,7 +53,7 @@ public class BoundField {
         } else if (Strings.isNotEmpty(this.affix)) {
             try {
                 Map<String, Object> config = (Map<String, Object>) Helpers.fromJson(this.affix);
-                this.alias = Helpers.toFieldName((String) config.get("name"));
+                this.alias = Strings.toFieldName((String) config.get("name"));
             } catch (Exception e) {
             }
         }

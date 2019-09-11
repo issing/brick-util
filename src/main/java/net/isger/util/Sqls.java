@@ -39,7 +39,7 @@ public class Sqls {
      * @return
      */
     public static String toTableName(String tableName) {
-        tableName = Helpers.toColumnName(tableName);
+        tableName = Strings.toColumnName(tableName);
         if (!Strings.startWithIgnoreCase(tableName, "t[_]")) {
             tableName = "t_" + tableName;
         }
@@ -113,7 +113,7 @@ public class Sqls {
             int count = metaData.getColumnCount();
             columns = new String[count];
             for (int i = 0; i < count;) {
-                columns[i] = Helpers.toFieldName(getColumnName(metaData, ++i));
+                columns[i] = Strings.toFieldName(getColumnName(metaData, ++i));
             }
             Object[] info = null;
             while (resultSet.next()) {
@@ -160,7 +160,7 @@ public class Sqls {
         BoundField field;
         for (List<BoundField> fields : Reflects.getBoundFields(bean.getClass()).values()) {
             field = fields.get(0);
-            column = Strings.empty(field.getAlias(), Helpers.toColumnName(field.getName()));
+            column = Strings.empty(field.getAlias(), Strings.toColumnName(field.getName()));
             value = field.getValue(bean);
             if (value != null) {
                 columns.add(column);

@@ -26,7 +26,7 @@ public class DynamicOperator implements Operator {
     }
 
     public DynamicOperator() {
-        this.source = this;
+        source = this;
     }
 
     public DynamicOperator(Object source) {
@@ -65,19 +65,8 @@ public class DynamicOperator implements Operator {
      * 默认绑定方法操作
      */
     public void operate() {
-        if (getSource() == this) {
-            throw new IllegalStateException("No target operation");
-        }
+        Asserts.throwState(getSource() != this, "No target operation");
         operate(METH_OPERATE);
-    }
-
-    /**
-     * 指定绑定方法操作
-     * 
-     * @param operate
-     */
-    protected Object operate(String operate) {
-        return operate(operate, Helpers.wraps());
     }
 
     /**
@@ -88,9 +77,7 @@ public class DynamicOperator implements Operator {
      */
     protected Object operate(String operate, Object... args) {
         BoundMethod method = getMethod(operate);
-        Asserts.isNotNull(method,
-                "Unfound the specified operate in the dynamic Operator [%s]",
-                source.getClass().getName());
+        Asserts.isNotNull(method, "Unfound the specified operate in the dynamic Operator [%s]", source.getClass().getName());
         return method.invoke(getSource(), args);
     }
 
@@ -115,7 +102,7 @@ public class DynamicOperator implements Operator {
                 operator.source = operator;
             }
         } catch (CloneNotSupportedException e) {
-            throw new IllegalStateException("Failure to clone operator", e);
+            throw Asserts.state("Failure to clone operator", e);
         }
         return operator;
     }
