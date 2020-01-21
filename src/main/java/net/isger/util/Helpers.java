@@ -173,9 +173,13 @@ public class Helpers {
         return fromJson(json, Object.class);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T fromJson(String json, Class<T> clazz) {
         try {
-            return GSON.fromJson(json, clazz);
+            if (Map.class.isAssignableFrom(clazz) || Collection.class.isAssignableFrom(clazz) || clazz == Object.class || clazz.isArray()) {
+                return GSON.fromJson(json, clazz);
+            }
+            return Reflects.newInstance(clazz, (Map<String, Object>) fromJson(json, Map.class));
         } catch (Exception e) {
             return null;
         }

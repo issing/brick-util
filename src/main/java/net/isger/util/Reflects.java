@@ -966,7 +966,7 @@ public class Reflects {
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             fieldName = entry.getKey();
             field = entry.getValue().get(0);
-            if (values.containsKey(fieldName) || values.containsKey(fieldName = field.getAlias())) {
+            if (values.containsKey(fieldName) || values.containsKey(fieldName = Strings.toFieldName(fieldName)) || values.containsKey(fieldName = Strings.toColumnName(fieldName)) || values.containsKey(fieldName = field.getAlias())) {
                 field.setValue(instance, values.get(fieldName), fieldAssembler);
             } else {
                 field.setValue(instance, UNKNOWN, fieldAssembler);
