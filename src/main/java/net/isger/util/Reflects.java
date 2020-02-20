@@ -1054,13 +1054,14 @@ public class Reflects {
                 return super.assemble(field, instance, value, (Object[]) Helpers.newArray(args, values));
             }
         };
+        Object value;
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             fieldName = entry.getKey();
             field = entry.getValue().get(0);
             if (field.isBatch()) {
-                field.setValue(instance, getBatch(values, fieldName, field.getAlias()), assembler);
-            } else if (values.containsKey(fieldName) || values.containsKey(fieldName = Strings.toFieldName(fieldName)) || values.containsKey(fieldName = Strings.toColumnName(fieldName)) || values.containsKey(fieldName = field.getAlias())) {
-                field.setValue(instance, values.get(fieldName), assembler);
+                field.setValue(instance, getValues(values, fieldName, field.getAlias()), assembler);
+            } else if ((value = getValue(values, fieldName, field.getAlias())) != null) {
+                field.setValue(instance, value, assembler);
             } else {
                 field.setValue(instance, UNKNOWN, assembler);
             }
@@ -1071,14 +1072,28 @@ public class Reflects {
         return instance;
     }
 
-    private static Object getBatch(Map<String, Object> values, String fieldName, String aliasName) {
-        Object value = Helpers.getValues(values, fieldName);
+    private static Object getValues(Map<String, Object> params, String fieldName, String aliasName) {
+        Object value = Helpers.getValues(params, fieldName);
         if (value == null) {
-            value = Helpers.getValues(values, fieldName = Strings.toFieldName(fieldName));
+            value = Helpers.getValues(params, Strings.toFieldName(fieldName));
             if (value == null) {
-                value = Helpers.getValues(values, fieldName = Strings.toColumnName(fieldName));
+                value = Helpers.getValues(params, Strings.toColumnName(fieldName));
                 if (value == null) {
-                    value = Helpers.getValues(values, fieldName = aliasName);
+                    value = Helpers.getValues(params, aliasName);
+                }
+            }
+        }
+        return value;
+    }
+
+    private static Object getValue(Map<String, Object> params, String fieldName, String aliasName) {
+        Object value = params.get(fieldName);
+        if (value == null) {
+            value = params.get(Strings.toFieldName(fieldName));
+            if (value == null) {
+                value = params.get(Strings.toColumnName(fieldName));
+                if (value == null) {
+                    value = params.get(aliasName);
                 }
             }
         }
