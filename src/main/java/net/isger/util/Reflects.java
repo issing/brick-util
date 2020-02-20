@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +38,10 @@ import org.slf4j.LoggerFactory;
 
 import net.isger.util.anno.Ignore;
 import net.isger.util.anno.Ignore.Mode;
+import net.isger.util.reflect.AssemblerAdapter;
 import net.isger.util.reflect.BoundField;
 import net.isger.util.reflect.BoundMethod;
+import net.isger.util.reflect.ClassAssembler;
 import net.isger.util.reflect.Constructor;
 
 /**
@@ -120,12 +123,12 @@ public class Reflects {
         return new ParameterizedTypeImpl(ownerType, rawType, arguments);
     }
 
-    public static WildcardType newUpperType(Type bound) {
-        return new WildcardTypeImpl(new Type[] { bound }, EMPTY_TYPE_ARRAY);
+    public static WildcardType newUpperType(Type boundType) {
+        return new WildcardTypeImpl(new Type[] { boundType }, EMPTY_TYPE_ARRAY);
     }
 
-    public static WildcardType newLowerType(Type bound) {
-        return new WildcardTypeImpl(new Type[] { Object.class }, new Type[] { bound });
+    public static WildcardType newLowerType(Type boundType) {
+        return new WildcardTypeImpl(new Type[] { Object.class }, new Type[] { boundType });
     }
 
     /**
@@ -310,7 +313,7 @@ public class Reflects {
         } else if (type instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) type;
             Type rawType = parameterizedType.getRawType();
-            Asserts.throwArgument(rawType instanceof Class);
+            Asserts.isInstance(Class.class, rawType);
             return (Class<?>) rawType;
         } else if (type instanceof GenericArrayType) {
             Type componentType = ((GenericArrayType) type).getGenericComponentType();
@@ -321,7 +324,7 @@ public class Reflects {
             return getRawClass(((WildcardType) type).getUpperBounds()[0]);
         } else {
             String className = type == null ? "null" : type.getClass().getName();
-            throw Asserts.argument("Expected a Class, ParameterizedType, or GenericArrayType, but <%s> is of type %s", type, className);
+            throw Asserts.argument("Expected a Class, ParameterizedType, or GenericArrayType, but [%s] is of class [%s]", type, className);
         }
     }
 
@@ -338,11 +341,11 @@ public class Reflects {
     /**
      * 是否为抽象类
      * 
-     * @param clazz
+     * @param rawType
      * @return
      */
-    public static boolean isAbstract(Class<?> clazz) {
-        return Modifier.isAbstract(clazz.getModifiers());
+    public static boolean isAbstract(Class<?> rawType) {
+        return Modifier.isAbstract(rawType.getModifiers());
     }
 
     /**
@@ -362,15 +365,15 @@ public class Reflects {
      * @return
      */
     public static Class<?> getClass(Object instance) {
-        Class<?> clazz = null;
+        Class<?> raw = null;
         if (instance instanceof String) {
-            clazz = getClass((String) instance);
+            raw = getClass((String) instance);
         } else if (instance instanceof Class) {
-            clazz = (Class<?>) instance;
+            raw = (Class<?>) instance;
         } else if (instance != null) {
-            clazz = instance.getClass();
+            raw = instance.getClass();
         }
-        return clazz;
+        return raw;
     }
 
     /**
@@ -387,53 +390,57 @@ public class Reflects {
      * 获取类型
      * 
      * @param name
-     * @param classLoader
+     * @param loader
      * @return
-     * @throws ClassNotFoundException
-     * @throws LinkageError
      */
-    public static Class<?> getClass(String name, ClassLoader classLoader) {
-        if (classLoader == null) {
-            classLoader = getClassLoader();
+    public static Class<?> getClass(String name, ClassLoader loader) {
+        if (loader == null) {
+            loader = getClassLoader();
         }
-        Class<?> result = null;
+        Class<?> rawClass = null;
         try {
-            result = (classLoader != null ? classLoader.loadClass(name) : Class.forName(name));
+            rawClass = loader != null ? loader.loadClass(name) : Class.forName(name);
         } catch (Exception ex) {
         }
-        return result;
+        return rawClass;
     }
 
     /**
      * 获取包装类型
      * 
-     * @param primitive
+     * @param primitiveClass
      * @return
      */
-    public static Class<?> getWrapClass(Class<?> primitive) {
-        Class<?> wrap = WRAP_TYPES.get(primitive);
+    public static Class<?> getWrapClass(Class<?> primitiveClass) {
+        Class<?> wrap = WRAP_TYPES.get(primitiveClass);
         if (wrap == null) {
-            wrap = primitive;
+            wrap = primitiveClass;
         }
         return wrap;
     }
 
-    public static Class<?> getPrimitiveClass(Class<?> wrap) {
-        if (wrap.isPrimitive()) {
-            return wrap;
+    /**
+     * 获取原始类型
+     *
+     * @param wrapClass
+     * @return
+     */
+    public static Class<?> getPrimitiveClass(Class<?> wrapClass) {
+        if (wrapClass.isPrimitive()) {
+            return wrapClass;
         }
-        return PRIMITIVE_TYPES.get(wrap);
+        return PRIMITIVE_TYPES.get(wrapClass);
     }
 
     /**
      * 获取所有接口
      *
-     * @param clazz
+     * @param rawClass
      * @return
      */
-    public static Class<?>[] getInterfaces(Class<?> clazz) {
+    public static Class<?>[] getInterfaces(Class<?> rawClass) {
         List<Class<?>> interfaces = new ArrayList<Class<?>>();
-        appendInterfaces(interfaces, clazz);
+        appendInterfaces(interfaces, rawClass);
         return interfaces.toArray(new Class<?>[interfaces.size()]);
     }
 
@@ -441,20 +448,20 @@ public class Reflects {
      * 递归追加接口
      *
      * @param container
-     * @param clazz
+     * @param rawClass
      */
-    private static void appendInterfaces(List<Class<?>> container, Class<?> clazz) {
-        if (clazz != null) {
-            if (clazz.isInterface()) {
-                container.add(clazz);
+    private static void appendInterfaces(List<Class<?>> container, Class<?> rawClass) {
+        if (!(rawClass == null || container.contains(rawClass))) {
+            if (rawClass.isInterface()) {
+                container.add(rawClass);
             }
-            for (Class<?> interfaceClass : clazz.getInterfaces()) {
+            for (Class<?> interfaceClass : rawClass.getInterfaces()) {
                 if (container.contains(interfaceClass)) {
                     continue;
                 }
                 appendInterfaces(container, interfaceClass);
             }
-            appendInterfaces(container, clazz.getSuperclass());
+            appendInterfaces(container, rawClass.getSuperclass());
         }
     }
 
@@ -488,13 +495,13 @@ public class Reflects {
             if (classLoader != null) {
                 return classLoader;
             }
-        } catch (Throwable ex) {
+        } catch (Throwable e) {
         }
         classLoader = Reflects.class.getClassLoader();
         if (classLoader == null) {
             try {
                 classLoader = ClassLoader.getSystemClassLoader();
-            } catch (Throwable ex) {
+            } catch (Throwable e) {
             }
         }
         return classLoader;
@@ -520,26 +527,26 @@ public class Reflects {
     }
 
     public static List<URL> getResources(Object source, String name) {
-        Enumeration<URL> urls;
-        List<URL> result = new ArrayList<URL>();
+        Enumeration<URL> pending;
+        List<URL> resources = new ArrayList<URL>();
         ClassLoader loader = Reflects.getClassLoader(source);
         get: try {
-            urls = loader.getResources(name);
-            if (urls == null) {
+            pending = loader.getResources(name);
+            if (pending == null) {
                 if (loader == ClassLoader.getSystemClassLoader()) {
                     break get;
                 }
-                urls = ClassLoader.getSystemClassLoader().getResources(name);
-                if (urls == null) {
+                pending = ClassLoader.getSystemClassLoader().getResources(name);
+                if (pending == null) {
                     break get;
                 }
             }
-            while (urls.hasMoreElements()) {
-                result.add(urls.nextElement());
+            while (pending.hasMoreElements()) {
+                resources.add(pending.nextElement());
             }
         } catch (Exception e) {
         }
-        return result;
+        return resources;
     }
 
     public static URL getResource(String name) {
@@ -548,38 +555,38 @@ public class Reflects {
 
     public static URL getResource(Object source, String name) {
         ClassLoader loader = Reflects.getClassLoader(source);
-        URL result;
+        URL resource;
         get: try {
-            result = loader.getResource(name);
-            if (result == null) {
+            resource = loader.getResource(name);
+            if (resource == null) {
                 if (loader == ClassLoader.getSystemClassLoader()) {
                     break get;
                 }
-                result = ClassLoader.getSystemClassLoader().getResource(name);
+                resource = ClassLoader.getSystemClassLoader().getResource(name);
             }
         } catch (Exception e) {
-            result = null;
+            resource = null;
         }
-        return result;
+        return resource;
     }
 
     /**
      * 获取绑定字段信息
      * 
-     * @param clazz
+     * @param rawClass
      * @return
      */
-    public static Map<String, List<BoundField>> getBoundFields(Class<?> clazz) {
-        Map<String, List<BoundField>> result = FIELDS.get(clazz);
+    public static Map<String, List<BoundField>> getBoundFields(Class<?> rawClass) {
+        Map<String, List<BoundField>> result = FIELDS.get(rawClass);
         // 跳过接口以及原始数据类型（不继承Object类）
-        if (result != null || clazz.isInterface() || !Object.class.isAssignableFrom(clazz)) {
+        if (result != null || rawClass.isInterface() || !Object.class.isAssignableFrom(rawClass)) {
             return result;
         }
         result = new LinkedHashMap<String, List<BoundField>>();
         Mode ignoreMode;
         BoundField boundField;
         List<BoundField> boundFields;
-        Class<?> pending = clazz;
+        Class<?> pending = rawClass;
         while (pending != null && pending != Object.class) {
             // 忽略指定类
             ignoreMode = getIgnoreMode(pending);
@@ -593,21 +600,21 @@ public class Reflects {
             pending = pending.getSuperclass();
         }
         // 屏蔽修改
-        FIELDS.put(clazz, result = Helpers.toUnmodifiable(result));
+        FIELDS.put(rawClass, result = Helpers.toUnmodifiable(result));
         return result;
     }
 
     /**
      * 获取绑定字段信息
      * 
-     * @param clazz
+     * @param rawClass
      * @param fieldName
      * @return
      */
-    public static BoundField getBoundField(Class<?> clazz, String fieldName) {
-        Map<String, List<BoundField>> boundFields = getBoundFields(clazz);
+    public static BoundField getBoundField(Class<?> rawClass, String fieldName) {
+        Map<String, List<BoundField>> boundFields = getBoundFields(rawClass);
         List<BoundField> bounds = boundFields.get(fieldName);
-        if (bounds != null) {
+        if (bounds != null && bounds.size() > 0) {
             return bounds.get(0);
         }
         return null;
@@ -636,13 +643,13 @@ public class Reflects {
     /**
      * 获取绑定方法信息
      * 
-     * @param clazz
+     * @param rawClass
      * @return
      */
-    public static Map<String, List<BoundMethod>> getBoundMethods(Class<?> clazz) {
-        Map<String, List<BoundMethod>> result = METHODS.get(clazz);
+    public static Map<String, List<BoundMethod>> getBoundMethods(Class<?> rawClass) {
+        Map<String, List<BoundMethod>> result = METHODS.get(rawClass);
         // 跳过接口以及原始数据类型（不继承Object类）
-        if (result != null || !Object.class.isAssignableFrom(clazz)) {
+        if (result != null || !Object.class.isAssignableFrom(rawClass)) {
             return result;
         }
         result = new LinkedHashMap<String, List<BoundMethod>>();
@@ -650,7 +657,7 @@ public class Reflects {
         Mode ignoreMode;
         BoundMethod boundMethod;
         List<BoundMethod> boundMethods;
-        Class<?> type = clazz;
+        Class<?> type = rawClass;
         while (type != null && type != Object.class) {
             // 忽略指定类
             ignoreMode = getIgnoreMode(type);
@@ -672,58 +679,99 @@ public class Reflects {
             type = type.getSuperclass();
         }
         // 屏蔽修改
-        METHODS.put(clazz, result = Helpers.toUnmodifiable(result));
+        METHODS.put(rawClass, result = Helpers.toUnmodifiable(result));
         return result;
     }
 
     /**
      * 获取绑定方法信息
      * 
-     * @param clazz
+     * @param rawClass
      * @param name
      * @return
      */
-    public static BoundMethod getBoundMethod(Class<?> clazz, String name) {
-        List<BoundMethod> bounds = getBoundMethods(clazz).get(name);
-        return bounds == null ? null : bounds.get(0);
+    public static BoundMethod getBoundMethod(Class<?> rawClass, String name) {
+        List<BoundMethod> bounds = getBoundMethods(rawClass).get(name);
+        return bounds == null || bounds.size() == 0 ? null : bounds.get(0);
     }
 
-    public static <T extends Annotation> List<BoundMethod> getBoundMethods(Class<?> clazz, Class<T> anno) {
+    /**
+     * 获取绑定方法信息
+     *
+     * @param <T>
+     * @param rawClass
+     * @param annoClass
+     * @return
+     */
+    public static <T extends Annotation> List<BoundMethod> getBoundMethods(Class<?> rawClass, Class<T> annoClass) {
         List<BoundMethod> result = new ArrayList<BoundMethod>();
-        for (List<BoundMethod> bounds : getBoundMethods(clazz).values()) {
-            result.addAll(getBoundMethods(bounds, anno));
+        for (List<BoundMethod> bounds : getBoundMethods(rawClass).values()) {
+            result.addAll(getBoundMethods(bounds, annoClass));
         }
         return result;
     }
 
-    private static <T extends Annotation> List<BoundMethod> getBoundMethods(List<BoundMethod> bounds, Class<T> anno) {
+    /**
+     * 获取绑定方法信息
+     *
+     * @param <T>
+     * @param bounds
+     * @param annoClass
+     * @return
+     */
+    private static <T extends Annotation> List<BoundMethod> getBoundMethods(List<BoundMethod> bounds, Class<T> annoClass) {
         List<BoundMethod> methods = new ArrayList<BoundMethod>();
         for (BoundMethod bound : bounds) {
-            if (bound.getAnnotation(anno) != null) {
+            if (bound.getAnnotation(annoClass) != null) {
                 methods.add(bound);
             }
         }
         return methods;
     }
 
-    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> clazz, Class<T> anno) {
+    /**
+     * 获取绑定方法信息
+     *
+     * @param <T>
+     * @param rawClass
+     * @param annoClass
+     * @return
+     */
+    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> rawClass, Class<T> annoClass) {
         BoundMethod method = null;
-        for (List<BoundMethod> bounds : getBoundMethods(clazz).values()) {
-            if ((method = getBoundMethod(bounds, anno)) != null) {
+        for (List<BoundMethod> bounds : getBoundMethods(rawClass).values()) {
+            if ((method = getBoundMethod(bounds, annoClass)) != null) {
                 break;
             }
         }
         return method;
     }
 
-    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> clazz, String name, Class<T> anno) {
-        List<BoundMethod> bounds = getBoundMethods(clazz).get(name);
+    /**
+     * 获取绑定方法信息
+     *
+     * @param <T>
+     * @param rawClass
+     * @param name
+     * @param annoClass
+     * @return
+     */
+    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> rawClass, String name, Class<T> annoClass) {
+        List<BoundMethod> bounds = getBoundMethods(rawClass).get(name);
         if (bounds != null) {
-            return getBoundMethod(bounds, anno);
+            return getBoundMethod(bounds, annoClass);
         }
         return null;
     }
 
+    /**
+     * 获取绑定方法信息
+     *
+     * @param <T>
+     * @param bounds
+     * @param anno
+     * @return
+     */
     private static <T extends Annotation> BoundMethod getBoundMethod(List<BoundMethod> bounds, Class<T> anno) {
         for (BoundMethod bound : bounds) {
             if (bound.getAnnotation(anno) != null) {
@@ -757,18 +805,18 @@ public class Reflects {
     /**
      * 获取忽略模式
      * 
-     * @param clazz
+     * @param rawClass
      * @return
      */
-    private static Mode getIgnoreMode(Class<?> clazz) {
-        Ignore ignore = clazz.getAnnotation(Ignore.class);
+    private static Mode getIgnoreMode(Class<?> rawClass) {
+        Ignore ignore = rawClass.getAnnotation(Ignore.class);
         Mode mode = getIgnoreMode(ignore, null);
         if (mode != null) {
             return mode;
         }
         /* 忽略配置文件（TODO 忽略配置规则不完善） */
-        String path = clazz.getName().replaceAll("[.]", "/");
-        String name = clazz.getSimpleName();
+        String path = rawClass.getName().replaceAll("[.]", "/");
+        String name = rawClass.getSimpleName();
         Properties props = new Properties();
         Helpers.load(props, false, path.substring(0, path.length() - name.length()) + ".ignoreMode");
         Helpers.load(props, path + ".ignoreMode");
@@ -781,6 +829,13 @@ public class Reflects {
         return mode;
     }
 
+    /**
+     * 获取忽略模式
+     *
+     * @param ignore
+     * @param mode
+     * @return
+     */
     private static Mode getIgnoreMode(Ignore ignore, Mode mode) {
         if (ignore != null) {
             Mode result = ignore.mode();
@@ -789,76 +844,6 @@ public class Reflects {
             }
         }
         return mode;
-    }
-
-    /**
-     * 集合填充生成指定类型对象
-     * 
-     * @param name
-     * @param params
-     * @return
-     */
-    public static Object newInstance(Map<String, Object> params) {
-        return newInstance(params, (Callable<?>) null);
-    }
-
-    /**
-     * 集合填充生成指定类型对象
-     * 
-     *
-     * @param params
-     * @param assembler
-     * @return
-     */
-    public static Object newInstance(Map<String, Object> params, Callable<?> assembler) {
-        Object type = params.get(KEY_CLASS);
-        if (type == null) {
-            return params;
-        }
-        params.remove(KEY_CLASS);
-        Class<?> clazz = type instanceof Class ? (Class<?>) type : getClass((String) type);
-        Asserts.isNotNull(clazz, "Cannot instantiation type " + type);
-        return newInstance(clazz, params, assembler);
-    }
-
-    /**
-     * 集合填充生成指定类型对象
-     * 
-     * @param name
-     * @param values
-     * @return
-     */
-    public static Object newInstance(String name, Map<String, Object> values) {
-        Object instance = newInstance(name);
-        toInstance(instance, values);
-        return instance;
-    }
-
-    /**
-     * 集合填充生成指定类型对象
-     * 
-     * @param clazz
-     * @param params
-     * @return
-     */
-    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params) {
-        return newInstance(clazz, params, (Callable<?>) null);
-    }
-
-    /**
-     * 集合填充生成指定类型对象
-     *
-     * @param clazz
-     * @param params
-     * @param assembler
-     * @return
-     */
-    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params, Callable<?> assembler) {
-        T instance = newInstance(clazz);
-        if (params != null && params.size() > 0) {
-            toInstance(instance, params, assembler);
-        }
-        return instance;
     }
 
     /**
@@ -875,35 +860,144 @@ public class Reflects {
     /**
      * 集合填充生成指定类型对象
      * 
-     * @param clazz
+     * @param rawClass
      * @param params
      * @param namespace
      * @return
      */
-    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params, String namespace) {
-        return Reflects.newInstance(clazz, Helpers.getMap(params, namespace));
+    public static <T> T newInstance(Class<T> rawClass, Map<String, Object> params, String namespace) {
+        return newInstance(rawClass, params, namespace, null);
+    }
+
+    /**
+     * 生成实例
+     *
+     * @param name
+     * @return
+     */
+    public static Object newInstance(String name) {
+        return newInstance(name, null);
     }
 
     /**
      * 生成实例
      * 
      * @param name
+     * @param assembler
      * @return
      */
-    public static Object newInstance(String name) {
-        Class<?> clazz = getClass(name);
-        Asserts.isNotNull(clazz, "Cannot instantiation type " + name);
-        return newInstance(clazz);
+    public static Object newInstance(String name, ClassAssembler assembler) {
+        return newInstance(name, null, assembler);
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param name
+     * @param values
+     * @param assembler
+     * @return
+     */
+    public static Object newInstance(String name, Map<String, Object> values, ClassAssembler assembler) {
+        return newInstance(Asserts.isNotNull(getClass(name), "Cannot instantiation class %s", name), values, assembler);
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param params
+     * @return
+     */
+    public static Object newInstance(Map<String, Object> params) {
+        return newInstance(params, (ClassAssembler) null);
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     *
+     * @param params
+     * @param assembler
+     * @return
+     */
+    public static Object newInstance(Map<String, Object> params, ClassAssembler assembler) {
+        Object className = params.get(KEY_CLASS);
+        if (Strings.isEmpty(className)) {
+            return params;
+        }
+        params.remove(KEY_CLASS);
+        Class<?> clazz = className instanceof Class ? (Class<?>) className : getClass(className.toString());
+        Asserts.isNotNull(clazz, "Cannot instantiation class %s", className);
+        return newInstance(clazz, params, assembler);
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param rawClass
+     * @param params
+     * @return
+     */
+    public static <T> T newInstance(Class<T> rawClass, Map<String, Object> params) {
+        return newInstance(rawClass, params, (ClassAssembler) null);
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param clazz
+     * @param params
+     * @param namespace
+     * @param assembler
+     * @return
+     */
+    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params, String namespace, ClassAssembler assembler) {
+        return newInstance(clazz, Helpers.getMap(params, namespace), assembler);
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     *
+     * @param rawClass
+     * @param params
+     * @param assembler
+     * @return
+     */
+    public static <T> T newInstance(Class<T> rawClass, Map<String, Object> params, ClassAssembler assembler) {
+        T instance = newInstance(rawClass, assembler);
+        if (params != null && params.size() > 0) {
+            toInstance(instance, params, assembler);
+        }
+        return instance;
     }
 
     /**
      * 生成实例
      * 
+     * @param <T>
      * @param rawClass
      * @return
      */
-    @SuppressWarnings("unchecked")
     public static <T> T newInstance(Class<? extends T> rawClass) {
+        return newInstance(rawClass, (ClassAssembler) null);
+    }
+
+    /**
+     * 生成实例
+     *
+     * @param <T>
+     * @param rawClass
+     * @param assembler
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T newInstance(Class<? extends T> rawClass, ClassAssembler assembler) {
+        if (assembler != null) {
+            Class<?> pending = assembler.assemble(rawClass);
+            if (pending != null) {
+                rawClass = (Class<? extends T>) pending;
+            }
+        }
         if (isAbstract(rawClass)) {
             if (Collection.class.isAssignableFrom(rawClass)) {
                 if (SortedSet.class.isAssignableFrom(rawClass)) {
@@ -912,15 +1006,16 @@ public class Reflects {
                     return (T) new LinkedHashSet<Object>();
                 } else if (Queue.class.isAssignableFrom(rawClass)) {
                     return (T) new LinkedList<Object>();
-                } else {
-                    return (T) new ArrayList<Object>();
                 }
+                return (T) new ArrayList<Object>();
             } else if (Map.class.isAssignableFrom(rawClass)) {
+                if (SortedMap.class.isAssignableFrom(rawClass)) {
+                    return (T) new LinkedHashMap<String, Object>();
+                }
                 return (T) new HashMap<String, Object>();
             }
-            // return new Standin(clazz).getSource();
-            throw Asserts.state("Unsupport %s", rawClass);
         }
+        Asserts.isNotNull(rawClass, "Cannot instantiation class");
         return Constructor.construct(rawClass);
     }
 
@@ -945,7 +1040,7 @@ public class Reflects {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static <T> T toInstance(T instance, Map<String, Object> params, final Callable<?> assembler) {
+    public static <T> T toInstance(T instance, Map<String, Object> params, ClassAssembler assembler) {
         if (instance instanceof Map) {
             ((Map<String, Object>) instance).putAll(params);
             return instance;
@@ -954,28 +1049,40 @@ public class Reflects {
         String fieldName;
         BoundField field;
         Map<String, List<BoundField>> fields = getBoundFields(instance.getClass());
-        Callable<?> fieldAssembler = assembler == null ? new Callable<Object>() {
-            public Object call(Object... args) {
-                return args[2]; // 直接返回字段实例
-            }
-        } : new Callable<Object>() {
-            public Object call(Object... args) {
-                return assembler.call((Object[]) Helpers.newArray(args, values));
+        assembler = assembler == null ? new AssemblerAdapter() : new AssemblerAdapter(assembler) {
+            public Object assemble(BoundField field, Object instance, Object value, Object... args) {
+                return super.assemble(field, instance, value, (Object[]) Helpers.newArray(args, values));
             }
         };
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             fieldName = entry.getKey();
             field = entry.getValue().get(0);
-            if (values.containsKey(fieldName) || values.containsKey(fieldName = Strings.toFieldName(fieldName)) || values.containsKey(fieldName = Strings.toColumnName(fieldName)) || values.containsKey(fieldName = field.getAlias())) {
-                field.setValue(instance, values.get(fieldName), fieldAssembler);
+            if (field.isBatch()) {
+                field.setValue(instance, getBatch(values, fieldName, field.getAlias()), assembler);
+            } else if (values.containsKey(fieldName) || values.containsKey(fieldName = Strings.toFieldName(fieldName)) || values.containsKey(fieldName = Strings.toColumnName(fieldName)) || values.containsKey(fieldName = field.getAlias())) {
+                field.setValue(instance, values.get(fieldName), assembler);
             } else {
-                field.setValue(instance, UNKNOWN, fieldAssembler);
+                field.setValue(instance, UNKNOWN, assembler);
             }
         }
         if (instance instanceof Extendable) {
             ((Extendable) instance).setExtends(params);
         }
         return instance;
+    }
+
+    private static Object getBatch(Map<String, Object> values, String fieldName, String aliasName) {
+        Object value = Helpers.getValues(values, fieldName);
+        if (value == null) {
+            value = Helpers.getValues(values, fieldName = Strings.toFieldName(fieldName));
+            if (value == null) {
+                value = Helpers.getValues(values, fieldName = Strings.toColumnName(fieldName));
+                if (value == null) {
+                    value = Helpers.getValues(values, fieldName = aliasName);
+                }
+            }
+        }
+        return value;
     }
 
     /**
@@ -1028,7 +1135,7 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static <T> T toBean(Class<T> clazz, Object[] columns, Object[] values, Callable<?> assembler) {
+    public static <T> T toBean(Class<T> clazz, Object[] columns, Object[] values, ClassAssembler assembler) {
         return Reflects.newInstance(clazz, toMap(columns, values), assembler);
     }
 
@@ -1097,7 +1204,7 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static <T> List<T> toList(Class<T> clazz, Object[] grid, Callable<?> assembler) {
+    public static <T> List<T> toList(Class<T> clazz, Object[] grid, ClassAssembler assembler) {
         List<T> result = new ArrayList<T>();
         Object[] columns = (Object[]) grid[0];
         Object gridValue = grid[1];
@@ -1369,4 +1476,5 @@ public class Reflects {
             }
         }
     }
+
 }

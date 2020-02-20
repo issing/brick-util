@@ -8,6 +8,7 @@ import net.isger.util.Asserts;
 import net.isger.util.Dates;
 import net.isger.util.Reflects;
 import net.isger.util.Strings;
+import net.isger.util.reflect.ClassAssembler;
 
 public class DateConversion implements Conversion {
 
@@ -21,7 +22,7 @@ public class DateConversion implements Conversion {
         return Date.class.isAssignableFrom(rawClass);
     }
 
-    public Date convert(Type type, Object value) {
+    public Date convert(Type type, Object value, ClassAssembler assembler) {
         String source;
         convert: {
             if (Strings.isEmpty(value)) {
@@ -43,8 +44,7 @@ public class DateConversion implements Conversion {
             }
         }
         try {
-            Method method = Reflects.getRawClass(type)
-                    .getDeclaredMethod("valueOf");
+            Method method = Reflects.getRawClass(type).getDeclaredMethod("valueOf");
             return (Date) method.invoke(type, value);
         } catch (Exception e) {
         }

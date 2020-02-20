@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 import net.isger.brick.blue.Marks.TYPE;
+import net.isger.util.Asserts;
 import net.isger.util.Reflects;
 import net.isger.util.Strings;
 import net.isger.util.anno.Affix;
@@ -74,7 +75,7 @@ public class BoundMethod {
             if (cause instanceof RuntimeException) {
                 throw (RuntimeException) cause;
             }
-            throw new IllegalStateException("Failure to invoke method " + getName(), cause);
+            throw Asserts.state("Failure to invoke method %s", getName(), cause);
         }
     }
 

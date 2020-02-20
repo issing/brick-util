@@ -80,8 +80,7 @@ public class Asserts {
 
     public static void isInstance(Class<?> type, Object instance, String message, Object... args) {
         isNotNull(type, "Type to check against must not be null");
-        throwArgument(type.isInstance(instance), "%sinstance of class [%s] must be an instance of %s", Strings.isEmpty(message) ? "" : Strings.format(message, args) + " - ", (instance != null ? instance.getClass().getName() : "null"),
-                type);
+        throwArgument(type.isInstance(instance), "%sinstance of class [%s] must be an instance of %s", Strings.isEmpty(message) ? "" : Strings.format(message, args) + " - ", (instance != null ? instance.getClass().getName() : "null"), type);
     }
 
     public static void isAssignable(Class<?> superType, Class<?> subType) {

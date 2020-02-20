@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.isger.util.Asserts;
-import net.isger.util.Callable;
 import net.isger.util.Helpers;
 import net.isger.util.Reflects;
 import net.isger.util.Strings;
@@ -101,8 +100,7 @@ public class Converter {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static Object convert(Type type, Object value,
-            Callable<?> assembler) {
+    public static Object convert(Type type, Object value, ClassAssembler assembler) {
         /* 默认值转换 */
         if (value == null) {
             return defaultValue(type);
@@ -112,11 +110,10 @@ public class Converter {
         for (Conversion conversion : CONVERTER.conversions.values()) {
             if (conversion.isSupport(type)) {
                 try {
-                    return conversion.convert(type, value);
+                    return conversion.convert(type, value, assembler);
                 } catch (Exception e) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.warn("Failure to convert [{}] to [{}]", value,
-                                rawClass, e);
+                        LOG.warn("Failure to convert [{}] to [{}]", value, rawClass, e);
                     }
                 }
             }
@@ -131,9 +128,7 @@ public class Converter {
             value = ((Collection<?>) value).toArray();
             srcClass = value.getClass();
         }
-        if ((!(rawClass.isArray()
-                || Collection.class.isAssignableFrom(rawClass)))
-                && srcClass.isArray()) {
+        if ((!(rawClass.isArray() || Collection.class.isAssignableFrom(rawClass))) && srcClass.isArray()) {
             if (Array.getLength(value) == 0) {
                 return defaultValue(rawClass);
             }
@@ -146,7 +141,7 @@ public class Converter {
             }
             Class<?> clazz = Reflects.getClass((String) value);
             if (clazz != null) {
-                return Reflects.newInstance(clazz);
+                return Reflects.newInstance(clazz, assembler);
             }
             value = Helpers.fromJson((String) value);
         }
@@ -163,8 +158,7 @@ public class Converter {
             }
             return Reflects.newInstance(config, assembler);
         }
-        throw Asserts.state("Unsupported convert to %s from %s",
-                Reflects.getName(rawClass), srcClass.getName());
+        throw Asserts.state("Unsupported convert to %s from %s", Reflects.getName(rawClass), srcClass.getName());
     }
 
     public static Object defaultValue(Type type) {

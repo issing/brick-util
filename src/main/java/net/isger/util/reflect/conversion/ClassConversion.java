@@ -4,6 +4,7 @@ import java.lang.reflect.Type;
 
 import net.isger.util.Asserts;
 import net.isger.util.Reflects;
+import net.isger.util.reflect.ClassAssembler;
 
 public class ClassConversion implements Conversion {
 
@@ -16,7 +17,7 @@ public class ClassConversion implements Conversion {
         return Reflects.getRawClass(type).equals(Class.class);
     }
 
-    public Object convert(Type type, Object value) {
+    public Object convert(Type type, Object value, ClassAssembler assembler) {
         if (value instanceof String) {
             Object result = Reflects.getClass((String) value);
             if (result != null) {

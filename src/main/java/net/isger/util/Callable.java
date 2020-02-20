@@ -8,8 +8,10 @@ package net.isger.util;
  */
 public class Callable<T> implements java.util.concurrent.Callable<T> {
 
+    private static final Object[] NONE = new Object[0];
+
     public T call() {
-        return call(new Object[0]);
+        return call(NONE);
     }
 
     /**
@@ -19,7 +21,7 @@ public class Callable<T> implements java.util.concurrent.Callable<T> {
      * @return
      */
     public T call(Object... args) {
-        return null;
+        return args == NONE ? null : call();
     }
 
     /**
@@ -51,6 +53,9 @@ public class Callable<T> implements java.util.concurrent.Callable<T> {
          * @param args
          */
         public void run(Object... args) {
+            if (args != NONE) {
+                run();
+            }
         }
 
     }

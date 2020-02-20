@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import net.isger.util.Reflects;
+import net.isger.util.reflect.ClassAssembler;
 import net.isger.util.reflect.Converter;
 
 public class ArrayConversion implements Conversion {
@@ -19,7 +20,7 @@ public class ArrayConversion implements Conversion {
         return Reflects.getRawClass(type).isArray();
     }
 
-    public Object convert(Type type, Object value) {
+    public Object convert(Type type, Object value, ClassAssembler assembler) {
         if (value instanceof Object[]) {
             value = Arrays.asList((Object[]) value);
         } else if (!(value instanceof Collection)) {
@@ -30,7 +31,7 @@ public class ArrayConversion implements Conversion {
         Object[] values = ((Collection<?>) value).toArray();
         Object array = Array.newInstance(componentClass, count);
         for (int i = 0; i < count; i++) {
-            Array.set(array, i, Converter.convert(componentClass, values[i]));
+            Array.set(array, i, Converter.convert(componentClass, values[i], assembler));
         }
         return array;
     }

@@ -2,6 +2,8 @@ package net.isger.util.reflect.conversion;
 
 import java.lang.reflect.Type;
 
+import net.isger.util.reflect.ClassAssembler;
+
 public interface Conversion {
 
     /**
@@ -16,9 +18,10 @@ public interface Conversion {
      * 转换类型
      * 
      * @param type
-     * @param res
+     * @param value
+     * @param assembler
      * @return
      */
-    public Object convert(Type type, Object value);
+    public Object convert(Type type, Object value, ClassAssembler assembler);
 
 }

@@ -12,7 +12,6 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import net.isger.util.Asserts;
-import net.isger.util.Callable;
 import net.isger.util.Helpers;
 import net.isger.util.Reflects;
 import net.isger.util.Strings;
@@ -35,6 +34,8 @@ public class BoundField {
     private boolean inject;
 
     private boolean infect;
+
+    private boolean batch;
 
     @SuppressWarnings("unchecked")
     public BoundField(Field field) {
@@ -59,6 +60,9 @@ public class BoundField {
         }
         this.inject = field.getAnnotation(Inject.class) != null;
         this.infect = field.getAnnotation(Infect.class) != null;
+        Type resolveType = token.getType();
+        Class<?> rawClass = token.getRawClass();
+        this.batch = resolveType instanceof GenericArrayType || Collection.class.isAssignableFrom(rawClass);
     }
 
     public TypeToken<?> getToken() {
@@ -89,19 +93,24 @@ public class BoundField {
         return infect;
     }
 
+    public boolean isBatch() {
+        return batch;
+    }
+
     public void setValue(Object instance, Object value) {
         setValue(instance, value, null);
     }
 
-    public void setValue(Object instance, Object value, Callable<?> assembler) {
-        Class<?> rawClass = token.getRawClass();
+    public void setValue(Object instance, Object value, ClassAssembler assembler) {
         try {
-            if (isInfect() && assembler != null) {
-                value = assembler.call(this, instance, value);
+            FieldAssembler fieldAssembler = assembler == null ? null : assembler.getFieldAssembler();
+            if (isInfect() && fieldAssembler != null) {
+                value = fieldAssembler.assemble(this, instance, value);
             }
             if (value != Reflects.UNKNOWN) {
+                Class<?> rawClass = token.getRawClass();
                 if (rawClass.isInstance(value)) {
-                    value = resolve(rawClass, token.getType(), value);
+                    value = resolve(rawClass, token.getType(), value, assembler);
                 } else {
                     try {
                         value = Converter.convert(token.getType(), value, assembler);
@@ -117,23 +126,23 @@ public class BoundField {
     }
 
     @SuppressWarnings("unchecked")
-    private Object resolve(Class<?> rawClass, Type resolveType, Object value) {
+    private Object resolve(Class<?> rawClass, Type resolveType, Object value, ClassAssembler assembler) {
         if (resolveType instanceof GenericArrayType) {
             resolveType = Reflects.getComponentType(resolveType);
             rawClass = Reflects.getRawClass(resolveType);
             int size = Array.getLength(value);
             Object array = Array.newInstance(rawClass, size);
             for (int i = 0; i < size; i++) {
-                Array.set(array, i, resolve(rawClass, resolveType, Array.get(value, i)));
+                Array.set(array, i, resolve(rawClass, resolveType, Array.get(value, i), assembler));
             }
             value = array;
         } else if (Collection.class.isAssignableFrom(rawClass) && (value instanceof Collection)) {
             ParameterizedType paramType = (ParameterizedType) resolveType;
-            Collection<Object> resolve = (Collection<Object>) Reflects.newInstance(rawClass);
+            Collection<Object> resolve = (Collection<Object>) Reflects.newInstance(rawClass, assembler);
             resolveType = paramType.getActualTypeArguments()[0];
             rawClass = Reflects.getClass(resolveType);
             for (Object instance : (Collection<?>) value) {
-                resolve.add(resolve(rawClass, paramType.getActualTypeArguments()[0], instance));
+                resolve.add(resolve(rawClass, paramType.getActualTypeArguments()[0], instance, assembler));
             }
             value = resolve;
         } else if (resolveType instanceof Class && (!((Class<?>) resolveType).isInstance(value))) {

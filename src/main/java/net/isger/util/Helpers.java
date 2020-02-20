@@ -38,6 +38,7 @@ import com.google.gson.Gson;
 
 import net.isger.util.anno.Alias;
 import net.isger.util.anno.Order;
+import net.isger.util.reflect.Converter;
 
 /**
  * 帮助工具
@@ -1001,46 +1002,77 @@ public class Helpers {
             return null;
         } else if (source instanceof Collection) {
             Collection<?> collection = (Collection<?>) source;
-            return collection.toArray(new Object[collection.size()]);
+            int size = collection.size();
+            Class<?> sourceClass = Object.class;
+            if (size > 0) {
+                for (Object value : (Collection<?>) source) {
+                    if (sourceClass.isInstance(value)) {
+                        sourceClass = value.getClass();
+                    } else if (value != null) {
+                        sourceClass = Object.class;
+                        break;
+                    }
+                }
+            }
+            return sourceClass == Object.class ? collection.toArray() : toArray(sourceClass, source);
         }
         Class<?> sourceClass = source.getClass();
         if (sourceClass.isArray()) {
             return source;
         } else {
-            return new Object[] { source };
+            Object result = Array.newInstance(sourceClass, 1);
+            Array.set(result, 0, source);
+            return result;
         }
     }
 
-    public static Object newArray(Object source) {
+    public static Object toArray(final Class<?> type, Object source) {
         if (source == null) {
             return null;
         }
-        Class<?> sourceClass = source.getClass();
-        int sourceCount;
-        if (sourceClass.isArray()) {
-            sourceCount = Array.getLength(source);
-            sourceClass = sourceClass.getComponentType();
-        } else {
-            sourceCount = 1;
-            source = new Object[] { source };
+        final List<Object> container = new ArrayList<Object>();
+        each(source, new Callable.Runnable() {
+            public void run(Object... args) {
+                if (type.isInstance(args[1])) {
+                    container.add(args[1]);
+                } else if (args[1] == null) {
+                    if (type.isPrimitive()) {
+                        args[1] = Converter.defaultValue(type);
+                    }
+                    container.add(args[1]);
+                }
+            }
+        });
+        int size = container.size();
+        source = Array.newInstance(type, size);
+        if (size > 0) {
+            System.arraycopy(container.toArray(), 0, source, 0, size);
         }
-        Object result = Array.newInstance(sourceClass, sourceCount);
-        System.arraycopy(source, 0, result, 0, sourceCount);
-        return result;
+        return source;
+    }
+
+    public static Object newArray(Object source) {
+        return newArray(source, -1);
     }
 
     public static Object newArray(Object source, int length) {
-        Object result;
-        Class<?> clazz = source == null ? Object.class : source.getClass();
-        if (clazz.isArray()) {
-            result = Array.newInstance(clazz.getComponentType(), length);
-            length = Math.min(Array.getLength(source), length);
-            System.arraycopy(source, 0, result, 0, length);
-        } else {
-            result = Array.newInstance(clazz, length);
-            Array.set(result, 0, source);
+        Class<?> sourceClass = source == null ? Object.class : source.getClass();
+        if ((source = toArray(source)) == null) {
+            return length < 0 ? null : new Object[length];
+        } else if (sourceClass.isArray()) {
+            int sourceLength = Array.getLength(source);
+            if (length < 0) {
+                length = sourceLength;
+            } else if (length < sourceLength) {
+                sourceLength = length;
+            }
+            Object target = Array.newInstance(sourceClass.getComponentType(), length);
+            if (sourceLength > 0) {
+                System.arraycopy(source, 0, target, 0, sourceLength);
+            }
+            source = target;
         }
-        return result;
+        return source;
     }
 
     public static Object newArray(Object source, Object target) {
@@ -1368,30 +1400,46 @@ public class Helpers {
      * 
      *
      * @param multipled
-     * @param instance
+     * @param array
      * @param callable
      * @param args
      * @return
      */
-    public static <T extends Object> Object each(boolean multipled, Object instance, Callable<T> callable, Object... args) {
+    public static <T extends Object> Object each(boolean multipled, Object array, Callable<T> callable, Object... args) {
         boolean isMultiple = true;
         int size;
-        if (instance instanceof Collection) {
-            Collection<?> collection = (Collection<?>) instance;
+        if (array instanceof Collection) {
+            Collection<?> collection = (Collection<?>) array;
             size = collection.size();
-            instance = collection.toArray(new Object[size]);
-        } else if (instance.getClass().isArray()) {
-            size = Array.getLength(instance);
+            array = collection.toArray(new Object[size]);
+        } else if (array != null && array.getClass().isArray()) {
+            size = Array.getLength(array);
         } else {
             isMultiple = false;
             size = 1;
-            instance = new Object[] { instance };
+            array = new Object[] { array };
         }
         Object[] result = new Object[size];
         for (int i = 0; i < size; i++) {
-            result[i] = callable.call(i, Array.get(instance, i), args);
+            result[i] = callable.call(i, Array.get(array, i), args);
         }
         return isMultiple || multipled ? result : result[0];
+    }
+
+    public static int getLength(Object array) {
+        int size;
+        if (array instanceof Collection) {
+            size = ((Collection<?>) array).size();
+        } else if (array instanceof Map) {
+            size = ((Map<?, ?>) array).size();
+        } else if (array == null) {
+            size = 0;
+        } else if (array.getClass().isArray()) {
+            size = Array.getLength(array);
+        } else {
+            size = 1;
+        }
+        return size;
     }
 
     public static int getIndex(Object array, Object instance) {
@@ -1421,6 +1469,28 @@ public class Helpers {
             size = Array.getLength(array);
         }
         return index < 0 || index >= size ? null : Array.get(array, index);
+    }
+
+    public static Object getValues(Map<String, Object> params, String key) {
+        return getValues(params, key, null);
+    }
+
+    public static Object getValues(Map<String, Object> params, String key, String suffix) {
+        Object value = params.get(key + "[]" + (suffix = Strings.empty(suffix)));
+        if (value == null) {
+            Object pending;
+            int amount = 0;
+            List<Object> container = new ArrayList<Object>();
+            while ((pending = params.get(key + "[" + (amount++) + "]" + suffix)) != null) {
+                container.add(pending);
+            }
+            if (container.size() > 0) {
+                return Helpers.newArray(container.get(0).getClass(), container.toArray(), container.size());
+            } else {
+                value = params.get(key);
+            }
+        }
+        return Helpers.newArray(value);
     }
 
     public static Object nvl(Object value, Object alternative) {

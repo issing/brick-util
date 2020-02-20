@@ -6,6 +6,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.isger.util.Asserts;
 import net.isger.util.hitch.Director;
 
 public class Constructor {
@@ -70,8 +71,7 @@ public class Constructor {
             }
         }
         try {
-            java.lang.reflect.Constructor<? extends T> cons = clazz
-                    .getDeclaredConstructor();
+            java.lang.reflect.Constructor<? extends T> cons = clazz.getDeclaredConstructor();
             if (cons != null) {
                 cons.setAccessible(true);
                 return cons.newInstance();
@@ -81,8 +81,7 @@ public class Constructor {
         try {
             return clazz.newInstance();
         } catch (Exception e) {
-            throw new IllegalStateException(
-                    "Unsupported construct type " + clazz, e);
+            throw Asserts.state("Unsupported construct %s", clazz, e);
         }
     }
 }
