@@ -83,8 +83,7 @@ public class Files {
         try {
             jos = new JarOutputStream(new FileOutputStream(path));
         } catch (IOException e) {
-            jos = new JarOutputStream(
-                    new URL(path).openConnection().getOutputStream());
+            jos = new JarOutputStream(new URL(path).openConnection().getOutputStream());
         }
         return jos;
     }
@@ -114,8 +113,7 @@ public class Files {
      * @return
      * @throws IOException
      */
-    public static JarEntry get(JarInputStream jis, String name)
-            throws IOException {
+    public static JarEntry get(JarInputStream jis, String name) throws IOException {
         JarEntry je;
         while ((je = jis.getNextJarEntry()) != null) {
             if (!je.isDirectory() && je.getName().equals(name)) {
@@ -133,8 +131,7 @@ public class Files {
      * @return
      * @throws IOException
      */
-    public static List<JarEntry> search(JarInputStream jis, String regex)
-            throws IOException {
+    public static List<JarEntry> search(JarInputStream jis, String regex) throws IOException {
         JarEntry je;
         List<JarEntry> entries = new ArrayList<JarEntry>();
         while ((je = jis.getNextJarEntry()) != null) {
@@ -249,8 +246,7 @@ public class Files {
      */
     public static File createFile(File file) {
         File parentDir = file.getParentFile();
-        if (parentDir.exists() && parentDir.isDirectory()
-                || parentDir.mkdirs()) {
+        if (parentDir.exists() && parentDir.isDirectory() || parentDir.mkdirs()) {
             try {
                 if (file.exists() && file.isFile() || file.createNewFile()) {
                     return file;
@@ -349,8 +345,7 @@ public class Files {
      * @param append
      * @return
      */
-    public static File write(String path, String name, String content,
-            boolean append) {
+    public static File write(String path, String name, String content, boolean append) {
         return write(getFile(path, name), content, append);
     }
 
@@ -383,6 +378,27 @@ public class Files {
             file = null;
         } finally {
             close(writer);
+        }
+        return file;
+    }
+
+    /**
+     * 写文件
+     *
+     * @param file
+     * @param data
+     * @return
+     */
+    public static File write(File file, byte[] data) {
+        FileOutputStream out = null;
+        file = createFile(file);
+        try {
+            out = new FileOutputStream(file);
+            out.write(data);
+        } catch (Exception e) {
+            file = null;
+        } finally {
+            close(out);
         }
         return file;
     }
@@ -451,6 +467,17 @@ public class Files {
             close(os);
         }
         return target;
+    }
+
+    /**
+     * 读文件
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static byte[] read(File file) throws IOException {
+        return read(new FileInputStream(file));
     }
 
     /**
