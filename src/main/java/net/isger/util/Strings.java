@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -16,6 +17,10 @@ import java.util.regex.Pattern;
  *
  */
 public class Strings {
+
+    private static final String REGEX_HIERARCHY = "\\[(.*?)]";
+
+    private static final Pattern PATTERN_HIERARCHY = Pattern.compile(REGEX_HIERARCHY);
 
     private Strings() {
     }
@@ -262,6 +267,32 @@ public class Strings {
             columnName.append(Character.toLowerCase(ch));
         }
         return columnName.toString();
+    }
+
+    /**
+     * 转换为层级值
+     *
+     * @param value
+     * @return
+     */
+    public static String toHierarchy(String value) {
+        Matcher matcher = PATTERN_HIERARCHY.matcher(value);
+        StringBuffer buffer = new StringBuffer(value.length());
+        int beginIndex = 0;
+        int endIndex = 0;
+        while (matcher.find()) {
+            endIndex = matcher.start();
+            if (beginIndex < endIndex) {
+                buffer.append(Strings.empty(value.substring(beginIndex, matcher.start())));
+                buffer.append(".");
+            }
+            buffer.append(matcher.group(1)).append(".");
+            beginIndex = matcher.end();
+        }
+        if (beginIndex < value.length()) {
+            buffer.append(value.substring(beginIndex));
+        }
+        return buffer.toString().replaceAll("[.]{2,}", ".").replaceAll("(^[.]+)|([.]+$)", "");
     }
 
     /**

@@ -38,6 +38,7 @@ import com.google.gson.Gson;
 
 import net.isger.util.anno.Alias;
 import net.isger.util.anno.Order;
+import net.isger.util.reflect.BoundField;
 import net.isger.util.reflect.Converter;
 
 /**
@@ -775,31 +776,47 @@ public class Helpers {
             if (entry.getValue() == null) {
                 continue;
             }
-            key = entry.getKey();
-            index = key.indexOf(".");
+            index = (key = Strings.toHierarchy(entry.getKey())).indexOf(".");
             if (index == -1) {
+                // 没有层级集合
                 subKey = null;
             } else {
+                // 存在层级集合
                 subKey = key.substring(index + 1);
                 key = key.substring(0, index);
             }
             value = result.get(key);
             if (value == null) {
                 if (subKey == null) {
-                    result.put(key, entry.getValue());
+                    // 没有层级集合，并规范对象
+                    result.put(key, (value = entry.getValue()) instanceof Map && value.getClass() != HashMap.class ? new HashMap<String, Object>((Map<String, Object>) value) : value);
                     continue;
                 }
-                container = new HashMap<String, Object>();
-                result.put(key, container);
+                result.put(key, container = new HashMap<String, Object>()); // 保存层级集合
             } else if (value instanceof Map) {
-                container = (Map<String, Object>) value;
+                container = (Map<String, Object>) value; // 获取层级集合
                 if (subKey == null) {
-                    throw new IllegalStateException();
+                    value = entry.getValue(); // 原始集合对象
+                    if (value instanceof Map) {
+                        // 合并层级集合
+                        String unionKey;
+                        Map<String, Object> pending = (Map<String, Object>) value;
+                        for (Entry<String, Object> unionEntry : pending.entrySet()) {
+                            if (!container.containsKey(unionKey = unionEntry.getKey())) {
+                                container.put(unionKey, unionEntry.getValue());
+                            }
+                        }
+                        continue;
+                    } else {
+                        // 层级对象冲突
+                        return values;
+                    }
                 }
             } else {
-                throw new IllegalStateException();
+                // 层级对象冲突
+                return values;
             }
-            container.put(subKey, entry.getValue());
+            container.put(subKey, entry.getValue()); // 存放层级对象（该步骤会替换原有层级对象）
         }
         return result;
     }
@@ -914,11 +931,11 @@ public class Helpers {
     }
 
     public static <T> int add(Collection<T> container, Enumeration<T> values) {
-        return add(container, getList(values));
+        return add(container, newList(values));
     }
 
     public static <T> int add(Collection<T> container, Iterator<T> values) {
-        return add(container, getList(values));
+        return add(container, newList(values));
     }
 
     @SuppressWarnings("unchecked")
@@ -946,23 +963,27 @@ public class Helpers {
         return result;
     }
 
-    public static <T> List<T> getList(Enumeration<T> values) {
+    public static <T> List<T> newList(Enumeration<T> values) {
         List<T> result = new ArrayList<T>();
-        while (values.hasMoreElements()) {
-            result.add(values.nextElement());
+        if (values != null) {
+            while (values.hasMoreElements()) {
+                result.add(values.nextElement());
+            }
         }
         return result;
     }
 
-    public static <T> List<T> getList(Iterator<T> values) {
+    public static <T> List<T> newList(Iterator<T> values) {
         List<T> result = new ArrayList<T>();
-        while (values.hasNext()) {
-            result.add(values.next());
+        if (values != null) {
+            while (values.hasNext()) {
+                result.add(values.next());
+            }
         }
         return result;
     }
 
-    public static <K, V> Map<K, V> getMap(Map<K, V> source) {
+    public static <K, V> Map<K, V> newMap(Map<K, V> source) {
         Map<K, V> target = new HashMap<K, V>();
         if (source != null) {
             target.putAll(source);
@@ -971,14 +992,16 @@ public class Helpers {
     }
 
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> getMap(Map<String, Object> params, String namespace) {
-        if (Strings.isNotEmpty(namespace)) {
+    public static Map<String, Object> getMap(Map<String, Object> params, String key) {
+        Object value = params.get(key);
+        if (value instanceof Map) {
+            params = (Map<String, Object>) value;
+        } else if (Strings.isNotEmpty(key)) {
             params = Helpers.toHierarchical(params);
-            Object value;
-            for (String name : namespace.split("[./]")) {
+            for (String name : Strings.toHierarchy(key).split("[./]")) {
                 value = params.get(name);
                 if (value instanceof Map) {
-                    params = (Map<String, Object>) value;
+                    params = Helpers.toHierarchical((Map<String, Object>) value);
                 } else {
                     params = null;
                     break;
@@ -988,13 +1011,13 @@ public class Helpers {
         return params;
     }
 
-    public static Object getInstance(Map<String, Object> params, String namespace) {
-        int index = namespace.lastIndexOf(".");
+    public static Object getInstance(Map<String, Object> params, String key) {
+        int index = key.lastIndexOf(".");
         if (index > 0) {
-            params = getMap(params, namespace.substring(0, index));
-            namespace = namespace.substring(index + 1);
+            params = getMap(params, key.substring(0, index));
+            key = key.substring(index + 1);
         }
-        return params.get(namespace);
+        return params.get(key);
     }
 
     public static Object toArray(Object source) {
@@ -1471,23 +1494,102 @@ public class Helpers {
         return index < 0 || index >= size ? null : Array.get(array, index);
     }
 
+    public static Object getValue(Map<String, Object> params, String key) {
+        return getValue(params, key, (String) null);
+    }
+
+    public static Object getValue(Map<String, Object> params, String key, String suffix) {
+        suffix = Strings.empty(suffix);
+        if ((key = Strings.empty(key)).length() > 0) {
+            String pendingKey = Strings.toHierarchy(key); // 层级化
+            int index = pendingKey.lastIndexOf(".");
+            Map<String, Object> pending;
+            if (index > 0) {
+                pending = getMap(params, pendingKey.substring(0, index));
+                pendingKey = pendingKey.substring(index + 1);
+            } else {
+                pending = toHierarchical(params);
+                pendingKey = key;
+            }
+            if (pending != null) {
+                Object value = pending.get(pendingKey + suffix);
+                if (value != null) {
+                    return value;
+                }
+            }
+        }
+        return params.get(key + suffix);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Object getValue(Map<String, Object> params, String key, Class<?> rawClass) {
+        if (Reflects.isGeneral(rawClass) || rawClass.isInterface()) {
+            return getValue(params, key);
+        }
+        params = Helpers.toHierarchical(params); // 集合层级化（做为阻止闭环依赖导致无限递归的依据）
+        key = Strings.empty(key);
+        Map<String, Object> result = new HashMap<String, Object>();
+        Map<String, List<BoundField>> fields = Reflects.getBoundFields(rawClass);
+        String name;
+        Object value;
+        Object subValue;
+        BoundField field;
+        Map<String, Object> pending;
+        for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
+            field = entry.getValue().get(0);
+            // 获取字段值（层级化后的集合如有子级必定存在父级）
+            if (((value = getValue(params, key + "." + (name = entry.getKey()))) != null) || (Strings.isNotEmpty(name = field.getAlias()) && (value = getValue(params, key + "." + name)) != null)) {
+                // 递归获取子字段类型
+                if (value instanceof Map) {
+                    value = pending = new HashMap<String, Object>((Map<String, Object>) value); // 采用子集合作为容器做递归获取
+                    if ((subValue = getValue(pending, name, field.getToken().getRawClass())) != null) {
+                        pending.put(name, subValue);
+                    }
+                }
+            } else {
+                continue; // 目标值不存在
+            }
+            result.put(name, value);
+        }
+        return result.size() > 0 ? result : null;
+
+    }
+
     public static Object getValues(Map<String, Object> params, String key) {
-        return getValues(params, key, null);
+        return getValues(params, key, (String) null);
     }
 
     public static Object getValues(Map<String, Object> params, String key, String suffix) {
-        Object value = params.get(key + "[]" + (suffix = Strings.empty(suffix)));
+        Object value = getValue(params, (key = Strings.empty(key)) + "[]", suffix);
         if (value == null) {
             Object pending;
             int amount = 0;
             List<Object> container = new ArrayList<Object>();
-            while ((pending = params.get(key + "[" + (amount++) + "]" + suffix)) != null) {
+            while ((pending = getValue(params, key + "[" + (amount++) + "]", suffix)) != null) {
                 container.add(pending);
             }
             if (container.size() > 0) {
                 return Helpers.newArray(container.get(0).getClass(), container.toArray(), container.size());
             } else {
-                value = params.get(key);
+                value = getValue(params, key, suffix);
+            }
+        }
+        return Helpers.newArray(value);
+    }
+
+    public static Object getValues(Map<String, Object> params, String key, Class<?> rawClass) {
+        Object value = getValue(params, (key = Strings.empty(key)) + "[]", rawClass);
+        if (value == null) {
+            Object pending;
+            int amount = 0;
+            List<Object> container = new ArrayList<Object>();
+            while ((pending = getValue(params, key + "[" + (amount++) + "]", rawClass)) != null) {
+                container.add(pending);
+            }
+            if (container.size() > 0) {
+                return Helpers.newArray(container.get(0).getClass(), container.toArray(), container.size());
+            } else {
+                value = getValue(params, key, rawClass);
             }
         }
         return Helpers.newArray(value);

@@ -17,6 +17,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -341,11 +342,11 @@ public class Reflects {
     /**
      * 是否为抽象类
      * 
-     * @param rawType
+     * @param rawClass
      * @return
      */
-    public static boolean isAbstract(Class<?> rawType) {
-        return Modifier.isAbstract(rawType.getModifiers());
+    public static boolean isAbstract(Class<?> rawClass) {
+        return Modifier.isAbstract(rawClass.getModifiers());
     }
 
     /**
@@ -356,6 +357,20 @@ public class Reflects {
      */
     public static boolean isAbstract(Method method) {
         return Modifier.isAbstract(method.getModifiers());
+    }
+
+    /**
+     * 是否为常规类
+     *
+     * @param instance
+     * @return
+     */
+    public static boolean isGeneral(Class<?> rawClass) {
+        boolean general = getPrimitiveClass(rawClass) != null || Object.class == rawClass;
+        if (!(general || rawClass == null)) {
+            general = CharSequence.class.isAssignableFrom(rawClass) || Date.class.isAssignableFrom(rawClass) || Map.class.isAssignableFrom(rawClass) || Collection.class.isAssignableFrom(rawClass) || rawClass.isArray();
+        }
+        return general;
     }
 
     /**
@@ -1046,8 +1061,6 @@ public class Reflects {
             return instance;
         }
         final Map<String, Object> values = Helpers.toHierarchical(params);
-        String fieldName;
-        BoundField field;
         Map<String, List<BoundField>> fields = getBoundFields(instance.getClass());
         assembler = assembler == null ? new AssemblerAdapter() : new AssemblerAdapter(assembler) {
             public Object assemble(BoundField field, Object instance, Object value, Object... args) {
@@ -1055,12 +1068,14 @@ public class Reflects {
             }
         };
         Object value;
+        String key;
+        BoundField field;
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
-            fieldName = entry.getKey();
+            key = entry.getKey();
             field = entry.getValue().get(0);
             if (field.isBatch()) {
-                field.setValue(instance, getValues(values, fieldName, field.getAlias()), assembler);
-            } else if ((value = getValue(values, fieldName, field.getAlias())) != null) {
+                field.setValue(instance, getValues(values, key, field.getAlias()), assembler);
+            } else if ((value = getValue(values, key, field.getAlias())) != null) {
                 field.setValue(instance, value, assembler);
             } else {
                 field.setValue(instance, UNKNOWN, assembler);
@@ -1087,13 +1102,13 @@ public class Reflects {
     }
 
     private static Object getValue(Map<String, Object> params, String fieldName, String aliasName) {
-        Object value = params.get(fieldName);
+        Object value = Helpers.getValue(params, fieldName);
         if (value == null) {
-            value = params.get(Strings.toFieldName(fieldName));
+            value = Helpers.getValue(params, Strings.toFieldName(fieldName));
             if (value == null) {
-                value = params.get(Strings.toColumnName(fieldName));
+                value = Helpers.getValue(params, Strings.toColumnName(fieldName));
                 if (value == null) {
-                    value = params.get(aliasName);
+                    value = Helpers.getValue(params, aliasName);
                 }
             }
         }
