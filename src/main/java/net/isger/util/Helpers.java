@@ -1143,7 +1143,7 @@ public class Helpers {
         return newArray(resultType, source, sourceCount, target, targetCount);
     }
 
-    public static Object newArray(Class<?> resultType, Object source, int sourceCount, Object target, int targetCount) {
+    private static Object newArray(Class<?> resultType, Object source, int sourceCount, Object target, int targetCount) {
         Object overValue;
         int loopCount;
         int resultCount;
@@ -1168,12 +1168,15 @@ public class Helpers {
         return result;
     }
 
-    public static Object newArray(Class<?> resultType, Object source, int sourceCount) {
-        Object result = Array.newInstance(resultType, sourceCount);
-        int amount = 0;
-        do {
-            Array.set(result, amount, Array.get(source, amount));
-        } while (++amount < sourceCount);
+    @SuppressWarnings("unchecked")
+    public static <T> T[] newArray(Class<T> resultType, Object[] source, int count) {
+        T[] result = (T[]) Array.newInstance(resultType, count);
+        if ((count = Math.min(source.length, count)) > 0) {
+            int amount = 0;
+            do {
+                Array.set(result, amount, Array.get(source, amount));
+            } while (++amount < count);
+        }
         return result;
     }
 
@@ -1442,9 +1445,14 @@ public class Helpers {
             size = 1;
             array = new Object[] { array };
         }
+        int[] status = { 0 };
         Object[] result = new Object[size];
         for (int i = 0; i < size; i++) {
-            result[i] = callable.call(i, Array.get(array, i), args);
+            result[i] = callable.call(i, Array.get(array, i), args, status);
+            switch (status[0]) {
+            case 1:
+                break;
+            }
         }
         return isMultiple || multipled ? result : result[0];
     }
@@ -1473,6 +1481,9 @@ public class Helpers {
             array = collection.toArray(new Object[size]);
         } else if (array.getClass().isArray()) {
             size = Array.getLength(array);
+        } else {
+            size = 1;
+            array = new Object[] { array };
         }
         for (int i = 0; i < size; i++) {
             if (instance.equals(Array.get(array, i))) {
@@ -1480,6 +1491,21 @@ public class Helpers {
             }
         }
         return -1;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T getInstance(Object array, Class<T> rawClass) {
+        final Object[] instance = new Object[1];
+        Helpers.each(array, new Callable.Runnable() {
+            public void run(Object... args) {
+                int[] status = (int[]) args[3];
+                if (rawClass.isInstance(args[1])) {
+                    instance[0] = args[1];
+                    status[0] = 1;
+                }
+            }
+        });
+        return (T) instance[0];
     }
 
     public static Object getInstance(Object array, int index) {
@@ -1490,6 +1516,9 @@ public class Helpers {
             array = collection.toArray(new Object[size]);
         } else if (array.getClass().isArray()) {
             size = Array.getLength(array);
+        } else {
+            size = 1;
+            array = new Object[] { array };
         }
         return index < 0 || index >= size ? null : Array.get(array, index);
     }

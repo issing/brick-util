@@ -45,6 +45,17 @@ public class BaseLoader implements Loader {
      * @param res
      * @return
      */
+    public static Object toLoad(Object res) {
+        return toLoad(res, null);
+    }
+
+    /**
+     * 加载资源
+     *
+     * @param res
+     * @param assembler
+     * @return
+     */
     public static Object toLoad(Object res, ClassAssembler assembler) {
         try {
             return LOADER.load(res, assembler);

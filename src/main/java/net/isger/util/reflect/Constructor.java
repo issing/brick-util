@@ -49,29 +49,29 @@ public class Constructor {
     /**
      * 类型检测
      * 
-     * @param clazz
+     * @param rawClass
      * @return
      */
-    public static boolean isSupport(Class<?> clazz) {
+    public static boolean isSupport(Class<?> rawClass) {
         for (Construction construction : CONSTRUCTOR.constructions.values()) {
-            if (construction.isSupport(clazz)) {
+            if (construction.isSupport(rawClass)) {
                 return true;
             }
         }
         return false;
     }
 
-    public static <T> T construct(Class<? extends T> clazz, Object... args) {
+    public static <T> T construct(Class<? extends T> rawClass, Object... args) {
         for (Construction construction : CONSTRUCTOR.constructions.values()) {
-            if (construction.isSupport(clazz)) {
+            if (construction.isSupport(rawClass)) {
                 try {
-                    return construction.construct(clazz, args);
+                    return construction.construct(rawClass, args);
                 } catch (Exception e) {
                 }
             }
         }
         try {
-            java.lang.reflect.Constructor<? extends T> cons = clazz.getDeclaredConstructor();
+            java.lang.reflect.Constructor<? extends T> cons = rawClass.getDeclaredConstructor();
             if (cons != null) {
                 cons.setAccessible(true);
                 return cons.newInstance();
@@ -79,9 +79,9 @@ public class Constructor {
         } catch (Exception e) {
         }
         try {
-            return clazz.newInstance();
+            return rawClass.newInstance();
         } catch (Exception e) {
-            throw Asserts.state("Unsupported construct %s", clazz, e);
+            throw Asserts.state("Unsupported construct %s", rawClass, e);
         }
     }
 }
