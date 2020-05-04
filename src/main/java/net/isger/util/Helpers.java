@@ -606,7 +606,7 @@ public class Helpers {
             } else if (instance != null) {
                 annos = instance.getClass().getDeclaredAnnotations();
             } else {
-                order = Order.LOW_PRECEDENCE;
+                order = Order.PRECEDENCE_LOW;
                 break getOrder;
             }
             order = getOrder(annos);
@@ -625,7 +625,7 @@ public class Helpers {
                     }
                 }
             }
-            order = Order.LOW_PRECEDENCE;
+            order = Order.PRECEDENCE_LOW;
         }
         return order;
     }

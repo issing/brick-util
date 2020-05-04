@@ -14,12 +14,12 @@ import java.lang.annotation.Target;
 @Target({ ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
 public @interface Order {
 
-    public static final int HIGH_PRECEDENCE = Integer.MIN_VALUE;
+    public static final int PRECEDENCE_HIGH = Integer.MIN_VALUE;
 
-    public static final int DEFAULT_PRECEDENCE = 0;
+    public static final int PRECEDENCE_DEFAULT = 0;
 
-    public static final int LOW_PRECEDENCE = Integer.MAX_VALUE;
+    public static final int PRECEDENCE_LOW = Integer.MAX_VALUE;
 
-    int value() default DEFAULT_PRECEDENCE;
+    int value() default PRECEDENCE_DEFAULT;
 
 }

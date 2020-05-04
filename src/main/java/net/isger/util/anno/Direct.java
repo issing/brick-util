@@ -6,15 +6,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 别名
+ * 向标
  * 
  * @author issing
- * 
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
-public @interface Alias {
-
-    String value();
+@Target({ ElementType.FIELD })
+public @interface Direct {
 
 }
