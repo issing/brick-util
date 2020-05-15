@@ -10,6 +10,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.URL;
@@ -1674,6 +1675,15 @@ public class Helpers {
             }
         });
         return instances;
+    }
+
+    public static boolean isUrl(String url) {
+        try {
+            new URL(url);
+        } catch (MalformedURLException e) {
+            return false;
+        }
+        return true;
     }
 
 }
