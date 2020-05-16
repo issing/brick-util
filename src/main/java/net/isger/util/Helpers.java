@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -35,7 +36,10 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import net.isger.util.anno.Alias;
 import net.isger.util.anno.Order;
@@ -86,7 +90,15 @@ public class Helpers {
         for (int i = 0; i < MAX_RADIX; i++) {
             DIGIT_INDECES.put(CODES[i], (int) i);
         }
-        GSON = new Gson();
+        GSON = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
+            public boolean shouldSkipField(FieldAttributes attrs) {
+                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT);
+            }
+
+            public boolean shouldSkipClass(Class<?> clazz) {
+                return clazz.isInterface();
+            }
+        }).create();
     }
 
     private Helpers() {
