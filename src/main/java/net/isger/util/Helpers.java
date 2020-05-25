@@ -1507,7 +1507,7 @@ public class Helpers {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T getInstance(Object array, Class<T> rawClass) {
+    public static <T> T getInstance(Object array, final Class<T> rawClass) {
         final Object[] instance = new Object[1];
         Helpers.each(array, new Callable.Runnable() {
             public void run(Object... args) {
