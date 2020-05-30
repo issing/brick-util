@@ -46,7 +46,7 @@ public class Dependency {
         } else {
             Asserts.throwArgument(!dependencies.contains(node), "Dependencies cannot contain itself [%s]", node);
         }
-        dependencies = Helpers.getMerge(this.dependencies.get(node), dependencies);
+        dependencies = Helpers.getMerge(this.dependencies.get(node), dependencies); // 合并依赖节点
         addDependencies(node, dependencies);
         setDependencies(node, dependencies);
     }
@@ -58,16 +58,16 @@ public class Dependency {
      * @param dependencies
      */
     private void addDependencies(Object node, List<Object> dependencies) {
-        this.dependencies.put(node, dependencies);
+        this.dependencies.put(node, dependencies); // 替换依赖集合
         List<Object> bedependencies;
         for (Object dependency : dependencies) {
-            bedependencies = this.bedependencies.get(dependency);
+            bedependencies = this.bedependencies.get(dependency); // 反向依赖集合
             if (bedependencies == null) {
-                this.bedependencies.put(dependency, bedependencies = new ArrayList<Object>());
+                this.bedependencies.put(dependency, bedependencies = new ArrayList<Object>()); // 新增反向依赖
             } else if (bedependencies.contains(node)) {
                 continue;
             }
-            bedependencies.add(node);
+            bedependencies.add(node); // 添加反向依赖
         }
     }
 
@@ -109,6 +109,11 @@ public class Dependency {
         stays.remove(node);
     }
 
+    /**
+     * 逗留节点
+     *
+     * @param node
+     */
     private void addStay(Object node) {
         Asserts.throwState(!stayings.contains(node), "Found the self-devourer: %s -> %s", stayings, node);
         stayings.add(node);

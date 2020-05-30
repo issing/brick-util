@@ -353,11 +353,11 @@ public class Helpers {
     /**
      * 生成MD5摘要
      * 
-     * @param hex
+     * @param value
      * @return
      */
-    public static String makeMD5(String hex) {
-        return makeMD5(toHex(hex));
+    public static String makeMD5(String value) {
+        return makeMD5(toHex(value));
     }
 
     /**
