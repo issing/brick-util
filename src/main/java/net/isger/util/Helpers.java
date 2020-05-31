@@ -1467,7 +1467,7 @@ public class Helpers {
                 break;
             }
         }
-        return isMultiple || multipled ? result : result[0];
+        return isMultiple || multipled ? result : Helpers.getInstance(result, 0);
     }
 
     public static int getLength(Object array) {
