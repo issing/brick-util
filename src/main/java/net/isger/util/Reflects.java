@@ -414,6 +414,8 @@ public class Reflects {
         }
         Class<?> rawClass = null;
         try {
+            String[] form = name.split("[ ]", 2);
+            name = form.length > 1 ? form[1] : form[0];
             rawClass = loader != null ? loader.loadClass(name) : Class.forName(name);
         } catch (Exception ex) {
         }

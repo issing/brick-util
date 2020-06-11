@@ -346,7 +346,7 @@ public class Helpers {
         try {
             return toHex(Securities.toDigest("MD5", value));
         } catch (Exception e) {
-            throw Asserts.state("Failure to make MD5 for [%s] - %s", value, e.getMessage());
+            throw Asserts.state("Failure to make MD5 for [%s] - %s", value, e.getMessage(), e.getCause());
         }
     }
 
