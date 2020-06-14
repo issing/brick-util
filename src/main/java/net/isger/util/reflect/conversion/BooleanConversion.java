@@ -2,6 +2,7 @@ package net.isger.util.reflect.conversion;
 
 import java.lang.reflect.Type;
 
+import net.isger.util.Helpers;
 import net.isger.util.Reflects;
 import net.isger.util.reflect.ClassAssembler;
 
@@ -18,7 +19,7 @@ public class BooleanConversion implements Conversion {
     }
 
     public Object convert(Type type, Object value, ClassAssembler assembler) {
-        return value == null ? false : value instanceof Number ? ((Number) value).intValue() != 0 : Boolean.parseBoolean(value.toString());
+        return Helpers.toBoolean(value);
     }
 
     public String toString() {

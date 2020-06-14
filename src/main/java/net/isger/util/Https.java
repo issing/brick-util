@@ -93,7 +93,7 @@ public class Https {
                 }
             }
             /* 设置报文体 */
-            StringEntity requestEntity = new StringEntity(new String(content, encoding));
+            StringEntity requestEntity = new StringEntity(new String(content, encoding), encoding);
             requestEntity.setContentType("application/json");
             post.setEntity(requestEntity);
             /* 发送请求（同步阻塞） */

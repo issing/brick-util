@@ -207,7 +207,7 @@ public class Helpers {
      * @return
      */
     public static boolean toBoolean(Object value) {
-        return value != null && (value instanceof Boolean ? (boolean) value : toInt(value) != 0 || Strings.equalsIgnoreCase(value.toString(), "t", "true", "y", "yes"));
+        return value != null && (value instanceof Boolean ? (boolean) value : toInt(value) != 0 || Strings.equalsIgnoreCase(value.toString(), "t", "true", "y", "yes", "o", "on"));
     }
 
     /**
