@@ -92,11 +92,11 @@ public class Helpers {
         }
         GSON = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
             public boolean shouldSkipField(FieldAttributes attrs) {
-                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT);
+                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT | Modifier.FINAL);
             }
 
             public boolean shouldSkipClass(Class<?> clazz) {
-                return clazz.isInterface();
+                return false;
             }
         }).create();
     }
