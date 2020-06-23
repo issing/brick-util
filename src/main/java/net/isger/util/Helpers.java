@@ -9,6 +9,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -40,6 +41,14 @@ import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.reflect.TypeToken;
 
 import net.isger.util.anno.Alias;
 import net.isger.util.anno.Order;
@@ -98,7 +107,9 @@ public class Helpers {
             public boolean shouldSkipClass(Class<?> clazz) {
                 return false;
             }
-        }).create();
+        }).registerTypeAdapter(new TypeToken<Class<?>>() {
+        }.getType(), new ClassAdapter()).create();
+
     }
 
     private Helpers() {
@@ -1696,6 +1707,18 @@ public class Helpers {
             return false;
         }
         return true;
+    }
+
+    private static class ClassAdapter implements JsonSerializer<Class<?>>, JsonDeserializer<Class<?>> {
+
+        public Class<?> deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
+            return json == null ? null : Reflects.getClass(json.getAsString());
+        }
+
+        public JsonElement serialize(Class<?> instance, Type type, JsonSerializationContext context) {
+            return new JsonPrimitive(instance == null ? "" : instance.getName());
+        }
+
     }
 
 }
