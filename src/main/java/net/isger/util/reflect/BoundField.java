@@ -18,6 +18,7 @@ import net.isger.util.Strings;
 import net.isger.util.anno.Affix;
 import net.isger.util.anno.Alias;
 import net.isger.util.anno.Infect;
+import net.isger.util.anno.Sensitive;
 
 public class BoundField {
 
@@ -30,6 +31,8 @@ public class BoundField {
     private String alias;
 
     private String affix;
+
+    private boolean sensitive;
 
     private boolean inject;
 
@@ -58,6 +61,7 @@ public class BoundField {
             } catch (Exception e) {
             }
         }
+        this.sensitive = field.getAnnotation(Sensitive.class) != null;
         this.inject = field.getAnnotation(Inject.class) != null;
         this.infect = field.getAnnotation(Infect.class) != null;
         Type resolveType = token.getType();
@@ -83,6 +87,10 @@ public class BoundField {
 
     public String getAffix() {
         return affix;
+    }
+
+    public boolean isSensitive() {
+        return sensitive;
     }
 
     public boolean isInject() {
@@ -152,8 +160,12 @@ public class BoundField {
     }
 
     public Object getValue(Object instance) {
+        return getValue(instance, false);
+    }
+
+    public Object getValue(Object instance, boolean desensitization) {
         try {
-            return field.get(instance);
+            return desensitization ? null : field.get(instance);
         } catch (IllegalAccessException e) {
             throw Asserts.state("Can not to access field %s", getName(), e);
         }

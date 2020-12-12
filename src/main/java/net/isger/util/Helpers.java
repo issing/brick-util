@@ -159,7 +159,7 @@ public class Helpers {
             value = value.toLowerCase();
         }
         if (count == 0) {
-            throw new NumberFormatException("Failure to parse \"" + value + "\" using " + radix + " radix");
+            throw new NumberFormatException("Failure to parse [" + value + "] using " + radix + " radix");
         }
         long limit = -Long.MAX_VALUE;
         Integer digit;
@@ -171,7 +171,7 @@ public class Helpers {
                 negative = true;
                 limit = Long.MIN_VALUE;
             } else if (v != '+' || count == 1) {
-                throw new NumberFormatException("Failure to parse \"" + value + "\" using " + radix + " radix");
+                throw new NumberFormatException("Failure to parse [" + value + "] using " + radix + " radix");
             }
             amount++;
         }
@@ -180,11 +180,11 @@ public class Helpers {
         while (amount < count) {
             digit = DIGIT_INDECES.get(value.charAt(amount++));
             if (digit == null || digit < 0 || result < multmin) {
-                throw new NumberFormatException("Failure to parse \"" + value + "\" using " + radix + " radix");
+                throw new NumberFormatException("Failure to parse [" + value + "] using " + radix + " radix");
             }
             result *= radix;
             if (result < limit + digit) {
-                throw new NumberFormatException("Failure to parse \"" + value + "\" using " + radix + " radix");
+                throw new NumberFormatException("Failure to parse [" + value + "] using " + radix + " radix");
             }
             result -= digit;
         }

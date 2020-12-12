@@ -663,7 +663,22 @@ public class Securities {
      * @throws Exception
      */
     public static byte[] toCipher(int mode, Key key, byte[] data, Callable<Void> initializer) throws Exception {
-        Cipher cipher = Cipher.getInstance(key.getAlgorithm()); // , "BC");
+        return toCipher(mode, key, key.getAlgorithm(), data, initializer);
+    }
+
+    /**
+     * 数据密文
+     * 
+     * @param mode
+     * @param key
+     * @param transformation
+     * @param data
+     * @param initializer
+     * @return
+     * @throws Exception
+     */
+    public static byte[] toCipher(int mode, Key key, String transformation, byte[] data, Callable<Void> initializer) throws Exception {
+        Cipher cipher = Cipher.getInstance(transformation); // , "BC");
         if (initializer == null) {
             cipher.init(mode, key);
         } else {

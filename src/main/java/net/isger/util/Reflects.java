@@ -1178,11 +1178,22 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object bean) {
+        return toMap(bean, false);
+    }
+
+    /**
+     * 提取字段值转换为集合
+     * 
+     * @param bean
+     * @param desensitization
+     * @return
+     */
+    public static Map<String, Object> toMap(Object bean, boolean desensitization) {
         Map<String, Object> values = new HashMap<String, Object>();
         Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
         for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
             try {
-                values.put(entry.getKey(), entry.getValue().get(0).getValue(bean));
+                values.put(entry.getKey(), entry.getValue().get(0).getValue(bean, desensitization));
             } catch (Exception e) {
                 LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
             }
