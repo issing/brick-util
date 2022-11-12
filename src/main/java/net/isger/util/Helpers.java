@@ -109,7 +109,6 @@ public class Helpers {
             }
         }).registerTypeAdapter(new TypeToken<Class<?>>() {
         }.getType(), new ClassAdapter()).create();
-
     }
 
     private Helpers() {
@@ -1280,29 +1279,27 @@ public class Helpers {
      */
     public static Object compact(Object value) {
         if (value != null) {
-            if (value instanceof Collection) {
-                value = ((Collection<?>) value).toArray();
-            }
-            Class<?> type = value.getClass();
-            if (type.isArray()) {
-                int size = Array.getLength(value);
-                switch (size) {
-                case 0:
-                    value = null;
-                    break;
-                case 1:
-                    value = compact(Array.get(value, 0));
-                    break;
-                default:
-                    List<Object> container = new ArrayList<Object>();
-                    Object pending;
-                    for (int i = 0; i < size; i++) {
-                        if ((pending = compact(Array.get(value, i))) != null) {
-                            container.add(pending);
-                        }
-                    }
-                    value = container.size() < 2 ? compact(container) : container.toArray();
+            value = toArray(value);
+            int size = Array.getLength(value);
+            switch (size) {
+            case 0:
+                value = null;
+                break;
+            case 1:
+                value = Array.get(value, 0);
+                if (isMultiple(value)) {
+                    value = compact(value);
                 }
+                break;
+            default:
+                List<Object> container = new ArrayList<Object>();
+                Object pending;
+                for (int i = 0; i < size; i++) {
+                    if ((pending = compact(Array.get(value, i))) != null) {
+                        container.add(pending);
+                    }
+                }
+                value = container.size() < 2 ? compact(container) : toArray(container);
             }
         }
         return value;
@@ -1340,6 +1337,16 @@ public class Helpers {
                 Thread.sleep(ms, ns);
             } catch (InterruptedException e) {
             }
+        }
+    }
+
+    public static void readying(Callable<Boolean> readyable) {
+        readying(readyable, 200l);
+    }
+
+    public static void readying(Callable<Boolean> readyable, long ms) {
+        while (!Helpers.toBoolean(readyable.call())) {
+            Helpers.sleep(ms);
         }
     }
 
@@ -1430,7 +1437,7 @@ public class Helpers {
     }
 
     public static boolean isMultiple(Object instance) {
-        return instance instanceof Collection || instance.getClass().isArray();
+        return instance != null && (instance instanceof Collection || instance.getClass().isArray());
     }
 
     /**

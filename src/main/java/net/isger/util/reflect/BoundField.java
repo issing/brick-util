@@ -165,7 +165,7 @@ public class BoundField {
 
     public Object getValue(Object instance, boolean desensitization) {
         try {
-            return desensitization ? null : field.get(instance);
+            return desensitization && isSensitive() ? null : field.get(instance);
         } catch (IllegalAccessException e) {
             throw Asserts.state("Can not to access field %s", getName(), e);
         }
