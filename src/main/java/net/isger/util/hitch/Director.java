@@ -9,6 +9,11 @@ import net.isger.util.Hitchers;
 import net.isger.util.Reflects;
 import net.isger.util.anno.Ignore;
 
+/**
+ * 牵引器
+ * 
+ * @author issing
+ */
 @Ignore
 public class Director {
 
@@ -33,7 +38,7 @@ public class Director {
     }
 
     /**
-     * 指示
+     * 牵引
      * 
      * @param source
      */
@@ -61,7 +66,7 @@ public class Director {
     }
 
     /**
-     * 路径
+     * 路径牵引
      * 
      * @return
      */
@@ -71,7 +76,7 @@ public class Director {
     }
 
     /**
-     * 路径
+     * 路径牵引
      * 
      * @param key
      * @param value
@@ -86,7 +91,7 @@ public class Director {
     }
 
     /**
-     * 搭载
+     * 牵引挂接
      * 
      * @param path
      */
@@ -105,7 +110,7 @@ public class Director {
     }
 
     /**
-     * 附加
+     * 牵引附加
      * 
      * @param path
      */
@@ -113,33 +118,50 @@ public class Director {
     }
 
     /**
-     * 汇集
-     * 
+     * 牵引汇集
      */
     protected void directInflux() {
     }
 
     /**
-     * 分解器
+     * 路径分解器
      * 
      * @param path
      * @return
      */
     protected StringTokenizer getTokenizer(String path) {
-        return new StringTokenizer(
-                path.replaceAll(REGEX_SEPARETOR, TOKEN_SEPARETOR),
-                TOKEN_SEPARETOR);
+        return new StringTokenizer(path.replaceAll(REGEX_SEPARETOR, TOKEN_SEPARETOR), TOKEN_SEPARETOR);
     }
 
+    /**
+     * 定制属性分解器
+     * 
+     * @param props
+     * @param key
+     * @return
+     */
     protected StringTokenizer getTokenizer(Properties props, String key) {
         return getTokenizer(props, key, "");
     }
 
-    protected StringTokenizer getTokenizer(Properties props, String key,
-            String value) {
+    /**
+     * 定制属性分解器
+     * 
+     * @param props
+     * @param key
+     * @param value
+     * @return
+     */
+    protected StringTokenizer getTokenizer(Properties props, String key, String value) {
         return getTokenizer(props.getProperty(key, value));
     }
 
+    /**
+     * 系统属性分解器
+     * 
+     * @param key
+     * @return
+     */
     protected StringTokenizer getSystemTokenizer(String key) {
         return getTokenizer(Helpers.getProperty(key));
     }

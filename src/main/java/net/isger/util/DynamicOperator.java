@@ -40,7 +40,7 @@ public class DynamicOperator implements Operator {
      * @return
      */
     private Map<String, List<BoundMethod>> getMethods() {
-        return Reflects.getBoundMethods(getSource().getClass());
+        return Reflects.getBoundMethods(getSource().getClass(), true);
     }
 
     /**

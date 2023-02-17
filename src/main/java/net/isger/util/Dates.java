@@ -67,6 +67,13 @@ public class Dates {
     private Dates() {
     }
 
+    public static String getPattern(int type) {
+        if (type < 0 && type > DATE_PATTERNS.length) {
+            type = 0;
+        }
+        return DATE_PATTERNS[type];
+    }
+
     public static Date toDate(Object value) {
         Date date = null;
         if (value != null) {

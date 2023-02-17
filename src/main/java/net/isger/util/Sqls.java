@@ -419,7 +419,7 @@ public class Sqls {
         while (amount < size) {
             if ((value = values[amount++]) instanceof Date) {
                 stat.setObject(amount, new Timestamp(((Date) value).getTime()));
-            } else if (value instanceof Number || value instanceof Boolean || value instanceof String) {
+            } else if (value instanceof Number || value instanceof Boolean || value instanceof String || value == null) {
                 stat.setObject(amount, value);
             } else {
                 stat.setObject(amount, Helpers.toJson(value));

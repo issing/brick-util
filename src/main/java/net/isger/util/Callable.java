@@ -32,6 +32,9 @@ public class Callable<T> implements java.util.concurrent.Callable<T> {
      */
     public static class Runnable extends Callable<Void> implements java.lang.Runnable {
 
+        /**
+         * 执行
+         */
         public void run() {
             call();
         }

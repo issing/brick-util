@@ -26,6 +26,8 @@ import java.util.jar.JarOutputStream;
  */
 public class Files {
 
+    private static final String PROP_TMPDIR = "java.io.tmpdir";
+
     private Files() {
     }
 
@@ -271,6 +273,15 @@ public class Files {
         if (file.exists()) {
             file.delete();
         }
+    }
+
+    /**
+     * 临时目录
+     * 
+     * @return
+     */
+    public static File tmpdir() {
+        return new File(System.getProperty(PROP_TMPDIR));
     }
 
     /**

@@ -4,7 +4,6 @@ package net.isger.util;
  * 可控接口
  * 
  * @author issing
- *
  */
 public interface Manageable {
 

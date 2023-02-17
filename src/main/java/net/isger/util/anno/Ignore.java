@@ -9,7 +9,6 @@ import java.lang.annotation.Target;
  * 忽略
  * 
  * @author issing
- * 
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
@@ -34,6 +33,13 @@ public @interface Ignore {
      * 
      * @return
      */
-    Mode mode() default Mode.EXCLUDE;
+    public Mode mode() default Mode.EXCLUDE;
+
+    /**
+     * 序列化
+     * 
+     * @return
+     */
+    public boolean serialize() default true;
 
 }

@@ -3,6 +3,7 @@ package net.isger.util;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -72,7 +73,7 @@ public class Reflects {
     private static final Map<Class<?>, Map<String, List<BoundField>>> FIELDS;
 
     /** 类方法缓存 */
-    private static final Map<Class<?>, Map<String, List<BoundMethod>>> METHODS;
+    private static final Map<Class<?>, Map<String, List<BoundMethod>>[]> METHODS;
 
     static {
         WRAP_TYPES = new HashMap<Class<?>, Class<?>>();
@@ -100,7 +101,7 @@ public class Reflects {
         LOG = LoggerFactory.getLogger(Reflects.class);
 
         FIELDS = new ConcurrentHashMap<Class<?>, Map<String, List<BoundField>>>();
-        METHODS = new ConcurrentHashMap<Class<?>, Map<String, List<BoundMethod>>>();
+        METHODS = new ConcurrentHashMap<Class<?>, Map<String, List<BoundMethod>>[]>();
     }
 
     private Reflects() {
@@ -130,6 +131,35 @@ public class Reflects {
 
     public static WildcardType newLowerType(Type boundType) {
         return new WildcardTypeImpl(new Type[] { Object.class }, new Type[] { boundType });
+    }
+
+    /**
+     * 获取注解
+     * 
+     * @param instance
+     * @param clazz
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T getAnnotation(Object instance, Class<T> clazz) {
+        Annotation[] annos;
+        if (instance instanceof Class) {
+            annos = ((Class<?>) instance).getDeclaredAnnotations();
+        } else if (instance instanceof Method) {
+            annos = ((Method) instance).getDeclaredAnnotations();
+        } else if (instance instanceof AnnotatedElement) {
+            annos = ((AnnotatedElement) instance).getAnnotations();
+        } else if (instance != null) {
+            annos = instance.getClass().getDeclaredAnnotations();
+        } else {
+            return null;
+        }
+        for (Annotation anno : annos) {
+            if (clazz.isInstance(anno)) {
+                return (T) anno;
+            }
+        }
+        return null;
     }
 
     /**
@@ -602,16 +632,17 @@ public class Reflects {
         result = new LinkedHashMap<String, List<BoundField>>();
         Mode ignoreMode;
         BoundField boundField;
-        List<BoundField> boundFields;
+        // List<BoundField> boundFields;
         Class<?> pending = rawClass;
         while (pending != null && pending != Object.class) {
             // 忽略指定类
             ignoreMode = getIgnoreMode(pending);
             // 导入声明字段（字段名优先）
-            boundFields = new ArrayList<BoundField>();
+            // boundFields = new ArrayList<BoundField>();
             for (Field field : pending.getDeclaredFields()) {
-                if ((boundField = createBoundField(field, ignoreMode)) != null && Helpers.toAppend(result, boundField.getName(), boundField)) {
-                    boundFields.add(boundField);
+                if ((boundField = createBoundField(field, ignoreMode)) != null) {
+                    // boundFields.add(boundField);
+                    Helpers.toAppend(result, boundField.getName(), boundField);
                 }
             }
             pending = pending.getSuperclass();
@@ -663,41 +694,37 @@ public class Reflects {
      * @param rawClass
      * @return
      */
-    public static Map<String, List<BoundMethod>> getBoundMethods(Class<?> rawClass) {
-        Map<String, List<BoundMethod>> result = METHODS.get(rawClass);
+    @SuppressWarnings("unchecked")
+    public static Map<String, List<BoundMethod>> getBoundMethods(Class<?> rawClass, boolean overall) {
+        Map<String, List<BoundMethod>>[] result = METHODS.get(rawClass);
         // 跳过接口以及原始数据类型（不继承Object类）
         if (result != null || !Object.class.isAssignableFrom(rawClass)) {
-            return result;
+            return result[overall ? 1 : 0];
         }
-        result = new LinkedHashMap<String, List<BoundMethod>>();
+        result = new Map[] { new LinkedHashMap<String, List<BoundMethod>>(), new LinkedHashMap<String, List<BoundMethod>>() };
         String name;
         Mode ignoreMode;
         BoundMethod boundMethod;
-        List<BoundMethod> boundMethods;
         Class<?> type = rawClass;
         while (type != null && type != Object.class) {
             // 忽略指定类
             ignoreMode = getIgnoreMode(type);
             // 导入声明方法（方法名优先）
-            boundMethods = new ArrayList<BoundMethod>();
             for (Method method : type.getDeclaredMethods()) {
-                if ((boundMethod = createBoundMethod(method, ignoreMode)) != null && Helpers.toAppend(result, boundMethod.getName(), boundMethod) && Helpers.toAppend(result, boundMethod.getMethodDesc(), boundMethod)) {
-                    boundMethods.add(boundMethod);
+                if ((boundMethod = createBoundMethod(method, ignoreMode)) != null && Helpers.toAppend(result[0], name = method.getName(), boundMethod)) {
+                    // 导入别名及描述名方法（候选）
+                    Helpers.toAppend(result[1], name, boundMethod);
+                    if (Strings.isNotEmpty(name = boundMethod.getAliasName())) {
+                        Helpers.toAppend(result[1], name, boundMethod);
+                    }
+                    Helpers.toAppend(result[1], boundMethod.getMethodDesc(), boundMethod);
                 }
-            }
-            // 导入别名及描述名方法（候选）
-            for (BoundMethod method : boundMethods) {
-                name = method.getAliasName();
-                if (name != null) {
-                    Helpers.toAppend(result, name, method);
-                }
-                Helpers.toAppend(result, method.getMethodDesc(), method);
             }
             type = type.getSuperclass();
         }
         // 屏蔽修改
-        METHODS.put(rawClass, result = Helpers.toUnmodifiable(result));
-        return result;
+        METHODS.put(rawClass, result = new Map[] { Helpers.toUnmodifiable(result[0]), Helpers.toUnmodifiable(result[1]) });
+        return result[overall ? 1 : 0];
     }
 
     /**
@@ -707,8 +734,8 @@ public class Reflects {
      * @param name
      * @return
      */
-    public static BoundMethod getBoundMethod(Class<?> rawClass, String name) {
-        List<BoundMethod> bounds = getBoundMethods(rawClass).get(name);
+    public static BoundMethod getBoundMethod(Class<?> rawClass, String name, boolean overall) {
+        List<BoundMethod> bounds = getBoundMethods(rawClass, overall).get(name);
         return bounds == null || bounds.size() == 0 ? null : bounds.get(0);
     }
 
@@ -720,9 +747,9 @@ public class Reflects {
      * @param annoClass
      * @return
      */
-    public static <T extends Annotation> List<BoundMethod> getBoundMethods(Class<?> rawClass, Class<T> annoClass) {
+    public static <T extends Annotation> List<BoundMethod> getBoundMethods(Class<?> rawClass, Class<T> annoClass, boolean overall) {
         List<BoundMethod> result = new ArrayList<BoundMethod>();
-        for (List<BoundMethod> bounds : getBoundMethods(rawClass).values()) {
+        for (List<BoundMethod> bounds : getBoundMethods(rawClass, overall).values()) {
             result.addAll(getBoundMethods(bounds, annoClass));
         }
         return result;
@@ -754,9 +781,9 @@ public class Reflects {
      * @param annoClass
      * @return
      */
-    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> rawClass, Class<T> annoClass) {
+    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> rawClass, Class<T> annoClass, boolean overall) {
         BoundMethod method = null;
-        for (List<BoundMethod> bounds : getBoundMethods(rawClass).values()) {
+        for (List<BoundMethod> bounds : getBoundMethods(rawClass, overall).values()) {
             if ((method = getBoundMethod(bounds, annoClass)) != null) {
                 break;
             }
@@ -773,8 +800,8 @@ public class Reflects {
      * @param annoClass
      * @return
      */
-    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> rawClass, String name, Class<T> annoClass) {
-        List<BoundMethod> bounds = getBoundMethods(rawClass).get(name);
+    public static <T extends Annotation> BoundMethod getBoundMethod(Class<?> rawClass, String name, Class<T> annoClass, boolean overall) {
+        List<BoundMethod> bounds = getBoundMethods(rawClass, overall).get(name);
         if (bounds != null) {
             return getBoundMethod(bounds, annoClass);
         }
@@ -832,11 +859,17 @@ public class Reflects {
             return mode;
         }
         /* 忽略配置文件（TODO 忽略配置规则不完善） */
-        String path = rawClass.getName().replaceAll("[.]", "/");
         String name = rawClass.getSimpleName();
+        String path = rawClass.getName().replaceAll("[.]", "/");
+        path = path.substring(0, path.length() - name.length());
         Properties props = new Properties();
-        Helpers.load(props, false, path.substring(0, path.length() - name.length()) + ".ignoreMode");
-        Helpers.load(props, path + ".ignoreMode");
+        String p = "";
+        if (path.length() > 0) {
+            for (String n : path.split("[/]")) {
+                Helpers.load(props, false, (p += n + "/") + ".ignoreMode");
+            }
+        }
+        Helpers.load(props, false, p + name + ".ignoreMode");
         String modeName = props.getProperty("this");
         if (Mode.EXCLUDE_NAME.equals(modeName)) {
             mode = Mode.EXCLUDE;
@@ -854,13 +887,13 @@ public class Reflects {
      * @return
      */
     private static Mode getIgnoreMode(Ignore ignore, Mode mode) {
+        Mode result = mode;
         if (ignore != null) {
-            Mode result = ignore.mode();
-            if (result != null) {
-                return result;
+            if ((result = ignore.mode()) == null) {
+                result = mode;
             }
         }
-        return mode;
+        return result;
     }
 
     /**
@@ -1190,12 +1223,18 @@ public class Reflects {
      */
     public static Map<String, Object> toMap(Object bean, boolean desensitization) {
         Map<String, Object> values = new HashMap<String, Object>();
-        Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
-        for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
-            try {
-                values.put(entry.getKey(), entry.getValue().get(0).getValue(bean, desensitization));
-            } catch (Exception e) {
-                LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
+        if (bean instanceof Map) {
+            for (Entry<?, ?> entry : ((Map<?, ?>) bean).entrySet()) {
+                values.put(String.valueOf(entry.getKey()), entry.getValue());
+            }
+        } else {
+            Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
+            for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
+                try {
+                    values.put(entry.getKey(), entry.getValue().get(0).getValue(bean, desensitization));
+                } catch (Exception e) {
+                    LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
+                }
             }
         }
         return values;

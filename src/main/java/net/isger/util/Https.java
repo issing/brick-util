@@ -70,6 +70,10 @@ public class Https {
         return HttpClients.custom().setConnectionManager(createManager());
     }
 
+    public static String post(String url) {
+        return post(url, null, null, null, null);
+    }
+
     public static String post(String url, byte[] content, String encoding) {
         return post(url, null, content, encoding, null);
     }
@@ -112,6 +116,14 @@ public class Https {
         return result;
     }
 
+    public static String put(String url) {
+        return put(url, null, null, null, null);
+    }
+
+    public static String put(String url, byte[] content) {
+        return put(url, null, content, null, null);
+    }
+
     public static String put(String url, Map<String, String> headers, byte[] content, String encoding, String token) {
         String result = null;
         CloseableHttpClient client = null;
@@ -148,6 +160,14 @@ public class Https {
             Files.close(client);
         }
         return result;
+    }
+
+    public static String get(String url) {
+        return get(url, null, null, null);
+    }
+
+    public static String get(String url, String content) {
+        return get(url, null, content, null);
     }
 
     public static String get(String url, Map<String, String> headers, String content, String token) {

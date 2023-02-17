@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -51,7 +52,10 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 
 import net.isger.util.anno.Alias;
+import net.isger.util.anno.Ignore;
+import net.isger.util.anno.Ignore.Mode;
 import net.isger.util.anno.Order;
+import net.isger.util.anno.Sensitive;
 import net.isger.util.reflect.BoundField;
 import net.isger.util.reflect.Converter;
 
@@ -101,14 +105,16 @@ public class Helpers {
         }
         GSON = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
             public boolean shouldSkipField(FieldAttributes attrs) {
-                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT | Modifier.FINAL);
+                Ignore ignore = attrs.getAnnotation(Ignore.class);
+                Sensitive sensitive = attrs.getAnnotation(Sensitive.class);
+                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT | Modifier.FINAL) || sensitive != null || (ignore != null && (ignore.mode() == Mode.EXCLUDE || !ignore.serialize()));
             }
 
             public boolean shouldSkipClass(Class<?> clazz) {
                 return false;
             }
         }).registerTypeAdapter(new TypeToken<Class<?>>() {
-        }.getType(), new ClassAdapter()).create();
+        }.getType(), new ClassAdapter()).setDateFormat(Dates.getPattern(Dates.PATTERN_COMMON)).create();
     }
 
     private Helpers() {
@@ -204,7 +210,12 @@ public class Helpers {
             if (Map.class.isAssignableFrom(clazz) || Collection.class.isAssignableFrom(clazz) || clazz == Object.class || clazz.isArray()) {
                 return GSON.fromJson(json, clazz);
             }
-            return Reflects.newInstance(clazz, (Map<String, Object>) fromJson(json, Map.class));
+            Map<String, Object> parameters = (Map<String, Object>) fromJson(json, Map.class);
+            T instance = Reflects.newInstance(clazz, parameters);
+            if (instance instanceof Extendable) {
+                ((Extendable) instance).setExtends(parameters);
+            }
+            return instance;
         } catch (Exception e) {
             return null;
         }
@@ -217,7 +228,7 @@ public class Helpers {
      * @return
      */
     public static boolean toBoolean(Object value) {
-        return value != null && (value instanceof Boolean ? (boolean) value : toInt(value) != 0 || Strings.equalsIgnoreCase(value.toString(), "t", "true", "y", "yes", "o", "on"));
+        return value != null && (value instanceof Boolean ? (boolean) value : toInt(value) != 0 || Strings.equalsIgnoreCase(value.toString(), "t", "true", "y", "yes", "o", "on", "ok"));
     }
 
     /**
@@ -618,47 +629,25 @@ public class Helpers {
         return value;
     }
 
-    public static int getOrder(Object instance) {
-        Integer order;
-        getOrder: {
-            Annotation[] annos;
-            if (instance instanceof Class) {
-                annos = ((Class<?>) instance).getDeclaredAnnotations();
-            } else if (instance instanceof Method) {
-                annos = ((Method) instance).getDeclaredAnnotations();
-            } else if (instance != null) {
-                annos = instance.getClass().getDeclaredAnnotations();
-            } else {
-                order = Order.PRECEDENCE_LOW;
-                break getOrder;
-            }
-            order = getOrder(annos);
+    public static int compare(Object other, Object another) {
+        if (other instanceof Ordered && another instanceof Ordered) {
+            return Integer.compare(((Ordered) other).order(), ((Ordered) another).order());
         }
-        return order;
-    }
-
-    public static int getOrder(Annotation[] annos) {
-        Integer order;
-        getOrder: {
-            if (annos != null) {
-                for (Annotation anno : annos) {
-                    order = getOrder(anno);
-                    if (order != null) {
-                        break getOrder;
-                    }
-                }
-            }
-            order = Order.PRECEDENCE_LOW;
+        Order oo = Reflects.getAnnotation(other, Order.class);
+        Order ao = Reflects.getAnnotation(another, Order.class);
+        if (oo != null && ao != null) {
+            return Integer.compare(oo.value(), ao.value());
+        } else if (other instanceof String && another instanceof String) {
+            return ((String) other).compareTo((String) another);
+        } else if (other != null && another != null) {
+            return Integer.compare(other.hashCode(), another.hashCode());
+        } else if (other != null) {
+            return 1;
+        } else if (another != null) {
+            return -1;
+        } else {
+            return 0;
         }
-        return order;
-    }
-
-    private static Integer getOrder(Annotation anno) {
-        Integer order = null;
-        if (anno instanceof Order) {
-            order = ((Order) anno).value();
-        }
-        return order;
     }
 
     public static boolean hasAliasName(AnnotatedElement element) {
@@ -747,25 +736,6 @@ public class Helpers {
 
     public static boolean isEmpty(Collection<?> values) {
         return values != null && values.isEmpty();
-    }
-
-    /**
-     * 转换集合
-     *
-     * @param content
-     * @return
-     */
-    public static Map<String, Object> toMap(String content) {
-        Map<String, Object> result = new HashMap<String, Object>();
-        String[] pending = content.split("[\\&]");
-        String[] entry;
-        for (String pair : pending) {
-            entry = pair.split("[\\=]", 2);
-            if (entry.length == 2) {
-                result.put(entry[0], entry[1]);
-            }
-        }
-        return result;
     }
 
     /**
@@ -1485,7 +1455,7 @@ public class Helpers {
                 break;
             }
         }
-        return isMultiple || multipled ? result : Helpers.getInstance(result, 0);
+        return isMultiple || multipled ? result : Helpers.getElement(result, 0);
     }
 
     public static int getLength(Object array) {
@@ -1525,7 +1495,7 @@ public class Helpers {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T getInstance(Object array, final Class<T> rawClass) {
+    public static <T> T getElement(Object array, final Class<T> rawClass) {
         final Object[] instance = new Object[1];
         Helpers.each(array, new Callable.Runnable() {
             public void run(Object... args) {
@@ -1539,7 +1509,7 @@ public class Helpers {
         return (T) instance[0];
     }
 
-    public static Object getInstance(Object array, int index) {
+    public static Object getElement(Object array, int index) {
         int size = 0;
         if (array instanceof Collection) {
             Collection<?> collection = (Collection<?>) array;
@@ -1698,10 +1668,44 @@ public class Helpers {
         return writer.getBuffer().toString();
     }
 
+    public static <K, V> List<Entry<K, V>> sortByKey(Map<K, V> instances) {
+        return sortByKey(instances.entrySet());
+    }
+
+    public static <K, V> List<Entry<K, V>> sortByKey(Set<Entry<K, V>> instances) {
+        List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>();
+        for (Entry<K, V> entry : instances) {
+            entries.add(entry);
+        }
+        Collections.sort(entries, new Comparator<Entry<K, V>>() {
+            public int compare(Entry<K, V> other, Entry<K, V> another) {
+                return Helpers.compare(other.getKey(), another.getKey());
+            }
+        });
+        return entries;
+    }
+
+    public static <K, V> List<Entry<K, V>> sortByValue(Map<K, V> instances) {
+        return sortByValue(instances.entrySet());
+    }
+
+    public static <K, V> List<Entry<K, V>> sortByValue(Set<Entry<K, V>> instances) {
+        List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>();
+        for (Entry<K, V> entry : instances) {
+            entries.add(entry);
+        }
+        Collections.sort(entries, new Comparator<Entry<K, V>>() {
+            public int compare(Entry<K, V> other, Entry<K, V> another) {
+                return Helpers.compare(other.getValue(), another.getValue());
+            }
+        });
+        return entries;
+    }
+
     public static <T> List<T> sort(List<T> instances) {
         Collections.sort(instances, new Comparator<T>() {
             public int compare(T a, T b) {
-                return Integer.compare(getOrder(a), getOrder(b));
+                return Helpers.compare(a, b);
             }
         });
         return instances;
