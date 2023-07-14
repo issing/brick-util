@@ -2,14 +2,14 @@ package net.isger.util.sql;
 
 public class PageSql extends SqlEntry {
 
-    private Page page;
+    private Pager page;
 
-    public PageSql(Page page, String sql, Object... values) {
+    public PageSql(Pager page, String sql, Object... values) {
         super(sql, values);
         this.page = page;
     }
 
-    public Page getPage() {
+    public Pager getPage() {
         return page;
     }
 

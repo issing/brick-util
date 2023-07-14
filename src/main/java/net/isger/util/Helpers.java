@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.annotation.Annotation;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -31,9 +32,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +52,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.google.gson.reflect.TypeToken;
 
 import net.isger.util.anno.Alias;
 import net.isger.util.anno.Ignore;
@@ -113,8 +115,7 @@ public class Helpers {
             public boolean shouldSkipClass(Class<?> clazz) {
                 return false;
             }
-        }).registerTypeAdapter(new TypeToken<Class<?>>() {
-        }.getType(), new ClassAdapter()).setDateFormat(Dates.getPattern(Dates.PATTERN_COMMON)).create();
+        }).registerTypeAdapter(Class.class, new ClassAdapter()).setDateFormat(Dates.getPattern(Dates.PATTERN_COMMON)).create();
     }
 
     private Helpers() {
@@ -328,7 +329,7 @@ public class Helpers {
         int hex;
         StringBuffer buffer = new StringBuffer(values.length);
         for (byte value : values) {
-            if ((hex = value & 0xFF) < 16) {
+            if ((hex = value & 0x0FF) < 16) {
                 buffer.append("0");
             }
             buffer.append(Integer.toHexString(hex));
@@ -336,6 +337,12 @@ public class Helpers {
         return buffer.toString();
     }
 
+    /**
+     * 转换16进制
+     * 
+     * @param hex
+     * @return
+     */
     public static byte[] toHex(String hex) {
         int size = hex.length() / 2;
         byte[] result = new byte[size];
@@ -363,12 +370,8 @@ public class Helpers {
      * @param value
      * @return
      */
-    public static String makeMD5(byte[] value) {
-        try {
-            return toHex(Securities.toDigest("MD5", value));
-        } catch (Exception e) {
-            throw Asserts.state("Failure to make MD5 for [%s] - %s", value, e.getMessage(), e.getCause());
-        }
+    public static String makeMD5(String value) {
+        return makeMD5(value.getBytes());
     }
 
     /**
@@ -377,8 +380,12 @@ public class Helpers {
      * @param value
      * @return
      */
-    public static String makeMD5(String value) {
-        return makeMD5(toHex(value));
+    public static String makeMD5(byte[] value) {
+        try {
+            return toHex(Securities.toDigest("MD5", value));
+        } catch (Exception e) {
+            throw Asserts.state("Failure to make MD5 for [%s] - %s", value, e.getMessage(), e.getCause());
+        }
     }
 
     /**
@@ -401,6 +408,19 @@ public class Helpers {
             uuidSearial %= MAX_RADIX;
         }
         return buffer.toString();
+    }
+
+    /**
+     * 生成机器码
+     * 
+     * @return
+     */
+    public static String makeMarchineCode() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(getCPUID());
+        buffer.append(getHDID());
+        buffer.append(Files.getBasePath());
+        return makeMD5(buffer.toString());
     }
 
     /**
@@ -630,13 +650,22 @@ public class Helpers {
     }
 
     public static int compare(Object other, Object another) {
-        if (other instanceof Ordered && another instanceof Ordered) {
-            return Integer.compare(((Ordered) other).order(), ((Ordered) another).order());
-        }
         Order oo = Reflects.getAnnotation(other, Order.class);
         Order ao = Reflects.getAnnotation(another, Order.class);
-        if (oo != null && ao != null) {
-            return Integer.compare(oo.value(), ao.value());
+        Integer oi = null;
+        if (other instanceof Ordered) {
+            oi = ((Ordered) other).order();
+        } else if (oo != null) {
+            oi = oo.value();
+        }
+        Integer ai = null;
+        if (another instanceof Ordered) {
+            ai = ((Ordered) another).order();
+        } else if (ao != null) {
+            ai = ao.value();
+        }
+        if (oi != null && ai != null) {
+            return oi.compareTo(ai);
         } else if (other instanceof String && another instanceof String) {
             return ((String) other).compareTo((String) another);
         } else if (other != null && another != null) {
@@ -736,6 +765,10 @@ public class Helpers {
 
     public static boolean isEmpty(Collection<?> values) {
         return values != null && values.isEmpty();
+    }
+
+    public static boolean isMultiple(Object instance) {
+        return instance != null && (instance instanceof Collection || instance.getClass().isArray());
     }
 
     /**
@@ -1406,10 +1439,6 @@ public class Helpers {
         return Strings.isNotEmpty(value) && value.toUpperCase().matches(REGEX_CODE) && value.length() < limit;
     }
 
-    public static boolean isMultiple(Object instance) {
-        return instance != null && (instance instanceof Collection || instance.getClass().isArray());
-    }
-
     /**
      * 遍历操作
      * 
@@ -1625,11 +1654,11 @@ public class Helpers {
         return Helpers.newArray(value);
     }
 
-    public static Object nvl(Object value, Object alternative) {
+    public static <T> T nvl(T value, T alternative) {
         return nvl(value, value, alternative);
     }
 
-    public static Object nvl(Object value, Object leftist, Object rightist) {
+    public static <T> T nvl(T value, T leftist, T rightist) {
         return value == null ? rightist : leftist;
     }
 
@@ -1718,6 +1747,115 @@ public class Helpers {
             return false;
         }
         return true;
+    }
+
+    public static boolean isEmail(String email) {
+        return Strings.isNotEmpty(email) && Pattern.matches("^(\\w+([-.][A-Za-z0-9]+)*){3,18}@\\w+([-.][A-Za-z0-9]+)*\\.\\w+([-.][A-Za-z0-9]+)*$", email);
+    }
+
+    /**
+     * 当前运行进程
+     * 
+     * @return
+     */
+    public static String getRuntimeProcess() {
+        return ManagementFactory.getRuntimeMXBean().getName();
+    }
+
+    /**
+     * 获取CPU标识
+     * 
+     * @return
+     */
+    public static String getCPUID() {
+        String result = "";
+        String systemName = System.getProperty("os.name");
+        if (Strings.containsIgnoreCase(systemName, "Windows")) {
+            result = run("wmic cpu get ProcessorId", 2);
+        } else if (Strings.containsIgnoreCase(systemName, "Linux")) {
+            result = run("dmidecode | grep \"ID\"", "ID");
+            if (Strings.isNotEmpty(result)) {
+                result = result.substring(result.indexOf(":") + 1);
+            }
+        } else if (Strings.containsIgnoreCase(systemName, "Mac")) {
+            result = run("system_profiler SPHardwareDataType", "Hardware UUID");
+            if (Strings.isNotEmpty(result)) {
+                result = result.substring(result.indexOf(":") + 1);
+            }
+        }
+        return Strings.empty(result);
+    }
+
+    /**
+     * 获取硬盘标识
+     * 
+     * @return
+     */
+    public static String getHDID() {
+        String result = "";
+        String systemName = System.getProperty("os.name");
+        if (Strings.containsIgnoreCase(systemName, "Windows")) {
+            result = run("wmic path win32_physicalmedia get serialnumber", 2);
+        } else if (Strings.containsIgnoreCase(systemName, "Linux")) {
+            result = run("dmidecode | grep \"Serial Number\"", "Serial Number");
+            if (Strings.isNotEmpty(result) && !": Not Specified".equals(result)) {
+                result = result.substring(result.indexOf(":") + 1);
+            } else {
+                result = run("dmidecode | grep \"UUID\"", "UUID");
+                if (Strings.isNotEmpty(result)) {
+                    result = result.substring(result.indexOf(":") + 1);
+                }
+            }
+        } else if (Strings.containsIgnoreCase(systemName, "Mac")) {
+            result = run("system_profiler SPStorageDataType", "Volume UUID");
+            if (Strings.isNotEmpty(result)) {
+                result = result.substring(result.indexOf(":") + 1);
+            }
+        }
+        return Strings.empty(result);
+    }
+
+    public static String run(String cmd, int line) {
+        Scanner scanner = null;
+        StringBuffer buffer = new StringBuffer();
+        try {
+            Process process = Runtime.getRuntime().exec(cmd);
+            process.getOutputStream().close();
+            scanner = new Scanner(process.getInputStream());
+            int amount = 0;
+            while (scanner.hasNextLine()) {
+                amount++;
+                String pending = Strings.empty(scanner.nextLine());
+                if (line <= 0) {
+                    buffer.append(pending).append("\r\n");
+                } else if (amount == line) {
+                    return pending;
+                }
+            }
+        } catch (Exception e) {
+        } finally {
+            Files.close(scanner);
+        }
+        return buffer.toString();
+    }
+
+    public static String run(String cmd, String regex) {
+        Scanner scanner = null;
+        try {
+            Process process = Runtime.getRuntime().exec(cmd);
+            process.getOutputStream().close();
+            scanner = new Scanner(process.getInputStream());
+            while (scanner.hasNextLine()) {
+                String pending = Strings.empty(scanner.nextLine());
+                if (Strings.isNotEmpty(pending) && Strings.containsIgnoreCase(pending, regex)) {
+                    return pending;
+                }
+            }
+        } catch (Exception e) {
+        } finally {
+            Files.close(scanner);
+        }
+        return null;
     }
 
     private static class ClassAdapter implements JsonSerializer<Class<?>>, JsonDeserializer<Class<?>> {

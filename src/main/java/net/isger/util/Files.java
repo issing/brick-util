@@ -28,7 +28,18 @@ public class Files {
 
     private static final String PROP_TMPDIR = "java.io.tmpdir";
 
+    private static final String PROP_USERDIR = "user.dir";
+
     private Files() {
+    }
+
+    /**
+     * 基础目录
+     * 
+     * @return
+     */
+    public static String getBasePath() {
+        return new File(System.getProperty(PROP_USERDIR)).getAbsolutePath();
     }
 
     /**

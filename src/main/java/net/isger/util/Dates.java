@@ -3,12 +3,14 @@ package net.isger.util;
 import java.sql.Timestamp;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 
 public class Dates {
 
-    private static final String DATE_PATTERNS[] = { "yyyy-MM-dd HH:mm:ss.SSS", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd", "yyyy-MM", "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd", "yyyy/MM", "yyyyMMddHHmmss", "yyyyMMddHHmm", "yyyyMMdd", "yyyyMM", "yyyy", "HH:mm:ss", "HH:mm", "MM", "dd", "HH", "mm", "ss" };
+    private static final String DATE_PATTERNS[] = { "yyyy-MM-dd HH:mm:ss.SSS", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd", "yyyy-MM", "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd", "yyyy/MM", "yyyyMMddHHmmss", "yyyyMMddHHmm", "yyyyMMdd", "yyyyMM", "yyyy", "HH:mm:ss", "HH:mm", "EEE MMM dd HH:mm:ss zzz yyyy" };
 
     public static final int PATTERN_DEFAULT = 0;
 
@@ -42,15 +44,7 @@ public class Dates {
 
     public static final int PATTERN_TIME_MINUTE = 15;
 
-    public static final int PATTERN_MONTH = 16;
-
-    public static final int PATTERN_DAY = 17;
-
-    public static final int PATTERN_HOUR = 18;
-
-    public static final int PATTERN_MINUTE = 19;
-
-    public static final int PATTERN_SECOND = 20;
+    public static final int PATTERN_LINGO = 16;
 
     private static final int UNITS[] = { 1, 1000, 60000, 3600000, 86400000 };
 
@@ -84,11 +78,16 @@ public class Dates {
             } else if (value instanceof Number) {
                 date = new Date(((Number) value).longValue());
             } else {
-                String source = String.valueOf(value).replaceAll("[Tt]", " ").replaceAll("[年月日]", "-").replaceAll("[时分]", ":").replaceAll("秒", "");
+                String source = String.valueOf(value);
+                try {
+                    source = LocalDateTime.parse(source).format(DateTimeFormatter.ofPattern(DATE_PATTERNS[PATTERN_COMMON]));
+                } catch (Exception e) {
+                }
                 SimpleDateFormat parser = new SimpleDateFormat();
                 parser.setLenient(true);
                 ParsePosition pos = new ParsePosition(0);
-                for (int i = 0; i < PATTERN_MONTH; i++) {
+                source = source.replaceFirst("\\d+([-/]?\\d+)T", " ").replaceAll("[年月日]", "-").replaceAll("[时分]", ":").replaceAll("秒", "");
+                for (int i = 0; i <= PATTERN_LINGO; i++) {
                     parser.applyPattern(DATE_PATTERNS[i]);
                     pos.setIndex(0);
                     date = parser.parse(source, pos);

@@ -1095,11 +1095,11 @@ public class Reflects {
             ((Map<String, Object>) instance).putAll(params);
             return instance;
         }
-        final Map<String, Object> values = Helpers.toHierarchical(params);
+        final Map<String, Object> data = Helpers.toHierarchical(params);
         Map<String, List<BoundField>> fields = getBoundFields(instance.getClass());
         assembler = assembler == null ? new AssemblerAdapter() : new AssemblerAdapter(assembler) {
             public Object assemble(BoundField field, Object instance, Object value, Object... args) {
-                return super.assemble(field, instance, value, (Object[]) Helpers.newArray(args, values));
+                return super.assemble(field, instance, value, (Object[]) Helpers.newArray(args, data)); // 装配器二次封装：传递原始数据
             }
         };
         Object value;
@@ -1109,8 +1109,8 @@ public class Reflects {
             key = entry.getKey();
             field = entry.getValue().get(0);
             if (field.isBatch()) {
-                field.setValue(instance, getValues(values, key, field.getAlias()), assembler);
-            } else if ((value = getValue(values, key, field.getAlias())) != null) {
+                field.setValue(instance, getValues(data, key, field.getAlias()), assembler);
+            } else if ((value = getValue(data, key, field.getAlias())) != null) {
                 field.setValue(instance, value, assembler);
             } else {
                 field.setValue(instance, UNKNOWN, assembler);
@@ -1211,7 +1211,11 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object bean) {
-        return toMap(bean, false);
+        return toMap(bean, false, false);
+    }
+
+    public static Map<String, Object> toMap(Object bean, boolean desensitization) {
+        return toMap(bean, desensitization, false);
     }
 
     /**
@@ -1221,17 +1225,36 @@ public class Reflects {
      * @param desensitization
      * @return
      */
-    public static Map<String, Object> toMap(Object bean, boolean desensitization) {
+    public static Map<String, Object> toMap(Object bean, boolean desensitization, boolean deep) {
+        if (bean instanceof String) {
+            bean = Helpers.fromJson((String) bean, Map.class);
+        }
         Map<String, Object> values = new HashMap<String, Object>();
+        Object value;
+        Map<String, Object> pending;
         if (bean instanceof Map) {
             for (Entry<?, ?> entry : ((Map<?, ?>) bean).entrySet()) {
-                values.put(String.valueOf(entry.getKey()), entry.getValue());
+                value = entry.getValue();
+                if (deep) {
+                    pending = toMap(value, desensitization, deep);
+                    if (!pending.isEmpty()) {
+                        value = pending;
+                    }
+                }
+                values.put(String.valueOf(entry.getKey()), value);
             }
-        } else {
+        } else if (!(bean == null || Reflects.isGeneral(bean.getClass()))) {
             Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
             for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
                 try {
-                    values.put(entry.getKey(), entry.getValue().get(0).getValue(bean, desensitization));
+                    value = entry.getValue().get(0).getValue(bean, desensitization);
+                    if (deep) {
+                        pending = toMap(value, desensitization, deep);
+                        if (!pending.isEmpty()) {
+                            value = pending;
+                        }
+                    }
+                    values.put(entry.getKey(), value);
                 } catch (Exception e) {
                     LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
                 }
@@ -1247,8 +1270,7 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object[] grid) {
-        Object[] values = grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0] : (Object[]) grid[1];
-        return toMap((Object[]) grid[0], values);
+        return toMap((Object[]) grid[0], grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0] : (Object[]) grid[1]);
     }
 
     /**

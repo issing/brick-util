@@ -147,7 +147,7 @@ public class Converter {
         }
         /* 字符串赋值 */
         if (rawClass == String.class) {
-            return Helpers.toJson(value);
+            return Helpers.toJson(value).replaceFirst("^[\"]+", "").replaceFirst("[\"]$", "");
         }
         /* 键值对转换 */
         if (value instanceof Map) {

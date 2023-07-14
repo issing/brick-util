@@ -4,10 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.isger.util.anno.Ignore;
+import net.isger.util.anno.Ignore.Mode;
 
-@Ignore
 public class BaseExtendable implements Extendable {
 
+    @Ignore(mode = Mode.EXCLUDE, serialize = false)
     private Map<String, Object> values;
 
     public BaseExtendable() {

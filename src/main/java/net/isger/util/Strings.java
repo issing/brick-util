@@ -135,6 +135,10 @@ public class Strings {
         return new String(source).equals(new String(target));
     }
 
+    public static boolean equalsTolerant(String source, String target) {
+        return isEmpty(source) || isEmpty(target) || source.equals(target);
+    }
+
     /**
      * 忽略大小写
      *
@@ -544,16 +548,10 @@ public class Strings {
         return null;
     }
 
-    /**
-     * 
-     *
-     * @param values
-     * @return
-     */
-    public static String[] trim(String[] values) {
+    public static String[] trim(String... values) {
         if (values != null) {
             for (int i = 0; i < values.length; i++) {
-                values[i] = Strings.empty(values[i]);
+                values[i] = Strings.trim(values[i]);
             }
         }
         return values;

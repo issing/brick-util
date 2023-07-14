@@ -3,6 +3,7 @@ package net.isger.util.reflect.conversion;
 import java.lang.reflect.Type;
 
 import net.isger.util.Reflects;
+import net.isger.util.Strings;
 import net.isger.util.reflect.ClassAssembler;
 import net.isger.util.reflect.Converter;
 
@@ -21,7 +22,7 @@ public class NumberConversion implements Conversion {
     public Object convert(Type type, Object value, ClassAssembler assembler) {
         Class<?> rawClass = Reflects.getRawClass(type);
         Number source;
-        if (value == null) {
+        if (Strings.isEmpty(value)) {
             return Converter.defaultValue(rawClass);
         } else if (value instanceof Number) {
             source = (Number) value;

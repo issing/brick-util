@@ -85,7 +85,6 @@ public class Sqls {
      * 转换为约定数据结构
      * 
      * @param resultSet
-     *            数据库查询结果集
      * @return
      * 
      *         <pre>
@@ -133,7 +132,6 @@ public class Sqls {
      * 获取网格数据
      * 
      * @param bean
-     *            实例对象
      * @return
      * 
      *         <pre>
@@ -179,9 +177,9 @@ public class Sqls {
      * @throws SQLException
      */
     private static String getColumnName(ResultSetMetaData metaData, int index) throws SQLException {
-        String name = metaData.getColumnName(index);
+        String name = metaData.getColumnLabel(index);
         if (Strings.isEmpty(name)) {
-            name = metaData.getColumnLabel(index);
+            name = metaData.getColumnName(index);
         }
         return name;
     }
@@ -217,6 +215,17 @@ public class Sqls {
         return modify(clazz, null, id, values, conn, args);
     }
 
+    /**
+     * 修改数据（批量）
+     * 
+     * @param clazz
+     * @param dialectName
+     * @param id
+     * @param values
+     * @param conn
+     * @param args
+     * @return
+     */
     public static int[] modify(Class<?> clazz, String dialectName, String id, Object[][] values, Connection conn, Object... args) {
         return modify(getSQL(clazz, dialectName, id, args), values, conn);
     }
@@ -234,7 +243,7 @@ public class Sqls {
         try {
             return stat.executeBatch();
         } catch (SQLException e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException(sql, e);
         } finally {
             close(stat);
         }
@@ -278,7 +287,7 @@ public class Sqls {
         try {
             return stat.executeUpdate();
         } catch (SQLException e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException(sql, e);
         } finally {
             close(stat);
         }
@@ -310,6 +319,17 @@ public class Sqls {
         return query(clazz, null, id, values, conn, args);
     }
 
+    /**
+     * 查询数据
+     * 
+     * @param clazz
+     * @param dialectName
+     * @param id
+     * @param values
+     * @param conn
+     * @param args
+     * @return
+     */
     public static Object[] query(Class<?> clazz, String dialectName, String id, Object[] values, Connection conn, Object... args) {
         return query(getSQL(clazz, dialectName, id, args), values, conn);
     }
@@ -340,7 +360,7 @@ public class Sqls {
             resultSet = stat.executeQuery();
             return getGridData(resultSet);
         } catch (SQLException e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException(sql, e);
         } finally {
             close(resultSet);
             close(stat);
@@ -362,7 +382,7 @@ public class Sqls {
         try {
             return prepare(conn.prepareStatement(sql), values);
         } catch (SQLException e) {
-            throw new IllegalStateException(e.getMessage(), e.getCause());
+            throw new IllegalStateException(sql, e);
         }
     }
 
@@ -387,7 +407,7 @@ public class Sqls {
             }
             return stat;
         } catch (SQLException e) {
-            throw new IllegalStateException(e.getMessage(), e.getCause());
+            throw new IllegalStateException(sql, e);
         }
     }
 

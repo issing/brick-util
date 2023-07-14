@@ -1,8 +1,10 @@
 package net.isger.util;
 
+import java.io.InputStream;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -28,6 +30,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
+
+import net.isger.util.reflect.Converter;
 
 public class Https {
 
@@ -62,7 +66,7 @@ public class Https {
             socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory> create().register("http", PlainConnectionSocketFactory.INSTANCE).register("https", new SSLConnectionSocketFactory(createContext(), NoopHostnameVerifier.INSTANCE)).build();
             return new PoolingHttpClientConnectionManager(socketFactoryRegistry);
         } catch (Exception e) {
-            throw Asserts.state("Failure to create http/https client connection manager: {}", e.getMessage(), e.getCause());
+            throw Asserts.state("Failure to create http/https client connection manager - {}", e.getMessage(), e.getCause());
         }
     }
 
@@ -71,14 +75,22 @@ public class Https {
     }
 
     public static String post(String url) {
-        return post(url, null, null, null, null);
+        return post(url, null, null, null);
     }
 
-    public static String post(String url, byte[] content, String encoding) {
-        return post(url, null, content, encoding, null);
+    public static String post(String url, Object content) {
+        return post(url, Reflects.toMap(content));
     }
 
-    public static String post(String url, Map<String, String> headers, byte[] content, String encoding, String token) {
+    public static String post(String url, Map<String, Object> content) {
+        return post(url, format(content));
+    }
+
+    public static String post(String url, String content) {
+        return post(url, null, content, null);
+    }
+
+    public static String post(String url, Map<String, String> headers, String content, String token) {
         String result = null;
         CloseableHttpClient client = null;
         CloseableHttpResponse response = null;
@@ -97,18 +109,18 @@ public class Https {
                 }
             }
             /* 设置报文体 */
-            StringEntity requestEntity = new StringEntity(new String(content, encoding), encoding);
+            StringEntity requestEntity = new StringEntity(content);
             requestEntity.setContentType("application/json");
             post.setEntity(requestEntity);
             /* 发送请求（同步阻塞） */
             response = client.execute(post);
             HttpEntity responseEntity = response.getEntity();
             if (responseEntity != null) {
-                result = EntityUtils.toString(responseEntity, encoding);
+                result = EntityUtils.toString(responseEntity);
             }
             EntityUtils.consume(responseEntity);
         } catch (Exception e) {
-            throw Asserts.state("Failure to request [%s]: %s", url, e.getMessage(), e.getCause());
+            throw Asserts.state("Failure to request [%s] - %s", url, e.getMessage(), e.getCause());
         } finally {
             Files.close(response);
             Files.close(client);
@@ -117,14 +129,14 @@ public class Https {
     }
 
     public static String put(String url) {
-        return put(url, null, null, null, null);
+        return put(url, null, null, null);
     }
 
-    public static String put(String url, byte[] content) {
-        return put(url, null, content, null, null);
+    public static String put(String url, String content) {
+        return put(url, null, content, null);
     }
 
-    public static String put(String url, Map<String, String> headers, byte[] content, String encoding, String token) {
+    public static String put(String url, Map<String, String> headers, String content, String token) {
         String result = null;
         CloseableHttpClient client = null;
         CloseableHttpResponse response = null;
@@ -143,18 +155,18 @@ public class Https {
                 }
             }
             /* 设置报文体 */
-            StringEntity requestEntity = new StringEntity(new String(content, encoding));
+            StringEntity requestEntity = new StringEntity(content);
             requestEntity.setContentType("application/json");
             put.setEntity(requestEntity);
             /* 发送请求（同步阻塞） */
             response = client.execute(put);
             HttpEntity responseEntity = response.getEntity();
             if (responseEntity != null) {
-                result = EntityUtils.toString(responseEntity, encoding);
+                result = EntityUtils.toString(responseEntity);
             }
             EntityUtils.consume(responseEntity);
         } catch (Exception e) {
-            throw Asserts.state("Failure to request [%s]: %s", url, e.getMessage(), e.getCause());
+            throw Asserts.state("Failure to request [%s] - %s", url, e.getMessage(), e.getCause());
         } finally {
             Files.close(response);
             Files.close(client);
@@ -196,12 +208,63 @@ public class Https {
             }
             EntityUtils.consume(responseEntity);
         } catch (Exception e) {
-            throw Asserts.state("Failure to request [%s]: %s", url, e.getMessage(), e.getCause());
+            throw Asserts.state("Failure to request [%s] - %s", url, e.getMessage(), e.getCause());
         } finally {
             Files.close(response);
             Files.close(client);
         }
         return result;
+    }
+
+    public static String format(Map<String, Object> parameters) {
+        return format(parameters, null);
+    }
+
+    public static String format(Map<String, Object> parameters, Encoder encoder) {
+        if (encoder == null) {
+            encoder = new Encoder() {
+                public byte[] encode(Object content) {
+                    return Strings.empty(content == null ? null : Converter.convert(String.class, content)).getBytes();
+                }
+            };
+        }
+        StringBuffer buffer = new StringBuffer(512);
+        String key;
+        String value;
+        for (Entry<String, Object> entry : Helpers.sortByKey(parameters)) {
+            if (Strings.isEmpty(key = Strings.empty(entry.getKey())) || Strings.isEmpty(value = new String(encoder.encode(entry.getValue())))) {
+                continue;
+            }
+            buffer.append(key).append("=").append(value).append("&");
+        }
+        if (buffer.length() > 0) {
+            buffer.setLength(buffer.length() - 1);
+        }
+        return buffer.toString();
+    }
+
+    public static Map<String, Object> parse(String content) {
+        return parse(content, null);
+    }
+
+    public static Map<String, Object> parse(String content, Decoder decoder) {
+        if (decoder == null) {
+            decoder = new Decoder() {
+                public Object decode(InputStream is) {
+                    return null;
+                }
+
+                public Object decode(byte[] content) {
+                    return new String(content);
+                }
+            };
+        }
+        Map<String, Object> parameters = new HashMap<String, Object>();
+        for (String parameter : content.split("[&]")) {
+            String[] entry = parameter.split("[=]", 2);
+            parameters.put(entry[0], decoder.decode(entry[1].getBytes()));
+        }
+        return parameters;
     }
 
 }

@@ -1,6 +1,6 @@
 package net.isger.util.sql;
 
-public class Page {
+public class Pager {
 
     private int start;
 
@@ -8,15 +8,15 @@ public class Page {
 
     private int total;
 
-    public Page() {
+    public Pager() {
         this(1);
     }
 
-    public Page(int start) {
+    public Pager(int start) {
         this(start, 10);
     }
 
-    public Page(int start, int limit) {
+    public Pager(int start, int limit) {
         this.setStart(start);
         this.setLimit(limit);
     }

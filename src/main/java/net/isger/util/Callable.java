@@ -4,12 +4,14 @@ package net.isger.util;
  * 回调接口
  * 
  * @author issing
- *
  */
 public class Callable<T> implements java.util.concurrent.Callable<T> {
 
     private static final Object[] NONE = new Object[0];
 
+    /**
+     * 回调
+     */
     public T call() {
         return call(NONE);
     }
@@ -21,14 +23,17 @@ public class Callable<T> implements java.util.concurrent.Callable<T> {
      * @return
      */
     public T call(Object... args) {
-        return args == NONE ? null : call();
+        T result = null;
+        if (args != NONE) {
+            result = call();
+        }
+        return result;
     }
 
     /**
-     * 回调接口
+     * 执行接口
      * 
      * @author issing
-     *
      */
     public static class Runnable extends Callable<Void> implements java.lang.Runnable {
 
@@ -36,7 +41,15 @@ public class Callable<T> implements java.util.concurrent.Callable<T> {
          * 执行
          */
         public void run() {
-            call();
+            run(NONE);
+        }
+
+        /**
+         * 回调
+         */
+        public final Void call() {
+            run();
+            return null;
         }
 
         /**

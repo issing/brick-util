@@ -7,6 +7,14 @@ package net.isger.util;
  */
 public interface Manageable {
 
+    public static final int UNINITIALIZED = 0;
+
+    public static final int INITIALIZING = 1;
+
+    public static final int INITIALIZED = 2;
+
+    public static final int DESTROYED = 3;
+
     /**
      * 初始
      */
