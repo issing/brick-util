@@ -1,7 +1,9 @@
 package net.isger;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import junit.framework.Test;
@@ -42,6 +44,57 @@ public class BrickUtilTest extends TestCase {
         values.put("value", "a");
         values.put("a.value", "a.a");
         System.out.println(Reflects.newInstance(A.class, values).a.value);
+    }
+
+    public static void testSql() {
+        String sql = "SELECT * FROM table1; INSERT INTO table2 VALUES ('value1'''';'';;'';;;'''''''';''value2'); UPDATE table3 SET column1 = 'value;3';";
+        List<String> statements = parseSQLStatements(sql);
+        for (String statement : statements) {
+            System.out.println(statement);
+        }
+    }
+
+    public static List<String> parseSQLStatements(String sql) {
+        List<String> statements = new ArrayList<>();
+
+        char[] chars = sql.toCharArray();
+        StringBuilder sb = new StringBuilder();
+        boolean insideQuotes = false; // 是否在引号内部
+        boolean insideEscapedQuotes = false; // 是否在转义引号内部
+
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
+
+            if (insideQuotes) {
+                sb.append(c);
+                if (c == '\'' && !insideEscapedQuotes) {
+                    insideQuotes = false;
+                } else if (c == '\'' && insideEscapedQuotes) {
+                    insideEscapedQuotes = false;
+                } else if (c == '\\' && i + 1 < chars.length && chars[i + 1] == '\'') {
+                    insideEscapedQuotes = true;
+                }
+            } else {
+                sb.append(c);
+                if (c == ';') {
+                    String statement = sb.toString().trim();
+                    if (!statement.isEmpty()) {
+                        statements.add(statement);
+                    }
+                    sb.setLength(0); // 清空StringBuilder
+                } else if (c == '\'' && i + 1 < chars.length && chars[i + 1] != '\'') {
+                    insideQuotes = true;
+                }
+            }
+        }
+
+        // 添加最后一个语句
+        String lastStatement = sb.toString().trim();
+        if (!lastStatement.isEmpty()) {
+            statements.add(lastStatement);
+        }
+
+        return statements;
     }
 
     public static interface TestBean {

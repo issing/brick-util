@@ -103,6 +103,23 @@ public class Strings {
     }
 
     /**
+     * 包含字符串个数
+     * 
+     * @param source
+     * @param target
+     * @return
+     */
+    public static int count(String source, String target) {
+        int count = 0;
+        int index = 0;
+        while ((index = source.indexOf(target, index)) != -1) {
+            count++;
+            index += target.length();
+        }
+        return count;
+    }
+
+    /**
      * 字符串起始匹配
      * 
      * @param value

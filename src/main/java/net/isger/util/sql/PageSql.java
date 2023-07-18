@@ -17,8 +17,16 @@ public class PageSql extends SqlEntry {
         return getWrapSql(sql);
     }
 
+    public final String getSql(SqlEntry entry) {
+        return getWrapSql(entry.sql);
+    }
+
     public final Object[] getValues() {
         return getWrapValues(values);
+    }
+
+    public final Object[] getValues(SqlEntry entry) {
+        return getWrapValues(entry.values);
     }
 
     public String getOriginSql() {
@@ -33,7 +41,13 @@ public class PageSql extends SqlEntry {
         if (page.getTotal() > 0) {
             return null;
         }
-        return "select count(1) from (" + super.getSql() + ") t";
+        SqlEntry lastEntry = this.entries.get(this.entries.size() - 1);
+        return "select count(1) from (" + lastEntry.getSql() + ") t";
+    }
+
+    public Object[] getCountValues() {
+        SqlEntry lastEntry = this.entries.get(this.entries.size() - 1);
+        return lastEntry.getValues();
     }
 
     public String getWrapSql(String sql) {
@@ -53,11 +67,6 @@ public class PageSql extends SqlEntry {
         wrapValues[valCount - 1] = page.getLimit();
         wrapValues[valCount - 2] = (page.getStart() - 1) * page.getLimit();
         return wrapValues;
-    }
-
-    public void wrap(SqlEntry entry) {
-        this.sql = entry.sql;
-        this.values = entry.values;
     }
 
 }

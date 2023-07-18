@@ -193,12 +193,16 @@ public class Sqls {
      * @throws RuntimeException
      */
     public static Object modify(SqlEntry entry, Connection conn) throws RuntimeException {
-        String sql = entry.getSql();
-        Object values = entry.getValues();
-        if (values instanceof Object[][]) {
-            return modify(sql, (Object[][]) values, conn);
+        Object result = null;
+        Object values;
+        for (SqlEntry e : entry) {
+            if ((values = e.getValues()) instanceof Object[][]) {
+                result = modify(e.getSql(), (Object[][]) values, conn);
+            } else {
+                result = modify(e.getSql(), (Object[]) values, conn);
+            }
         }
-        return modify(sql, (Object[]) values, conn);
+        return result;
     }
 
     /**
@@ -302,7 +306,13 @@ public class Sqls {
      * @throws RuntimeException
      */
     public static Object[] query(SqlEntry entry, Connection conn) throws RuntimeException {
-        return query(entry.getSql(), entry.getValues(), conn);
+        List<SqlEntry> entries = entry.getEntries();
+        int size = entries.size() - 1;
+        for (int i = 0; i < size; i++) {
+            modify(entries.get(i), conn);
+        }
+        SqlEntry lastEntry = entries.get(size);
+        return query(entry.getSql(lastEntry), entry.getValues(lastEntry), conn);
     }
 
     /**
