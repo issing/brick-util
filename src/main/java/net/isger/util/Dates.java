@@ -150,6 +150,14 @@ public class Dates {
         return getGap(startTime, endTime, UNIT_DAY);
     }
 
+    public static long getGap(Date startTime) {
+        return getGap(startTime, UNIT_DAY);
+    }
+
+    public static long getGap(Date startTime, int unit) {
+        return getGap(startTime, new Date(), unit);
+    }
+
     public static long getGap(Date startTime, Date endTime, int unit) {
         if (unit < 0 || unit > UNIT_DAY) {
             unit = UNIT_DAY;

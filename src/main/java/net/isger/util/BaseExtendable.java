@@ -28,6 +28,7 @@ public class BaseExtendable implements Extendable {
     }
 
     public void setExtends(Map<String, Object> values) {
+        this.values.clear();
         this.values.putAll(values);
     }
 

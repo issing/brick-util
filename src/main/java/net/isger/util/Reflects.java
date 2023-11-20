@@ -949,7 +949,7 @@ public class Reflects {
      * @return
      */
     public static Object newInstance(String name, Map<String, Object> values, ClassAssembler assembler) {
-        return newInstance(Asserts.isNotNull(getClass(name), "Cannot instantiation class %s", name), values, assembler);
+        return newInstance(Asserts.isNotNull(getClass(name), "Unable to instantiate class %s", name), values, assembler);
     }
 
     /**

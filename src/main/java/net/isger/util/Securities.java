@@ -195,12 +195,37 @@ public class Securities {
      * @throws Exception
      */
     public static KeyStore getKeyStore(String algorithm, String path, char[] password) throws Exception {
+        return getKeyStore(algorithm, Reflects.getResourceAsStream(path), password);
+    }
+
+    /**
+     * 获取证书库
+     * 
+     * @param algorithm
+     * @param data
+     * @param password
+     * @return
+     * @throws Exception
+     */
+    public static KeyStore getKeyStore(String algorithm, byte[] data, char[] password) throws Exception {
+        return getKeyStore(algorithm, new ByteArrayInputStream(data), password);
+    }
+
+    /**
+     * 获取证书库
+     * 
+     * @param algorithm
+     * @param stream
+     * @param password
+     * @return
+     * @throws Exception
+     */
+    public static KeyStore getKeyStore(String algorithm, InputStream stream, char[] password) throws Exception {
         KeyStore keyStore = KeyStore.getInstance(algorithm); // , "BC");
-        InputStream is = Reflects.getResourceAsStream(path);
         try {
-            keyStore.load(is, password);
+            keyStore.load(stream, password);
         } finally {
-            Files.close(is);
+            Files.close(stream);
         }
         return keyStore;
     }
