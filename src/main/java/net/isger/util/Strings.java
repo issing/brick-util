@@ -249,10 +249,21 @@ public class Strings {
     /**
      * 转换为字段命名
      * 
+     * @param item
+     * @return
+     */
+    public static String toFieldName(Enum<?> item) {
+        return item == null ? null : toFieldName(item.name());
+    }
+
+    /**
+     * 转换为字段命名
+     * 
      * @param columnName
      * @return
      */
     public static String toFieldName(String columnName) {
+        if (Strings.isEmpty(columnName)) return null;
         char[] chs = columnName.toLowerCase().toCharArray();
         StringBuffer fieldName = new StringBuffer(chs.length);
         boolean hasUpper = false;

@@ -93,6 +93,8 @@ public class Helpers {
 
     private final static Map<Character, Integer> DIGIT_INDECES;
 
+    private static final ThreadLocal<Map<String, Object>> GSON_CONTEXT;
+
     private static final Gson GSON;
 
     /** 属性配置缓存 */
@@ -105,11 +107,13 @@ public class Helpers {
         for (int i = 0; i < MAX_RADIX; i++) {
             DIGIT_INDECES.put(CODES[i], (int) i);
         }
+        GSON_CONTEXT = new ThreadLocal<Map<String, Object>>();
         GSON = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
             public boolean shouldSkipField(FieldAttributes attrs) {
                 Ignore ignore = attrs.getAnnotation(Ignore.class);
                 Sensitive sensitive = attrs.getAnnotation(Sensitive.class);
-                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT | Modifier.FINAL) || sensitive != null || (ignore != null && (ignore.mode() == Mode.EXCLUDE || !ignore.serialize()));
+                Map<String, Object> context = GSON_CONTEXT.get();
+                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT | Modifier.FINAL) || (sensitive != null && (context == null || toBoolean(context.get("desensitization")))) || (ignore != null && (ignore.mode() == Mode.EXCLUDE || !ignore.serialize()));
             }
 
             public boolean shouldSkipClass(Class<?> clazz) {
@@ -198,7 +202,20 @@ public class Helpers {
     }
 
     public static String toJson(Object instance) {
-        return GSON.toJson(instance);
+        return toJson(instance, false);
+    }
+
+    public static String toJson(Object instance, boolean desensitization) {
+        synchronized (GSON_CONTEXT) {
+            Map<String, Object> context = new HashMap<String, Object>();
+            context.put("desensitization", desensitization);
+            GSON_CONTEXT.set(context);
+            try {
+                return GSON.toJson(instance);
+            } finally {
+                GSON_CONTEXT.set(null);
+            }
+        }
     }
 
     public static Object fromJson(String json) {
@@ -791,14 +808,14 @@ public class Helpers {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> toHierarchical(Map<String, Object> values) {
+    public static Map<String, ? extends Object> toHierarchical(Map<String, ? extends Object> values) {
         Map<String, Object> result = new HashMap<String, Object>();
         int index;
         String key;
         String subKey;
         Object value;
         Map<String, Object> container;
-        for (Entry<String, Object> entry : values.entrySet()) {
+        for (Entry<String, ? extends Object> entry : values.entrySet()) {
             if (entry.getValue() == null) {
                 continue;
             }
@@ -1009,16 +1026,23 @@ public class Helpers {
         return result;
     }
 
-    public static <K, V> Map<K, V> newMap(Map<K, V> source) {
+    @SuppressWarnings("unchecked")
+    public static <K, V> Map<K, V> newMap(Map<K, V> source, K... keys) {
         Map<K, V> target = new HashMap<K, V>();
         if (source != null) {
-            target.putAll(source);
+            if (keys != null && keys.length > 0) {
+                for (K key : keys) {
+                    if (key != null) target.put(key, source.get(key));
+                }
+            } else {
+                target.putAll(source);
+            }
         }
         return target;
     }
 
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> getMap(Map<String, Object> params, String key) {
+    public static Map<String, ? extends Object> getMap(Map<String, ? extends Object> params, String key) {
         Object value = params.get(key);
         if (value instanceof Map) {
             params = (Map<String, Object>) value;
@@ -1037,7 +1061,7 @@ public class Helpers {
         return params;
     }
 
-    public static Object getInstance(Map<String, Object> params, String key) {
+    public static Object getInstance(Map<String, ? extends Object> params, String key) {
         int index = key.lastIndexOf(".");
         if (index > 0) {
             params = getMap(params, key.substring(0, index));
@@ -1553,16 +1577,16 @@ public class Helpers {
         return index < 0 || index >= size ? null : Array.get(array, index);
     }
 
-    public static Object getValue(Map<String, Object> params, String key) {
+    public static Object getValue(Map<String, ? extends Object> params, String key) {
         return getValue(params, key, (String) null);
     }
 
-    public static Object getValue(Map<String, Object> params, String key, String suffix) {
+    public static Object getValue(Map<String, ? extends Object> params, String key, String suffix) {
         suffix = Strings.empty(suffix);
         if ((key = Strings.empty(key)).length() > 0) {
             String pendingKey = Strings.toHierarchy(key); // 层级化
             int index = pendingKey.lastIndexOf(".");
-            Map<String, Object> pending;
+            Map<String, ? extends Object> pending;
             if (index > 0) {
                 pending = getMap(params, pendingKey.substring(0, index));
                 pendingKey = pendingKey.substring(index + 1);
@@ -1581,7 +1605,7 @@ public class Helpers {
     }
 
     @SuppressWarnings("unchecked")
-    public static Object getValue(Map<String, Object> params, String key, Class<?> rawClass) {
+    public static Object getValue(Map<String, ? extends Object> params, String key, Class<?> rawClass) {
         if (Reflects.isGeneral(rawClass) || rawClass.isInterface()) {
             return getValue(params, key);
         }
@@ -1614,11 +1638,11 @@ public class Helpers {
 
     }
 
-    public static Object getValues(Map<String, Object> params, String key) {
+    public static Object getValues(Map<String, ? extends Object> params, String key) {
         return getValues(params, key, (String) null);
     }
 
-    public static Object getValues(Map<String, Object> params, String key, String suffix) {
+    public static Object getValues(Map<String, ? extends Object> params, String key, String suffix) {
         Object value = getValue(params, (key = Strings.empty(key)) + "[]", suffix);
         if (value == null) {
             Object pending;
@@ -1658,8 +1682,18 @@ public class Helpers {
         return nvl(value, value, alternative);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T nvl(T value, T leftist, T rightist) {
-        return value == null ? rightist : leftist;
+        return (T) resolve(value == null, leftist, rightist);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T resolve(boolean resolved, T value) {
+        return (T) resolve(resolved, value, null);
+    }
+
+    public static Object resolve(boolean resolved, Object leftist, Object rightist) {
+        return resolved ? rightist : leftist;
     }
 
     @SuppressWarnings("unchecked")

@@ -45,12 +45,12 @@ import net.isger.util.reflect.BoundField;
 import net.isger.util.reflect.BoundMethod;
 import net.isger.util.reflect.ClassAssembler;
 import net.isger.util.reflect.Constructor;
+import net.isger.util.reflect.Converter;
 
 /**
  * 反射工具
  * 
  * @author issing
- * 
  */
 public class Reflects {
 
@@ -903,7 +903,7 @@ public class Reflects {
      * @param namespace
      * @return
      */
-    public static Object newInstance(Map<String, Object> params, String namespace) {
+    public static Object newInstance(Map<String, ? extends Object> params, String namespace) {
         return newInstance(Helpers.getMap(params, namespace));
     }
 
@@ -915,7 +915,7 @@ public class Reflects {
      * @param namespace
      * @return
      */
-    public static <T> T newInstance(Class<T> rawClass, Map<String, Object> params, String namespace) {
+    public static <T> T newInstance(Class<T> rawClass, Map<String, ? extends Object> params, String namespace) {
         return newInstance(rawClass, params, namespace, null);
     }
 
@@ -944,12 +944,12 @@ public class Reflects {
      * 集合填充生成指定类型对象
      * 
      * @param name
-     * @param values
+     * @param params
      * @param assembler
      * @return
      */
-    public static Object newInstance(String name, Map<String, Object> values, ClassAssembler assembler) {
-        return newInstance(Asserts.isNotNull(getClass(name), "Unable to instantiate class %s", name), values, assembler);
+    public static Object newInstance(String name, Map<String, ? extends Object> params, ClassAssembler assembler) {
+        return newInstance(Asserts.isNotNull(getClass(name), "Unable to instantiate class %s", name), params, assembler);
     }
 
     /**
@@ -958,7 +958,7 @@ public class Reflects {
      * @param params
      * @return
      */
-    public static Object newInstance(Map<String, Object> params) {
+    public static Object newInstance(Map<String, ? extends Object> params) {
         return newInstance(params, (ClassAssembler) null);
     }
 
@@ -970,7 +970,7 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static Object newInstance(Map<String, Object> params, ClassAssembler assembler) {
+    public static Object newInstance(Map<String, ? extends Object> params, ClassAssembler assembler) {
         Object className = params.get(KEY_CLASS);
         if (Strings.isEmpty(className)) {
             return params;
@@ -988,7 +988,7 @@ public class Reflects {
      * @param params
      * @return
      */
-    public static <T> T newInstance(Class<T> rawClass, Map<String, Object> params) {
+    public static <T> T newInstance(Class<T> rawClass, Map<String, ? extends Object> params) {
         return newInstance(rawClass, params, (ClassAssembler) null);
     }
 
@@ -1001,7 +1001,7 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static <T> T newInstance(Class<T> clazz, Map<String, Object> params, String namespace, ClassAssembler assembler) {
+    public static <T> T newInstance(Class<T> clazz, Map<String, ? extends Object> params, String namespace, ClassAssembler assembler) {
         return newInstance(clazz, Helpers.getMap(params, namespace), assembler);
     }
 
@@ -1013,7 +1013,7 @@ public class Reflects {
      * @param assembler
      * @return
      */
-    public static <T> T newInstance(Class<T> rawClass, Map<String, Object> params, ClassAssembler assembler) {
+    public static <T> T newInstance(Class<T> rawClass, Map<String, ? extends Object> params, ClassAssembler assembler) {
         T instance = newInstance(rawClass, assembler);
         if (params != null && params.size() > 0) {
             toInstance(instance, params, assembler);
@@ -1090,12 +1090,12 @@ public class Reflects {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static <T> T toInstance(T instance, Map<String, Object> params, ClassAssembler assembler) {
+    public static <T> T toInstance(T instance, Map<String, ? extends Object> params, ClassAssembler assembler) {
         if (instance instanceof Map) {
             ((Map<String, Object>) instance).putAll(params);
             return instance;
         }
-        final Map<String, Object> data = Helpers.toHierarchical(params);
+        final Map<String, ? extends Object> data = Helpers.toHierarchical(params);
         Map<String, List<BoundField>> fields = getBoundFields(instance.getClass());
         assembler = assembler == null ? new AssemblerAdapter() : new AssemblerAdapter(assembler) {
             public Object assemble(BoundField field, Object instance, Object value, Object... args) {
@@ -1122,7 +1122,7 @@ public class Reflects {
         return instance;
     }
 
-    private static Object getValues(Map<String, Object> params, String fieldName, String aliasName) {
+    private static Object getValues(Map<String, ? extends Object> params, String fieldName, String aliasName) {
         Object value = Helpers.getValues(params, fieldName);
         if (value == null) {
             value = Helpers.getValues(params, Strings.toFieldName(fieldName));
@@ -1136,7 +1136,7 @@ public class Reflects {
         return value;
     }
 
-    private static Object getValue(Map<String, Object> params, String fieldName, String aliasName) {
+    private static Object getValue(Map<String, ? extends Object> params, String fieldName, String aliasName) {
         Object value = Helpers.getValue(params, fieldName);
         if (value == null) {
             value = Helpers.getValue(params, Strings.toFieldName(fieldName));
@@ -1211,11 +1211,7 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object bean) {
-        return toMap(bean, false, false);
-    }
-
-    public static Map<String, Object> toMap(Object bean, boolean desensitization) {
-        return toMap(bean, desensitization, false);
+        return toMap(bean, false, false, Object.class);
     }
 
     /**
@@ -1225,36 +1221,97 @@ public class Reflects {
      * @param desensitization
      * @return
      */
+    public static Map<String, Object> toMap(Object bean, boolean desensitization) {
+        return toMap(bean, desensitization, false, Object.class);
+    }
+
+    /**
+     * 提取字段值转换为集合
+     * 
+     * @param bean
+     * @param desensitization
+     * @param deep
+     * @return
+     */
     public static Map<String, Object> toMap(Object bean, boolean desensitization, boolean deep) {
-        if (bean instanceof String) {
-            bean = Helpers.fromJson((String) bean, Map.class);
-        }
-        Map<String, Object> values = new HashMap<String, Object>();
+        return toMap(bean, desensitization, deep, Object.class);
+    }
+
+    /**
+     * 提取字段值转换为集合
+     * 
+     * @param <T>
+     * @param bean
+     * @param clazz
+     * @return
+     */
+    public static <T> Map<String, T> toMap(Object bean, Class<T> clazz) {
+        return toMap(bean, false, false, clazz);
+    }
+
+    /**
+     * 提取字段值转换为集合
+     * 
+     * @param <T>
+     * @param bean
+     * @param desensitization
+     * @param clazz
+     * @return
+     */
+    public static <T> Map<String, T> toMap(Object bean, boolean desensitization, Class<T> clazz) {
+        return toMap(bean, desensitization, false, clazz);
+    }
+
+    /**
+     * 提取字段值转换为集合
+     * 
+     * @param bean
+     * @param desensitization
+     * @param deep
+     * @param clazz
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Map<String, T> toMap(Object bean, boolean desensitization, boolean deep, Class<T> clazz) {
+        boolean translate = bean instanceof String; // 转义标记
         Object value;
-        Map<String, Object> pending;
+        if (translate && Strings.isNotEmpty(value = Helpers.fromJson((String) bean, Map.class))) bean = value;
+        Map<String, T> values = new HashMap<String, T>();
+        Map<String, T> pending;
+        Object translateValue;
         if (bean instanceof Map) {
             for (Entry<?, ?> entry : ((Map<?, ?>) bean).entrySet()) {
                 value = entry.getValue();
-                if (deep) {
-                    pending = toMap(value, desensitization, deep);
-                    if (!pending.isEmpty()) {
-                        value = pending;
+                if (value != null) {
+                    if (deep && clazz == Object.class) {
+                        translateValue = pending = toMap(value, desensitization, deep, clazz);
+                        if (!pending.isEmpty() || value instanceof String && Strings.isNotEmpty(translateValue = Helpers.fromJson((String) value))) value = translateValue;
+                    } else if (String.class.isAssignableFrom(clazz)) {
+                        value = value instanceof String ? String.valueOf(value) : Helpers.toJson(value, desensitization);
+                    } else if (value instanceof String && !translate) {
+                        value = Strings.empty(Helpers.fromJson((String) value), (String) value); // 对未转义对象进行转换
+                    } else if (clazz != Object.class) {
+                        value = Converter.convert(clazz, value);
                     }
                 }
-                values.put(String.valueOf(entry.getKey()), value);
+                values.put(String.valueOf(entry.getKey()), (T) value);
             }
         } else if (!(bean == null || Reflects.isGeneral(bean.getClass()))) {
             Map<String, List<BoundField>> fields = getBoundFields(bean.getClass());
             for (Entry<String, List<BoundField>> entry : fields.entrySet()) {
                 try {
                     value = entry.getValue().get(0).getValue(bean, desensitization);
-                    if (deep) {
-                        pending = toMap(value, desensitization, deep);
+                    if (deep && clazz == Object.class) {
+                        pending = toMap(value, desensitization, deep, clazz);
                         if (!pending.isEmpty()) {
                             value = pending;
                         }
+                    } else if (String.class.isAssignableFrom(clazz)) {
+                        value = Helpers.toJson(value, desensitization);
+                    } else if (clazz != Object.class) {
+                        value = Converter.convert(clazz, value);
                     }
-                    values.put(entry.getKey(), value);
+                    values.put(entry.getKey(), (T) value);
                 } catch (Exception e) {
                     LOG.warn("Failure getting field [{}] value.", entry.getKey(), e);
                 }
@@ -1270,7 +1327,26 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object[] grid) {
-        return toMap((Object[]) grid[0], grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0] : (Object[]) grid[1]);
+        return toMap(grid, false);
+    }
+
+    /**
+     * 根据网格模型转换为集合
+     * 
+     * @param grid
+     * @param form
+     * @return
+     */
+    public static Map<String, Object> toMap(Object[] grid, boolean form) {
+        if (form) {
+            Map<String, Object> result = new HashMap<String, Object>(grid.length);
+            for (Object item : grid) {
+                result.put(String.valueOf(((Object[]) item)[0]), ((Object[]) item)[1]);
+            }
+            return result;
+        } else {
+            return toMap((Object[]) grid[0], grid[1] instanceof Object[][] ? ((Object[][]) grid[1])[0] : (Object[]) grid[1]);
+        }
     }
 
     /**

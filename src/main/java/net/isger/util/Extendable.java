@@ -8,8 +8,10 @@ public interface Extendable {
 
     public void setExtend(String name, Object value);
 
-    public Map<String, Object> getExtends();
+    public Map<String, ? extends Object> getExtends();
 
-    public void setExtends(Map<String, Object> values);
+    public void setExtends(Map<String, ? extends Object> values);
+
+    public void clearExtends();
 
 }
