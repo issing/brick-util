@@ -2,6 +2,8 @@ package net.isger.util.reflect.conversion;
 
 import java.lang.reflect.Type;
 
+import com.google.gson.JsonElement;
+
 import net.isger.util.Helpers;
 import net.isger.util.Reflects;
 import net.isger.util.reflect.ClassAssembler;
@@ -19,7 +21,7 @@ public class BooleanConversion implements Conversion {
     }
 
     public Object convert(Type type, Object value, ClassAssembler assembler) {
-        return Helpers.toBoolean(value);
+        return value instanceof JsonElement ? ((JsonElement) value).getAsBoolean() : Helpers.toBoolean(value);
     }
 
     public String toString() {

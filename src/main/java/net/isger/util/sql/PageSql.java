@@ -42,7 +42,7 @@ public class PageSql extends SqlEntry {
             return null;
         }
         SqlEntry lastEntry = this.entries.get(this.entries.size() - 1);
-        return "select count(1) from (" + lastEntry.getSql() + ") t";
+        return "SELECT COUNT(1) FROM (" + lastEntry.getSql() + ") t";
     }
 
     public Object[] getCountValues() {
@@ -51,7 +51,7 @@ public class PageSql extends SqlEntry {
     }
 
     public String getWrapSql(String sql) {
-        return sql + " limit ?, ?";
+        return sql + " LIMIT ?, ?";
     }
 
     public Object[] getWrapValues(Object[] values) {

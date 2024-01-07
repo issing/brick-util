@@ -7,10 +7,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 public class Dates {
 
-    private static final String DATE_PATTERNS[] = { "yyyy-MM-dd HH:mm:ss.SSS", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd", "yyyy-MM", "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd", "yyyy/MM", "yyyyMMddHHmmss", "yyyyMMddHHmm", "yyyyMMdd", "yyyyMM", "yyyy", "HH:mm:ss", "HH:mm", "EEE MMM dd HH:mm:ss zzz yyyy" };
+    private static final String DATE_PATTERNS[] = { "yyyy-MM-dd HH:mm:ss.SSS", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd", "yyyy-MM", "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd", "yyyy/MM", "yyyyMMddHHmmss", "yyyyMMddHHmm", "yyyyMMdd", "yyyyMM", "yyyy", "HH:mm:ss", "HH:mm", "EEE MMM dd HH:mm:ss zzz yyyy", "yyyy-MM-dd'T'HH:mm:ssXXX", "MMM dd, yyyy hh:mm:ss a" };
 
     public static final int PATTERN_DEFAULT = 0;
 
@@ -44,7 +45,11 @@ public class Dates {
 
     public static final int PATTERN_TIME_MINUTE = 15;
 
-    public static final int PATTERN_LINGO = 16;
+    public static final int PATTERN_RFC_822 = 16;
+
+    public static final int PATTERN_RFC_3339 = 17;
+
+    public static final int PATTERN_APPEAR = 18;
 
     private static final int UNITS[] = { 1, 1000, 60000, 3600000, 86400000 };
 
@@ -62,41 +67,44 @@ public class Dates {
     }
 
     public static String getPattern(int type) {
-        if (type < 0 && type > DATE_PATTERNS.length) {
-            type = 0;
-        }
+        if (type < 0 && type > DATE_PATTERNS.length) type = 0;
         return DATE_PATTERNS[type];
     }
 
     public static Date toDate(Object value) {
-        Date date = null;
-        if (value != null) {
-            parse: if (value instanceof java.sql.Timestamp) {
-                date = new Date(((Timestamp) value).getTime());
-            } else if (value instanceof Date) {
-                date = (Date) value;
-            } else if (value instanceof Number) {
-                date = new Date(((Number) value).longValue());
-            } else {
-                String source = String.valueOf(value);
-                try {
-                    source = LocalDateTime.parse(source).format(DateTimeFormatter.ofPattern(DATE_PATTERNS[PATTERN_COMMON]));
-                } catch (Exception e) {
-                }
-                SimpleDateFormat parser = new SimpleDateFormat();
-                parser.setLenient(true);
-                ParsePosition pos = new ParsePosition(0);
-                source = source.replaceFirst("\\d+([-/]?\\d+)T", " ").replaceAll("[年月日]", "-").replaceAll("[时分]", ":").replaceAll("秒", "");
-                for (int i = 0; i <= PATTERN_LINGO; i++) {
-                    parser.applyPattern(DATE_PATTERNS[i]);
-                    pos.setIndex(0);
-                    date = parser.parse(source, pos);
-                    if (date != null && pos.getIndex() == source.length()) {
-                        break parse;
-                    }
-                }
-                date = null;
+        if (value == null) return null;
+        Date date;
+        if (value instanceof java.sql.Timestamp) {
+            date = new Date(((Timestamp) value).getTime());
+        } else if (value instanceof Date) {
+            date = (Date) value;
+        } else if (value instanceof Number) {
+            date = new Date(((Number) value).longValue());
+        } else {
+            String source = String.valueOf(value);
+            try {
+                source = LocalDateTime.parse(source).format(DateTimeFormatter.ofPattern(DATE_PATTERNS[PATTERN_COMMON]));
+            } catch (Exception e) {
             }
+            source = source.replaceFirst("\\d+([-/]?\\d+)T", " ").replaceAll("[年月日]", "-").replaceAll("[时分]", ":").replaceAll("秒", "");
+            date = parse(source, Locale.getDefault(Locale.Category.FORMAT));
+            if (date == null && Locale.getDefault(Locale.Category.FORMAT) != Locale.ENGLISH) {
+                date = parse(source, Locale.ENGLISH);
+            }
+        }
+        return date;
+    }
+
+    private static Date parse(String source, Locale locale) {
+        Date date = null;
+        SimpleDateFormat parser = new SimpleDateFormat("", locale);
+        parser.setLenient(true);
+        ParsePosition pos = new ParsePosition(0);
+        for (int i = 0; i < DATE_PATTERNS.length; i++) {
+            parser.applyPattern(DATE_PATTERNS[i]);
+            pos.setIndex(0);
+            date = parser.parse(source, pos);
+            if (date != null && pos.getIndex() == source.length()) break;
         }
         return date;
     }
@@ -118,31 +126,35 @@ public class Dates {
     }
 
     public static String toString(Date date, int selector) {
-        if (date == null) {
-            date = new Date();
-        }
-        if (selector < 0 || selector >= DATE_PATTERNS.length) {
-            selector = PATTERN_DEFAULT;
-        }
-        SimpleDateFormat parser = new SimpleDateFormat(DATE_PATTERNS[selector]);
-        return parser.format(date);
+        if (date == null) date = new Date();
+        if (selector < 0 || selector >= DATE_PATTERNS.length) selector = PATTERN_DEFAULT;
+        return toString(date, DATE_PATTERNS[selector]);
+    }
+
+    public static String toString(Date date, String pattern) {
+        return new SimpleDateFormat(pattern).format(date);
     }
 
     public static Date getDate() {
-        return getDate(null, 0);
+        return getDate(null, 0, 0);
     }
 
     public static Date getDate(long delay) {
-        return getDate(null, delay);
+        return getDate(null, delay, 0);
+    }
+
+    public static Date getDate(long delay, int unit) {
+        return getDate(null, delay, unit);
     }
 
     public static Date getDate(Date startTime, long delay) {
-        if (startTime == null) {
-            startTime = new Date();
-        }
-        if (delay != 0) {
-            startTime = new Date(startTime.getTime() + delay);
-        }
+        return getDate(startTime, delay, 0);
+    }
+
+    public static Date getDate(Date startTime, long delay, int unit) {
+        if (unit < 0 || unit > UNIT_DAY) unit = UNIT_DAY;
+        if (startTime == null) startTime = new Date();
+        if (delay != 0) startTime = new Date(startTime.getTime() + delay * UNITS[unit]);
         return startTime;
     }
 
@@ -159,9 +171,7 @@ public class Dates {
     }
 
     public static long getGap(Date startTime, Date endTime, int unit) {
-        if (unit < 0 || unit > UNIT_DAY) {
-            unit = UNIT_DAY;
-        }
+        if (unit < 0 || unit > UNIT_DAY) unit = UNIT_DAY;
         Calendar sc = Calendar.getInstance();
         sc.setTime(startTime);
         Calendar ec = Calendar.getInstance();
@@ -182,4 +192,29 @@ public class Dates {
         }
         return (ec.getTimeInMillis() - sc.getTimeInMillis()) / UNITS[unit];
     }
+
+    public static Date getMin(Date source, int delay) {
+        return getMin(source, delay, UNIT_DAY);
+    }
+
+    public static Date getMin(Date source, int delay, int unit) {
+        return getMin(source, getDate(delay, unit));
+    }
+
+    public static Date getMin(Date source, Date target) {
+        return source.getTime() >= target.getTime() ? target : source;
+    }
+
+    public static Date getMax(Date source, int delay) {
+        return getMax(source, delay, UNIT_DAY);
+    }
+
+    public static Date getMax(Date source, int delay, int unit) {
+        return getMax(source, getDate(delay, unit));
+    }
+
+    public static Date getMax(Date source, Date target) {
+        return source.getTime() >= target.getTime() ? source : target;
+    }
+
 }

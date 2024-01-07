@@ -4,6 +4,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Date;
 
+import com.google.gson.JsonElement;
+
 import net.isger.util.Asserts;
 import net.isger.util.Dates;
 import net.isger.util.Reflects;
@@ -34,6 +36,8 @@ public class DateConversion implements Conversion {
             } else if (!(value instanceof String)) {
                 source = value.toString();
                 break convert;
+            } else if (value instanceof JsonElement) {
+                source = ((JsonElement) value).getAsString();
             } else {
                 source = (String) value;
             }

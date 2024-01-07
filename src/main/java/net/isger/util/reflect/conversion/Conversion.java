@@ -4,6 +4,11 @@ import java.lang.reflect.Type;
 
 import net.isger.util.reflect.ClassAssembler;
 
+/**
+ * 转换接口
+ * 
+ * @author issing
+ */
 public interface Conversion {
 
     /**

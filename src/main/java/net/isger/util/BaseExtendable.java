@@ -8,6 +8,7 @@ import net.isger.util.anno.Ignore.Mode;
 
 public class BaseExtendable implements Extendable {
 
+    /** 扩展值（默认不做序列化，但受传递注解影响） */
     @Ignore(mode = Mode.EXCLUDE, serialize = false)
     private Map<String, Object> values;
 

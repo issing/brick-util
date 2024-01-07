@@ -49,9 +49,11 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.ToNumberPolicy;
 
 import net.isger.util.anno.Alias;
 import net.isger.util.anno.Ignore;
@@ -113,13 +115,13 @@ public class Helpers {
                 Ignore ignore = attrs.getAnnotation(Ignore.class);
                 Sensitive sensitive = attrs.getAnnotation(Sensitive.class);
                 Map<String, Object> context = GSON_CONTEXT.get();
-                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT | Modifier.FINAL) || (sensitive != null && (context == null || toBoolean(context.get("desensitization")))) || (ignore != null && (ignore.mode() == Mode.EXCLUDE || !ignore.serialize()));
+                return attrs.hasModifier(Modifier.VOLATILE | Modifier.TRANSIENT | Modifier.FINAL) || (sensitive != null && toBoolean(context.get("desensitization"))) || (ignore != null && (ignore.mode() == Mode.EXCLUDE || !ignore.serialize()));
             }
 
             public boolean shouldSkipClass(Class<?> clazz) {
                 return false;
             }
-        }).registerTypeAdapter(Class.class, new ClassAdapter()).setDateFormat(Dates.getPattern(Dates.PATTERN_COMMON)).create();
+        }).registerTypeAdapter(Class.class, new ClassAdapter()).setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).setDateFormat(Dates.getPattern(Dates.PATTERN_COMMON)).create();
     }
 
     private Helpers() {
@@ -208,7 +210,7 @@ public class Helpers {
     public static String toJson(Object instance, boolean desensitization) {
         synchronized (GSON_CONTEXT) {
             Map<String, Object> context = new HashMap<String, Object>();
-            context.put("desensitization", desensitization);
+            context.put("desensitization", desensitization); // 脱敏标识
             GSON_CONTEXT.set(context);
             try {
                 return GSON.toJson(instance);
@@ -225,8 +227,10 @@ public class Helpers {
     @SuppressWarnings("unchecked")
     public static <T> T fromJson(String json, Class<T> clazz) {
         try {
-            if (Map.class.isAssignableFrom(clazz) || Collection.class.isAssignableFrom(clazz) || clazz == Object.class || clazz.isArray()) {
+            if (Map.class.isAssignableFrom(clazz) || Collection.class.isAssignableFrom(clazz) || clazz.isArray() || clazz == Object.class) {
                 return GSON.fromJson(json, clazz);
+            } else if (Reflects.isGeneral(clazz)) {
+                return (T) Converter.convert(clazz, JsonParser.parseString(json));
             }
             Map<String, Object> parameters = (Map<String, Object>) fromJson(json, Map.class);
             T instance = Reflects.newInstance(clazz, parameters);
@@ -1684,7 +1688,7 @@ public class Helpers {
 
     @SuppressWarnings("unchecked")
     public static <T> T nvl(T value, T leftist, T rightist) {
-        return (T) resolve(value == null, leftist, rightist);
+        return (T) resolve(value != null, leftist, rightist);
     }
 
     @SuppressWarnings("unchecked")
@@ -1693,7 +1697,7 @@ public class Helpers {
     }
 
     public static Object resolve(boolean resolved, Object leftist, Object rightist) {
-        return resolved ? rightist : leftist;
+        return resolved ? leftist : rightist;
     }
 
     @SuppressWarnings("unchecked")
@@ -1704,6 +1708,16 @@ public class Helpers {
             }
         }
         return null;
+    }
+
+    public static <K, V> Map<K, V> trim(Map<K, V> values) {
+        Map<K, V> result = new HashMap<K, V>();
+        for (Entry<K, V> entry : values.entrySet()) {
+            if (Strings.isNotEmpty(entry.getValue())) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return result;
     }
 
     public static int toInt(String value, int beginIndex, int endIndex) {

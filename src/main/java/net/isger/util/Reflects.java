@@ -1211,7 +1211,7 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object bean) {
-        return toMap(bean, false, false, Object.class);
+        return toMap(bean, false, false, true, Object.class);
     }
 
     /**
@@ -1222,7 +1222,7 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object bean, boolean desensitization) {
-        return toMap(bean, desensitization, false, Object.class);
+        return toMap(bean, desensitization, false, true, Object.class);
     }
 
     /**
@@ -1234,7 +1234,7 @@ public class Reflects {
      * @return
      */
     public static Map<String, Object> toMap(Object bean, boolean desensitization, boolean deep) {
-        return toMap(bean, desensitization, deep, Object.class);
+        return toMap(bean, desensitization, deep, true, Object.class);
     }
 
     /**
@@ -1246,7 +1246,7 @@ public class Reflects {
      * @return
      */
     public static <T> Map<String, T> toMap(Object bean, Class<T> clazz) {
-        return toMap(bean, false, false, clazz);
+        return toMap(bean, false, false, true, clazz);
     }
 
     /**
@@ -1259,7 +1259,7 @@ public class Reflects {
      * @return
      */
     public static <T> Map<String, T> toMap(Object bean, boolean desensitization, Class<T> clazz) {
-        return toMap(bean, desensitization, false, clazz);
+        return toMap(bean, desensitization, false, true, clazz);
     }
 
     /**
@@ -1272,7 +1272,7 @@ public class Reflects {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static <T> Map<String, T> toMap(Object bean, boolean desensitization, boolean deep, Class<T> clazz) {
+    public static <T> Map<String, T> toMap(Object bean, boolean desensitization, boolean deep, boolean trim, Class<T> clazz) {
         boolean translate = bean instanceof String; // 转义标记
         Object value;
         if (translate && Strings.isNotEmpty(value = Helpers.fromJson((String) bean, Map.class))) bean = value;
@@ -1282,17 +1282,16 @@ public class Reflects {
         if (bean instanceof Map) {
             for (Entry<?, ?> entry : ((Map<?, ?>) bean).entrySet()) {
                 value = entry.getValue();
-                if (value != null) {
-                    if (deep && clazz == Object.class) {
-                        translateValue = pending = toMap(value, desensitization, deep, clazz);
-                        if (!pending.isEmpty() || value instanceof String && Strings.isNotEmpty(translateValue = Helpers.fromJson((String) value))) value = translateValue;
-                    } else if (String.class.isAssignableFrom(clazz)) {
-                        value = value instanceof String ? String.valueOf(value) : Helpers.toJson(value, desensitization);
-                    } else if (value instanceof String && !translate) {
-                        value = Strings.empty(Helpers.fromJson((String) value), (String) value); // 对未转义对象进行转换
-                    } else if (clazz != Object.class) {
-                        value = Converter.convert(clazz, value);
-                    }
+                if (value == null) continue;
+                if (deep && clazz == Object.class) {
+                    translateValue = pending = toMap(value, desensitization, deep, trim, clazz);
+                    if (!pending.isEmpty() || value instanceof String && Strings.isNotEmpty(translateValue = Helpers.fromJson((String) value))) value = translateValue;
+                } else if (String.class.isAssignableFrom(clazz)) {
+                    value = value instanceof String ? (String) value : Helpers.toJson(value, desensitization);
+                } else if (value instanceof String && !translate) {
+                    value = Strings.empty(Helpers.fromJson((String) value), (String) value); // 对未转义对象进行转换
+                } else if (clazz != Object.class) {
+                    value = Converter.convert(clazz, value);
                 }
                 values.put(String.valueOf(entry.getKey()), (T) value);
             }
@@ -1302,11 +1301,11 @@ public class Reflects {
                 try {
                     value = entry.getValue().get(0).getValue(bean, desensitization);
                     if (deep && clazz == Object.class) {
-                        pending = toMap(value, desensitization, deep, clazz);
+                        pending = toMap(value, desensitization, deep, trim, clazz);
                         if (!pending.isEmpty()) {
                             value = pending;
                         }
-                    } else if (String.class.isAssignableFrom(clazz)) {
+                    } else if (String.class.isAssignableFrom(clazz) && value != null) {
                         value = Helpers.toJson(value, desensitization);
                     } else if (clazz != Object.class) {
                         value = Converter.convert(clazz, value);
@@ -1317,7 +1316,7 @@ public class Reflects {
                 }
             }
         }
-        return values;
+        return trim ? Helpers.trim(values) : values;
     }
 
     /**
@@ -1423,13 +1422,16 @@ public class Reflects {
      * @return
      */
     public static <T> List<T> toList(Class<T> clazz, List<Map<String, Object>> values, Callable<T> interceptor) {
-        List<T> result = new ArrayList<T>(values.size());
-        int step = 0;
-        T instance;
-        for (Map<String, Object> value : values) {
-            instance = interceptor.call(step++, newInstance(clazz, value), result);
-            if (instance != null) {
-                result.add(instance);
+        int size = values == null ? 0 : values.size();
+        List<T> result = new ArrayList<T>(size);
+        if (size > 0) {
+            int step = 0;
+            T instance;
+            for (Map<String, Object> value : values) {
+                instance = interceptor.call(step++, newInstance(clazz, value), result);
+                if (instance != null) {
+                    result.add(instance);
+                }
             }
         }
         return result;

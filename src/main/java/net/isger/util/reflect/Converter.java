@@ -17,6 +17,11 @@ import net.isger.util.Strings;
 import net.isger.util.hitch.Director;
 import net.isger.util.reflect.conversion.Conversion;
 
+/**
+ * 类型转换器
+ * 
+ * @author issing
+ */
 public class Converter {
 
     private static final String KEY_CONVERSIONS = "brick.util.reflect.conversions";
@@ -40,27 +45,38 @@ public class Converter {
     }
 
     private Converter() {
-        conversions = new Hashtable<String, Conversion>();
+        this.conversions = new Hashtable<String, Conversion>();
     }
 
+    /**
+     * 包含转换
+     * 
+     * @param conversion
+     * @return
+     */
     public static boolean contains(Conversion conversion) {
         return CONVERTER.conversions.containsValue(conversion);
     }
 
+    /**
+     * 添加转换
+     * 
+     * @param conversion
+     */
     public static void addConversion(Conversion conversion) {
-        if (contains(conversion)) {
-            return;
-        }
+        if (contains(conversion)) return;
         String name = conversion.getClass().getName();
-        if (LOG.isDebugEnabled()) {
-            LOG.info("Achieve conversion [{}]", conversion);
-        }
+        if (LOG.isDebugEnabled()) LOG.info("Achieve conversion [{}]", conversion);
         conversion = CONVERTER.conversions.put(name, conversion);
-        if (conversion != null && LOG.isDebugEnabled()) {
-            LOG.warn("(!) Discard conversion [{}]", conversion);
-        }
+        if (conversion != null && LOG.isDebugEnabled()) LOG.warn("(!) Discard conversion [{}]", conversion);
     }
 
+    /**
+     * 获取转换
+     * 
+     * @param name
+     * @return
+     */
     public static Conversion getConversion(String name) {
         return CONVERTER.conversions.get(name);
     }
@@ -73,9 +89,7 @@ public class Converter {
      */
     public static boolean isSupport(Class<?> clazz) {
         for (Conversion conversion : CONVERTER.conversions.values()) {
-            if (conversion.isSupport(clazz)) {
-                return true;
-            }
+            if (conversion.isSupport(clazz)) return true;
         }
         return false;
     }
@@ -102,53 +116,39 @@ public class Converter {
     @SuppressWarnings("unchecked")
     public static Object convert(Type type, Object value, ClassAssembler assembler) {
         /* 默认值转换 */
-        if (value == null) {
-            return defaultValue(type);
-        }
-        Class<?> rawClass = Reflects.getRawClass(type);
+        if (value == null) return defaultValue(type);
         /* 自定义转换 */
+        Class<?> rawClass = Reflects.getRawClass(type);
         for (Conversion conversion : CONVERTER.conversions.values()) {
             if (conversion.isSupport(type)) {
                 try {
                     return conversion.convert(type, value, assembler);
                 } catch (Exception e) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.warn("Failure to convert [{}] to [{}]", value, rawClass, e);
-                    }
+                    if (LOG.isDebugEnabled()) LOG.warn("Failure to convert [{}] to [{}]", value, rawClass, e);
                 }
             }
         }
         /* 可赋值操作 */
         Class<?> srcClass = value.getClass();
-        if (rawClass.isAssignableFrom(srcClass)) {
-            return value;
-        }
+        if (rawClass.isAssignableFrom(srcClass)) return value;
         /* 多值转换 */
         if (value instanceof Collection) {
             value = ((Collection<?>) value).toArray();
             srcClass = value.getClass();
         }
         if ((!(rawClass.isArray() || Collection.class.isAssignableFrom(rawClass))) && srcClass.isArray()) {
-            if (Array.getLength(value) == 0) {
-                return defaultValue(rawClass);
-            }
+            if (Array.getLength(value) == 0) return defaultValue(rawClass);
             return convert(rawClass, Array.get(value, 0));
         }
         /* 字符串转换 */
         if (value instanceof String) {
-            if (Strings.isEmpty(value)) {
-                return defaultValue(type);
-            }
+            if (Strings.isEmpty(value)) return defaultValue(type);
             Class<?> clazz = Reflects.getClass((String) value);
-            if (clazz != null) {
-                return Reflects.newInstance(clazz, assembler);
-            }
+            if (clazz != null) return Reflects.newInstance(clazz, assembler);
             value = Helpers.fromJson((String) value);
         }
         /* 字符串赋值 */
-        if (rawClass == String.class) {
-            return Helpers.toJson(value).replaceFirst("^[\"]+", "").replaceFirst("[\"]$", "");
-        }
+        if (rawClass == String.class) return Helpers.toJson(value).replaceFirst("^[\"]+", "").replaceFirst("[\"]$", "");
         /* 键值对转换 */
         if (value instanceof Map) {
             Map<String, Object> config = (Map<String, Object>) value;
@@ -164,9 +164,7 @@ public class Converter {
     public static Object defaultValue(Type type) {
         Class<?> rawClass = Reflects.getRawClass(type);
         if (rawClass.isPrimitive() && rawClass != Void.TYPE) {
-            if (Boolean.TYPE == rawClass) {
-                return false;
-            }
+            if (Boolean.TYPE == rawClass) return false;
             return 0;
         }
         return null;

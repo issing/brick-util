@@ -2,6 +2,8 @@ package net.isger.util.reflect.conversion;
 
 import java.lang.reflect.Type;
 
+import com.google.gson.JsonElement;
+
 import net.isger.util.Reflects;
 import net.isger.util.Strings;
 import net.isger.util.reflect.ClassAssembler;
@@ -30,6 +32,8 @@ public class NumberConversion implements Conversion {
             source = (Boolean) value ? 1 : 0;
         } else if (value instanceof byte[]) {
             source = Double.parseDouble(new String((byte[]) value));
+        } else if (value instanceof JsonElement) {
+            source = ((JsonElement) value).getAsNumber();
         } else {
             source = Double.parseDouble(value.toString().trim());
         }

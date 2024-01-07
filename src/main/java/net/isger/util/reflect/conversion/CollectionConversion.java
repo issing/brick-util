@@ -4,6 +4,8 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
 
+import com.google.gson.JsonElement;
+
 import net.isger.util.Reflects;
 import net.isger.util.reflect.ClassAssembler;
 import net.isger.util.reflect.Converter;
@@ -23,6 +25,8 @@ public class CollectionConversion implements Conversion {
     public Object convert(Type type, Object value, ClassAssembler assembler) {
         if (value instanceof Object[]) {
             value = Arrays.asList((Object[]) value);
+        } else if (value instanceof JsonElement) {
+            value = ((JsonElement) value).getAsJsonArray().asList();
         } else if (!(value instanceof Collection)) {
             value = Arrays.asList(value);
         }

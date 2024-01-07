@@ -5,8 +5,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -574,6 +579,30 @@ public class Strings {
             return buffer.toString();
         }
         return null;
+    }
+
+    public static String chain(Map<?, ?> values) {
+        return chain(values, false);
+    }
+
+    public static String chain(Map<?, ?> values, boolean sorted) {
+        Set<?> entries = sorted ? new TreeMap<Object, Object>(values).entrySet() : values.entrySet();
+        return Strings.join(true, "&", (Object[]) Helpers.each(entries, new Callable<String>() {
+            public String call(Object... args) {
+                Entry<?, ?> entry = (Entry<?, ?>) args[1];
+                return Strings.join(true, "=", Helpers.wraps(entry.getKey(), entry.getValue()));
+            }
+        }));
+    }
+
+    public static Map<String, String> chain(String value) {
+        Map<String, String> values = new HashMap<String, String>();
+        String[] pair;
+        for (String v : value.split("[&]")) {
+            pair = v.split("[=]", 2);
+            values.put((String) Helpers.getElement(pair, 0), (String) Helpers.getElement(pair, 1));
+        }
+        return values;
     }
 
     public static String[] trim(String... values) {

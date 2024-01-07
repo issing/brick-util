@@ -5,10 +5,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import net.isger.util.Dates;
 import net.isger.util.Hitchers;
 import net.isger.util.Reflects;
 import net.isger.util.hitch.Hitcher;
@@ -24,10 +27,25 @@ public class BrickUtilTest extends TestCase {
         return new TestSuite(BrickUtilTest.class);
     }
 
+    public void testOther() {
+        System.out.println(Dates.toString(Dates.toDate("Nov 30, 2023 11:34:56 AM"), Dates.PATTERN_RFC_3339));
+
+        String regex = "^https?://([^\\s/?#\\[\\]\\@]+\\@)?([^\\s/?#\\@:]+)(?::\\d{2,5})?([^\\s?#\\[\\]]*)$";
+        Pattern pattern = Pattern.compile(regex);
+
+        String url = "https://cashier.bildatas.com/payhub?notify=true";
+
+        Matcher matcher = pattern.matcher(url);
+        if (matcher.matches()) {
+            System.out.println("Matched: " + url);
+        } else {
+            System.out.println("Not Matched: " + url);
+        }
+    }
+
     public void testUtil() {
         Hitcher hitcher = Hitchers.getHitcher("net/isger/util/reflect/type");
         System.out.println(hitcher.hitch(this));
-        // System.out.println(Void.TYPE.getName());
         TestBean testBean = new Standin<TestBean>(TestBean.class) {
             public Object action(Method method, Object[] args) {
                 System.out.println(method);
