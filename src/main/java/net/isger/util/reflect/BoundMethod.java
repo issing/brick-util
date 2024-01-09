@@ -72,9 +72,7 @@ public class BoundMethod {
             throw e;
         } catch (Exception e) {
             Throwable cause = e.getCause();
-            if (cause instanceof RuntimeException) {
-                throw (RuntimeException) cause;
-            }
+            if (cause instanceof RuntimeException) throw (RuntimeException) cause;
             throw Asserts.state("Failure to invoke method %s", getName(), cause);
         }
     }
