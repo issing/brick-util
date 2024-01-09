@@ -4,18 +4,21 @@
     <parent>
         <groupId>net.isger</groupId>
         <artifactId>brick-primary</artifactId>
-        <version>0.0.2-alpha</version>
+        <version>${brick.version}</version>
     </parent>
     <artifactId>brick-util</artifactId>
     <packaging>jar</packaging>
+    
     <name>brick-util</name>
     <description>Java auxiliary tools of Brick</description>
     <url>https://github.com/issing/brick-util</url>
+    
     <scm>
         <connection>scm:git:https://github.com/issing/brick-util.git</connection>
         <developerConnection>scm:git:git@github.com:issing/brick-util.git</developerConnection>
         <url>https://github.com/issing/brick-util</url>
     </scm>
+    
     <dependencies>
         <!-- 工具依赖 -->
         <dependency>
