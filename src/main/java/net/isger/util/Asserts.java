@@ -47,22 +47,22 @@ public class Asserts {
         return value;
     }
 
-    public static <T extends Object> String isEmpty(T value) {
+    public static <T extends Object> T isEmpty(T value) {
         return isEmpty(value, "The argument [%s] must be null or empty");
     }
 
-    public static <T extends Object> String isEmpty(T value, String message, Object... args) {
-        throwArgument(Strings.isEmpty(value), message, (Object[]) Helpers.newArray(value, args));
-        return "";
+    public static <T extends Object> T isEmpty(T value, String message, Object... args) {
+        throwArgument(Strings.isEmpty(value) || Helpers.getLength(value) == 0, message, (Object[]) Helpers.newArray(value, args));
+        return null;
     }
 
-    public static <T extends Object> String isNotEmpty(T value) {
+    public static <T extends Object> T isNotEmpty(T value) {
         return isNotEmpty(value, "The argument not be null or empty");
     }
 
-    public static <T extends Object> String isNotEmpty(T value, String message, Object... args) {
-        throwArgument(Strings.isNotEmpty(value), message, args);
-        return Strings.empty(value.toString());
+    public static <T extends Object> T isNotEmpty(T value, String message, Object... args) {
+        throwArgument(Helpers.getLength(value) > 0 && Strings.isNotEmpty(value), message, args);
+        return value;
     }
 
     public static String isNotContains(String source, String value) {
@@ -103,15 +103,11 @@ public class Asserts {
     }
 
     public static void throwArgument(boolean expression, String message, Object... args) {
-        if (!expression) {
-            throw argument(message, args);
-        }
+        if (!expression) throw argument(message, args);
     }
 
     public static IllegalArgumentException argument(String message, Object... args) {
-        if (Strings.isEmpty(message)) {
-            message = "The argument is invalid";
-        }
+        if (Strings.isEmpty(message)) message = "The argument is invalid";
         return new IllegalArgumentException("(X) " + Strings.format(message, args), getCause(args));
     }
 
@@ -120,15 +116,11 @@ public class Asserts {
     }
 
     public static void throwState(boolean expression, String message, Object... args) {
-        if (!expression) {
-            throw state(message, args);
-        }
+        if (!expression) throw state(message, args);
     }
 
     public static IllegalStateException state(String message, Object... args) {
-        if (Strings.isEmpty(message)) {
-            message = "The state invariant must be true";
-        }
+        if (Strings.isEmpty(message)) message = "The state invariant must be true";
         return new IllegalStateException("(X) " + Strings.format(message, args), getCause(args));
     }
 

@@ -85,7 +85,13 @@ public class Helpers {
 
     private static final char[] CODES = CODE_RADIX.toCharArray();
 
-    private static final int[][] CODES_LIMITS = { { 0, 10 }, { 10, 26 }, { 36, 26 }, { 0, 16 }, { 0, 36 }, { 10, 52 }, { 0, 62 } };
+    private static final int[][] CODES_LIMITS = { { 0, 10 }, { 10, 26 }, { 36, 26 }, { 0, 16 }, { 0, 36 }, { 10, 52 }, { 0, 62 }, { 2, 6 }, { 0, 32 } };
+
+    private static final int[] SEEDS_BASE32 = { 2, 7 };
+
+    public static final int SEED_BASE32 = 7;
+
+    public static final int SEED_BASE32_EXT = 8;
 
     /** 最大进制数 */
     public static final int MAX_RADIX = CODES.length;
@@ -460,6 +466,21 @@ public class Helpers {
      * 生成指定位数编码
      * 
      * @param length
+     * @param seeds
+     * @return
+     */
+    public static String makeCode(int length, int[] seeds) {
+        StringBuffer code = new StringBuffer(length);
+        for (int i = 0; i < length; i++) {
+            code.append(getRandomCode(seeds[getRandom() % seeds.length]));
+        }
+        return code.toString();
+    }
+
+    /**
+     * 生成指定位数编码
+     * 
+     * @param length
      * @return
      */
     public static String makeCode(int length) {
@@ -474,6 +495,7 @@ public class Helpers {
      * @return
      */
     public static String makeCode(int length, int seed) {
+        if (seed == SEED_BASE32) return makeCode(length, SEEDS_BASE32);
         StringBuffer code = new StringBuffer(length);
         for (int i = 0; i < length; i++) {
             code.append(getRandomCode(seed));
@@ -811,61 +833,44 @@ public class Helpers {
      * @param values
      * @return
      */
-    @SuppressWarnings("unchecked")
     public static Map<String, ? extends Object> toHierarchical(Map<String, ? extends Object> values) {
         Map<String, Object> result = new HashMap<String, Object>();
-        int index;
-        String key;
-        String subKey;
-        Object value;
-        Map<String, Object> container;
-        for (Entry<String, ? extends Object> entry : values.entrySet()) {
-            if (entry.getValue() == null) {
-                continue;
+        try {
+            for (Entry<String, ? extends Object> entry : values.entrySet()) {
+                addEntry(result, entry.getKey(), entry.getValue());
             }
-            index = (key = Strings.toHierarchy(entry.getKey())).indexOf(".");
-            if (index == -1) {
-                // 没有层级集合
-                subKey = null;
-            } else {
-                // 存在层级集合
-                subKey = key.substring(index + 1);
-                key = key.substring(0, index);
-            }
-            value = result.get(key);
-            if (value == null) {
-                if (subKey == null) {
-                    // 没有层级集合，并规范对象
-                    result.put(key, (value = entry.getValue()) instanceof Map && value.getClass() != HashMap.class ? new HashMap<String, Object>((Map<String, Object>) value) : value);
-                    continue;
-                }
-                result.put(key, container = new HashMap<String, Object>()); // 保存层级集合
-            } else if (value instanceof Map) {
-                container = (Map<String, Object>) value; // 获取层级集合
-                if (subKey == null) {
-                    value = entry.getValue(); // 原始集合对象
-                    if (value instanceof Map) {
-                        // 合并层级集合
-                        String unionKey;
-                        Map<String, Object> pending = (Map<String, Object>) value;
-                        for (Entry<String, Object> unionEntry : pending.entrySet()) {
-                            if (!container.containsKey(unionKey = unionEntry.getKey())) {
-                                container.put(unionKey, unionEntry.getValue());
-                            }
-                        }
-                        continue;
-                    } else {
-                        // 层级对象冲突
-                        return values;
-                    }
-                }
-            } else {
-                // 层级对象冲突
-                return values;
-            }
-            container.put(subKey, entry.getValue()); // 存放层级对象（该步骤会替换原有层级对象）
+        } catch (Exception e) {
+            return values;
         }
         return result;
+    }
+
+    /**
+     * 添加层级条目
+     * 
+     * @param result
+     * @param key
+     * @param value
+     */
+    @SuppressWarnings("unchecked")
+    private static void addEntry(Map<String, Object> result, String key, Object value) {
+        String[] keys = Strings.toHierarchy(key).split("\\.");
+        Map<String, Object> currentMap = result;
+        for (int i = 0; i < keys.length - 1; i++) {
+            String currentKey = keys[i];
+            Object nestedValue = currentMap.get(currentKey);
+            if (nestedValue == null) {
+                currentMap.put(currentKey, nestedValue = new HashMap<String, Object>());
+            } else if (!(nestedValue instanceof Map)) {
+                throw new IllegalArgumentException("Conflicting key: " + currentKey);
+            }
+            currentMap = (Map<String, Object>) nestedValue;
+        }
+        String lastKey = keys[keys.length - 1];
+        if (currentMap.containsKey(lastKey)) {
+            throw new IllegalArgumentException("Conflicting key: " + lastKey);
+        }
+        currentMap.put(lastKey, value);
     }
 
     /**
@@ -874,8 +879,31 @@ public class Helpers {
      * @param values
      * @return
      */
-    public static Map<String, Object> toFlat(Map<String, Object> values) {
-        return null;
+    public static Map<String, ? extends Object> toFlat(Map<String, ? extends Object> values) {
+        Map<String, Object> result = new HashMap<String, Object>();
+        flattenMap("", values, result);
+        return result;
+    }
+
+    /**
+     * 压平集合
+     * 
+     * @param prefix
+     * @param nestedMap
+     * @param flatMap
+     */
+    @SuppressWarnings("unchecked")
+    private static void flattenMap(String prefix, Map<String, ? extends Object> nestedMap, Map<String, Object> flatMap) {
+        for (Entry<String, ? extends Object> entry : nestedMap.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            String newKey = prefix.isEmpty() ? key : prefix + "." + key;
+            if (value instanceof Map) {
+                flattenMap(newKey, (Map<String, Object>) value, flatMap);
+            } else {
+                flatMap.put(newKey, value);
+            }
+        }
     }
 
     /**
@@ -1050,12 +1078,16 @@ public class Helpers {
         Object value = params.get(key);
         if (value instanceof Map) {
             params = (Map<String, Object>) value;
+        } else if (value != null) {
+            params = Reflects.toMap(value);
         } else if (Strings.isNotEmpty(key)) {
             params = Helpers.toHierarchical(params);
             for (String name : Strings.toHierarchy(key).split("[./]")) {
                 value = params.get(name);
                 if (value instanceof Map) {
                     params = Helpers.toHierarchical((Map<String, Object>) value);
+                } else if (value != null) {
+                    params = Reflects.toMap(value);
                 } else {
                     params = null;
                     break;
@@ -1070,14 +1102,14 @@ public class Helpers {
         if (index > 0) {
             params = getMap(params, key.substring(0, index));
             key = key.substring(index + 1);
+            return getInstance(params, key);
         }
         return params.get(key);
     }
 
     public static Object toArray(Object source) {
-        if (source == null) {
-            return null;
-        } else if (source instanceof Collection) {
+        if (source == null) return null;
+        if (source instanceof Collection) {
             Collection<?> collection = (Collection<?>) source;
             int size = collection.size();
             Class<?> sourceClass = Object.class;
@@ -1094,19 +1126,14 @@ public class Helpers {
             return sourceClass == Object.class ? collection.toArray() : toArray(sourceClass, source);
         }
         Class<?> sourceClass = source.getClass();
-        if (sourceClass.isArray()) {
-            return source;
-        } else {
-            Object result = Array.newInstance(sourceClass, 1);
-            Array.set(result, 0, source);
-            return result;
-        }
+        if (sourceClass.isArray()) return source;
+        Object result = Array.newInstance(sourceClass, 1);
+        Array.set(result, 0, source);
+        return result;
     }
 
     public static Object toArray(final Class<?> type, Object source) {
-        if (source == null) {
-            return null;
-        }
+        if (source == null) return null;
         final List<Object> container = new ArrayList<Object>();
         each(source, new Callable.Runnable() {
             public void run(Object... args) {
@@ -1517,12 +1544,12 @@ public class Helpers {
 
     public static int getLength(Object array) {
         int size;
-        if (array instanceof Collection) {
+        if (array == null) {
+            size = 0;
+        } else if (array instanceof Collection) {
             size = ((Collection<?>) array).size();
         } else if (array instanceof Map) {
             size = ((Map<?, ?>) array).size();
-        } else if (array == null) {
-            size = 0;
         } else if (array.getClass().isArray()) {
             size = Array.getLength(array);
         } else {

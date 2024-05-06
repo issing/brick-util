@@ -3,7 +3,6 @@ package net.isger.util.reflect;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
@@ -116,15 +115,15 @@ public class Converter {
     @SuppressWarnings("unchecked")
     public static Object convert(Type type, Object value, ClassAssembler assembler) {
         /* 默认值转换 */
-        if (value == null) return defaultValue(type);
-        /* 自定义转换 */
         Class<?> rawClass = Reflects.getRawClass(type);
+        if (value == null || Reflects.getPrimitiveClass(rawClass) == Void.TYPE) return defaultValue(type);
+        /* 自定义转换 */
         for (Conversion conversion : CONVERTER.conversions.values()) {
             if (conversion.isSupport(type)) {
                 try {
                     return conversion.convert(type, value, assembler);
                 } catch (Exception e) {
-                    if (LOG.isDebugEnabled()) LOG.warn("Failure to convert [{}] to [{}]", value, rawClass, e);
+                    if (LOG.isDebugEnabled()) LOG.warn("Failure to convert [{}] to [{}]", value, rawClass);
                 }
             }
         }
@@ -150,14 +149,8 @@ public class Converter {
         /* 字符串赋值 */
         if (rawClass == String.class) return Helpers.toJson(value).replaceFirst("^[\"]+", "").replaceFirst("[\"]$", "");
         /* 键值对转换 */
-        if (value instanceof Map) {
-            Map<String, Object> config = (Map<String, Object>) value;
-            if (!config.containsKey(Reflects.KEY_CLASS)) {
-                config = new HashMap<String, Object>(config);
-                config.put(Reflects.KEY_CLASS, rawClass);
-            }
-            return Reflects.newInstance(config, assembler);
-        }
+        if (value instanceof Map) return Reflects.newInstance(rawClass, (Map<String, Object>) value, assembler);
+        /* 不支持转换 */
         throw Asserts.state("Unsupported convert to %s from %s", Reflects.getName(rawClass), srcClass.getName());
     }
 

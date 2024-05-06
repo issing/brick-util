@@ -18,7 +18,7 @@ public class NumberConversion implements Conversion {
 
     public boolean isSupport(Type type) {
         Class<?> rawClass = Reflects.getRawClass(type);
-        return Boolean.class.isAssignableFrom(rawClass) || Character.class.isAssignableFrom(rawClass) || Number.class.isAssignableFrom(rawClass) || rawClass.isPrimitive();
+        return Boolean.class.isAssignableFrom(rawClass) || Character.class.isAssignableFrom(rawClass) || Number.class.isAssignableFrom(rawClass) || rawClass.isPrimitive() && Reflects.getPrimitiveClass(rawClass) != Void.TYPE;
     }
 
     public Object convert(Type type, Object value, ClassAssembler assembler) {

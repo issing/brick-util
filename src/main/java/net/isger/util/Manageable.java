@@ -1,19 +1,25 @@
 package net.isger.util;
 
 /**
- * 可控接口
+ * 管理接口
  * 
  * @author issing
  */
 public interface Manageable {
 
-    public static final int UNINITIALIZED = 0;
+    /**
+     * 就绪
+     * 
+     * @return
+     */
+    public boolean hasReady();
 
-    public static final int INITIALIZING = 1;
-
-    public static final int INITIALIZED = 2;
-
-    public static final int DESTROYED = 3;
+    /**
+     * 状态
+     * 
+     * @return
+     */
+    public Status getStatus();
 
     /**
      * 初始
@@ -25,4 +31,22 @@ public interface Manageable {
      */
     public void destroy();
 
+    /**
+     * 管理状态
+     * 
+     * @author issing
+     */
+    public static enum Status {
+
+        UNINITIALIZED(0), INITIALIZING(1), PENDING(2), INITIALIZED(3), DESTROYED(4), STATELESS(9);
+
+        public static final int COUNT = 5;
+
+        public final int value;
+
+        private Status(int value) {
+            this.value = value;
+        }
+
+    }
 }

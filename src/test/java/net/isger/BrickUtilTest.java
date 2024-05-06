@@ -34,7 +34,6 @@ public class BrickUtilTest extends TestCase {
         Pattern pattern = Pattern.compile(regex);
 
         String url = "https://cashier.bildatas.com/payhub?notify=true";
-
         Matcher matcher = pattern.matcher(url);
         if (matcher.matches()) {
             System.out.println("Matched: " + url);

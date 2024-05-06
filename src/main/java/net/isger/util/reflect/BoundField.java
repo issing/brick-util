@@ -109,24 +109,23 @@ public class BoundField {
         setValue(instance, value, null);
     }
 
+    @SuppressWarnings("unchecked")
     public void setValue(Object instance, Object value, ClassAssembler assembler) {
         try {
             FieldAssembler fieldAssembler = assembler == null ? null : assembler.getFieldAssembler();
-            if (isInfect() && fieldAssembler != null) {
-                value = fieldAssembler.assemble(this, instance, value);
-            }
+            if (isInfect() && fieldAssembler != null) value = fieldAssembler.assemble(this, instance, value);
             if (value != Reflects.UNKNOWN) {
-                Class<?> rawClass = token.getRawClass();
+                Class<?> rawClass = this.token.getRawClass();
                 if (rawClass.isInstance(value)) {
-                    value = resolve(rawClass, token.getType(), value, assembler);
+                    value = resolve(rawClass, this.token.getType(), value, assembler);
                 } else {
                     try {
-                        value = Converter.convert(token.getType(), value, assembler);
+                        value = Converter.convert(this.token.getType(), value, assembler);
                     } catch (Exception e) {
-                        value = Converter.defaultValue(token.getType());
+                        value = Converter.defaultValue(this.token.getType());
                     }
                 }
-                field.set(instance, value);
+                this.field.set(instance, value);
             }
         } catch (Throwable e) {
             throw Asserts.state("Failure to setting field '%s' of %s: %s", getName(), field.getDeclaringClass(), value, e);

@@ -28,6 +28,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 import javax.security.auth.x500.X500PrivateCredential;
 
+import org.apache.commons.codec.binary.Base32;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.BasicConstraints;
@@ -51,6 +52,8 @@ import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 public class Securities {
+
+    private static final int WINDOW_SIZE = 1;
 
     static {
         Security.addProvider(new BouncyCastleProvider());
@@ -786,6 +789,41 @@ public class Securities {
         signature.initVerify(key);
         signature.update(data);
         return signature.verify(sign);
+    }
+
+    public static boolean toVerify(String secret, int code) throws Exception {
+        return toVerify(secret, code, System.currentTimeMillis());
+    }
+
+    public static boolean toVerify(String secret, int code, long time) throws Exception {
+        Base32 codec = new Base32();
+        byte[] key = codec.decode(secret);
+        time /= 1000 * 30;
+        for (int i = -WINDOW_SIZE; i <= WINDOW_SIZE; i++) {
+            if (toVerify(key, time + i) == code) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static long toVerify(byte[] key, long time) throws Exception {
+        byte[] data = new byte[8];
+        long value = time;
+        for (int i = 8; i-- > 0; value >>>= 8) {
+            data[i] = (byte) value;
+        }
+        SecretKey secretKey = createSecretKey("HmacSHA1", key);
+        byte[] hash = toMac(secretKey, data);
+        int offset = hash[19] & 0xF;
+        long truncatedHash = 0;
+        for (int i = 0; i < 4; i++) {
+            truncatedHash <<= 8;
+            truncatedHash |= (hash[offset + i] & 0xFF);
+        }
+        truncatedHash &= 0x7FFFFFFF;
+        truncatedHash %= 1000000;
+        return truncatedHash;
     }
 
 }

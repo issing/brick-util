@@ -409,16 +409,19 @@ public class Reflects {
      * @param instance
      * @return
      */
+    @SuppressWarnings("rawtypes")
     public static Class<?> getClass(Object instance) {
-        Class<?> raw = null;
-        if (instance instanceof String) {
-            raw = getClass((String) instance);
-        } else if (instance instanceof Class) {
-            raw = (Class<?>) instance;
+        Class<?> rawClass = null;
+        if (instance instanceof Class) {
+            rawClass = (Class<?>) instance;
+        } else if (instance instanceof String) {
+            rawClass = getClass((String) instance);
+        } else if (instance instanceof Map && ((Map) instance).containsKey(KEY_CLASS)) {
+            rawClass = getClass(((Map) instance).get(KEY_CLASS));
         } else if (instance != null) {
-            raw = instance.getClass();
+            rawClass = instance.getClass();
         }
-        return raw;
+        return rawClass;
     }
 
     /**
@@ -439,13 +442,10 @@ public class Reflects {
      * @return
      */
     public static Class<?> getClass(String name, ClassLoader loader) {
-        if (loader == null) {
-            loader = getClassLoader();
-        }
+        if (loader == null) loader = getClassLoader();
         Class<?> rawClass = null;
         try {
-            String[] form = name.split("[ ]", 2);
-            name = form.length > 1 ? form[1] : form[0];
+            if (name.startsWith("interface ") || name.startsWith("class ")) name = name.split("[ ]", 2)[1];
             rawClass = loader != null ? loader.loadClass(name) : Class.forName(name);
         } catch (Exception ex) {
         }
@@ -460,9 +460,7 @@ public class Reflects {
      */
     public static Class<?> getWrapClass(Class<?> primitiveClass) {
         Class<?> wrap = WRAP_TYPES.get(primitiveClass);
-        if (wrap == null) {
-            wrap = primitiveClass;
-        }
+        if (wrap == null) wrap = primitiveClass;
         return wrap;
     }
 
@@ -473,9 +471,7 @@ public class Reflects {
      * @return
      */
     public static Class<?> getPrimitiveClass(Class<?> wrapClass) {
-        if (wrapClass.isPrimitive()) {
-            return wrapClass;
-        }
+        if (wrapClass.isPrimitive()) return wrapClass;
         return PRIMITIVE_TYPES.get(wrapClass);
     }
 
@@ -897,29 +893,6 @@ public class Reflects {
     }
 
     /**
-     * 集合填充生成指定类型对象
-     * 
-     * @param params
-     * @param namespace
-     * @return
-     */
-    public static Object newInstance(Map<String, ? extends Object> params, String namespace) {
-        return newInstance(Helpers.getMap(params, namespace));
-    }
-
-    /**
-     * 集合填充生成指定类型对象
-     * 
-     * @param rawClass
-     * @param params
-     * @param namespace
-     * @return
-     */
-    public static <T> T newInstance(Class<T> rawClass, Map<String, ? extends Object> params, String namespace) {
-        return newInstance(rawClass, params, namespace, null);
-    }
-
-    /**
      * 生成实例
      *
      * @param name
@@ -956,6 +929,17 @@ public class Reflects {
      * 集合填充生成指定类型对象
      * 
      * @param params
+     * @param namespace
+     * @return
+     */
+    public static Object newInstance(Map<String, ? extends Object> params, String namespace) {
+        return newInstance(Helpers.getMap(params, namespace));
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param params
      * @return
      */
     public static Object newInstance(Map<String, ? extends Object> params) {
@@ -971,14 +955,36 @@ public class Reflects {
      * @return
      */
     public static Object newInstance(Map<String, ? extends Object> params, ClassAssembler assembler) {
-        Object className = params.get(KEY_CLASS);
-        if (Strings.isEmpty(className)) {
-            return params;
-        }
+        Object clazz = params.get(KEY_CLASS);
+        if (Strings.isEmpty(clazz)) return params;
         params.remove(KEY_CLASS);
-        Class<?> clazz = className instanceof Class ? (Class<?>) className : getClass(className.toString());
-        Asserts.isNotNull(clazz, "Cannot instantiation class %s", className);
-        return newInstance(clazz, params, assembler);
+        Class<?> rawClass = Asserts.isNotNull(getClass(clazz), "Cannot instantiation class %s", clazz);
+        return newInstance(rawClass, params, assembler);
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param rawClass
+     * @param params
+     * @param namespace
+     * @return
+     */
+    public static <T> T newInstance(Class<T> rawClass, Map<String, ? extends Object> params, String namespace) {
+        return newInstance(rawClass, params, namespace, null);
+    }
+
+    /**
+     * 集合填充生成指定类型对象
+     * 
+     * @param rawClass
+     * @param params
+     * @param namespace
+     * @param assembler
+     * @return
+     */
+    public static <T> T newInstance(Class<T> rawClass, Map<String, ? extends Object> params, String namespace, ClassAssembler assembler) {
+        return newInstance(rawClass, Helpers.getMap(params, namespace), assembler);
     }
 
     /**
@@ -994,26 +1000,18 @@ public class Reflects {
 
     /**
      * 集合填充生成指定类型对象
-     * 
-     * @param clazz
-     * @param params
-     * @param namespace
-     * @param assembler
-     * @return
-     */
-    public static <T> T newInstance(Class<T> clazz, Map<String, ? extends Object> params, String namespace, ClassAssembler assembler) {
-        return newInstance(clazz, Helpers.getMap(params, namespace), assembler);
-    }
-
-    /**
-     * 集合填充生成指定类型对象
      *
      * @param rawClass
      * @param params
      * @param assembler
      * @return
      */
+    @SuppressWarnings("unchecked")
     public static <T> T newInstance(Class<T> rawClass, Map<String, ? extends Object> params, ClassAssembler assembler) {
+        Class<?> clazz = getClass(params);
+        if (clazz != null && rawClass.isAssignableFrom(clazz)) {
+            rawClass = (Class<T>) clazz;
+        }
         T instance = newInstance(rawClass, assembler);
         if (params != null && params.size() > 0) {
             toInstance(instance, params, assembler);
@@ -1065,8 +1063,7 @@ public class Reflects {
                 return (T) new HashMap<String, Object>();
             }
         }
-        Asserts.isNotNull(rawClass, "Cannot instantiation class");
-        return Constructor.construct(rawClass);
+        return Constructor.construct(Asserts.isNotNull(rawClass, "Cannot instantiation class"));
     }
 
     /**
@@ -1098,8 +1095,8 @@ public class Reflects {
         final Map<String, ? extends Object> data = Helpers.toHierarchical(params);
         Map<String, List<BoundField>> fields = getBoundFields(instance.getClass());
         assembler = assembler == null ? new AssemblerAdapter() : new AssemblerAdapter(assembler) {
-            public Object assemble(BoundField field, Object instance, Object value, Object... args) {
-                return super.assemble(field, instance, value, (Object[]) Helpers.newArray(args, data)); // 装配器二次封装：传递原始数据
+            public Object assemble(BoundField field, Object instance, Object value, Map<String, ? extends Object>... args) {
+                return super.assemble(field, instance, value, (Map<String, ? extends Object>[]) Helpers.newArray(args, data)); // 装配器二次封装：传递原始数据
             }
         };
         Object value;

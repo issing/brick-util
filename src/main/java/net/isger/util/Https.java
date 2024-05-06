@@ -1,6 +1,7 @@
 package net.isger.util;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -24,6 +25,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -35,11 +37,9 @@ import net.isger.util.reflect.Converter;
 
 public class Https {
 
-    private Https() {
-    }
+    private static final String ENCODING = StandardCharsets.UTF_8.name();
 
-    public static SSLContext createContext() throws NoSuchAlgorithmException, KeyManagementException {
-        return createContext("SSLv3");
+    private Https() {
     }
 
     public static SSLContext createContext(String version) throws NoSuchAlgorithmException, KeyManagementException {
@@ -60,34 +60,42 @@ public class Https {
         return context;
     }
 
-    public static HttpClientConnectionManager createManager() {
+    public static HttpClientConnectionManager createManager(String version) {
         Registry<ConnectionSocketFactory> socketFactoryRegistry;
         try {
-            socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory> create().register("http", PlainConnectionSocketFactory.INSTANCE).register("https", new SSLConnectionSocketFactory(createContext(), NoopHostnameVerifier.INSTANCE)).build();
+            socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory> create().register("http", PlainConnectionSocketFactory.INSTANCE).register("https", new SSLConnectionSocketFactory(createContext(version), NoopHostnameVerifier.INSTANCE)).build();
             return new PoolingHttpClientConnectionManager(socketFactoryRegistry);
         } catch (Exception e) {
-            throw Asserts.state("Failure to create http/https client connection manager - {}", e.getMessage(), e.getCause());
+            throw Asserts.state("Failure to create http/https client connection manager", e);
         }
     }
 
-    public static HttpClientBuilder createBuilder() {
-        return HttpClients.custom().setConnectionManager(createManager());
+    public static HttpClientBuilder createBuilder(String version) {
+        return HttpClients.custom().setConnectionManager(createManager(version));
     }
 
     public static String post(String url) {
         return post(url, null, null, null);
     }
 
+    public static String post(String url, String content) {
+        return post(url, null, content, null);
+    }
+
     public static String post(String url, Object content) {
-        return post(url, Reflects.toMap(content));
+        return post(url, null, Reflects.toMap(content));
     }
 
     public static String post(String url, Map<String, Object> content) {
-        return post(url, format(content));
+        return post(url, null, content);
     }
 
-    public static String post(String url, String content) {
-        return post(url, null, content, null);
+    public static String post(String url, Map<String, String> headers, Object content) {
+        return post(url, headers, Reflects.toMap(content));
+    }
+
+    public static String post(String url, Map<String, String> headers, Map<String, Object> content) {
+        return post(url, headers, format(content), null);
     }
 
     public static String post(String url, Map<String, String> headers, String content, String token) {
@@ -95,32 +103,27 @@ public class Https {
         CloseableHttpClient client = null;
         CloseableHttpResponse response = null;
         try {
-            client = createBuilder().build();
+            client = createBuilder("TLSv1.2").build();
             HttpPost post = new HttpPost(url);
             /* 设置报文头 */
             post.setHeader("Content-type", "application/x-www-form-urlencoded");
-            if (Strings.isNotEmpty(token)) {
-                post.setHeader("Authorization", token);
-            }
+            if (Strings.isNotEmpty(token)) post.setHeader("Authorization", token);
             post.setHeader("User-Agent", "Brick/1.0.0");
+            String encoding = ENCODING;
             if (headers != null) {
-                for (Entry<String, String> header : headers.entrySet()) {
-                    post.setHeader(header.getKey(), header.getValue());
-                }
+                for (Entry<String, String> header : headers.entrySet()) post.setHeader(header.getKey(), header.getValue());
+                encoding = Strings.empty(headers.get("encoding"), encoding);
             }
             /* 设置报文体 */
-            StringEntity requestEntity = new StringEntity(content);
-            requestEntity.setContentType("application/json");
+            StringEntity requestEntity = new StringEntity(content, ContentType.APPLICATION_JSON.withCharset(encoding));
             post.setEntity(requestEntity);
             /* 发送请求（同步阻塞） */
             response = client.execute(post);
             HttpEntity responseEntity = response.getEntity();
-            if (responseEntity != null) {
-                result = EntityUtils.toString(responseEntity);
-            }
+            if (responseEntity != null) result = EntityUtils.toString(responseEntity);
             EntityUtils.consume(responseEntity);
         } catch (Exception e) {
-            throw Asserts.state("Failure to request [%s] - %s", url, e.getMessage(), e.getCause());
+            throw Asserts.state("Failure to request [%s]", url, e);
         } finally {
             Files.close(response);
             Files.close(client);
@@ -136,37 +139,36 @@ public class Https {
         return put(url, null, content, null);
     }
 
+    public static String put(String url, Map<String, String> headers, String content) {
+        return put(url, headers, content, null);
+    }
+
     public static String put(String url, Map<String, String> headers, String content, String token) {
         String result = null;
         CloseableHttpClient client = null;
         CloseableHttpResponse response = null;
         try {
-            client = createBuilder().build();
+            client = createBuilder("TLSv1.2").build();
             HttpPut put = new HttpPut(url);
             /* 设置报文头 */
             put.setHeader("Content-type", "application/x-www-form-urlencoded");
-            if (Strings.isNotEmpty(token)) {
-                put.setHeader("Authorization", token);
-            }
+            if (Strings.isNotEmpty(token)) put.setHeader("Authorization", token);
             put.setHeader("User-Agent", "Brick/1.0.0");
+            String encoding = ENCODING;
             if (headers != null) {
-                for (Entry<String, String> header : headers.entrySet()) {
-                    put.setHeader(header.getKey(), header.getValue());
-                }
+                for (Entry<String, String> header : headers.entrySet()) put.setHeader(header.getKey(), header.getValue());
+                encoding = Strings.empty(headers.get("encoding"), encoding);
             }
             /* 设置报文体 */
-            StringEntity requestEntity = new StringEntity(content);
-            requestEntity.setContentType("application/json");
+            StringEntity requestEntity = new StringEntity(content, ContentType.APPLICATION_JSON.withCharset(encoding));
             put.setEntity(requestEntity);
             /* 发送请求（同步阻塞） */
             response = client.execute(put);
             HttpEntity responseEntity = response.getEntity();
-            if (responseEntity != null) {
-                result = EntityUtils.toString(responseEntity);
-            }
+            if (responseEntity != null) result = EntityUtils.toString(responseEntity);
             EntityUtils.consume(responseEntity);
         } catch (Exception e) {
-            throw Asserts.state("Failure to request [%s] - %s", url, e.getMessage(), e.getCause());
+            throw Asserts.state("Failure to request [%s]", url, e);
         } finally {
             Files.close(response);
             Files.close(client);
@@ -187,7 +189,7 @@ public class Https {
         CloseableHttpClient client = null;
         CloseableHttpResponse response = null;
         try {
-            client = createBuilder().build();
+            client = createBuilder("TLSv1.2").build();
             HttpGet get = new HttpGet(url + "?" + content);
             /* 设置报文头 */
             get.setHeader("Content-type", "application/x-www-form-urlencoded");
@@ -204,11 +206,11 @@ public class Https {
             response = client.execute(get);
             HttpEntity responseEntity = response.getEntity();
             if (responseEntity != null) {
-                result = EntityUtils.toString(responseEntity, "UTF-8");
+                result = EntityUtils.toString(responseEntity);
             }
             EntityUtils.consume(responseEntity);
         } catch (Exception e) {
-            throw Asserts.state("Failure to request [%s] - %s", url, e.getMessage(), e.getCause());
+            throw Asserts.state("Failure to request [%s]", url, e);
         } finally {
             Files.close(response);
             Files.close(client);
@@ -232,14 +234,10 @@ public class Https {
         String key;
         String value;
         for (Entry<String, Object> entry : Helpers.sortByKey(parameters)) {
-            if (Strings.isEmpty(key = Strings.empty(entry.getKey())) || Strings.isEmpty(value = new String(encoder.encode(entry.getValue())))) {
-                continue;
-            }
+            if (Strings.isEmpty(key = Strings.empty(entry.getKey())) || Strings.isEmpty(value = new String(encoder.encode(entry.getValue())))) continue;
             buffer.append(key).append("=").append(value).append("&");
         }
-        if (buffer.length() > 0) {
-            buffer.setLength(buffer.length() - 1);
-        }
+        if (buffer.length() > 0) buffer.setLength(buffer.length() - 1);
         return buffer.toString();
     }
 

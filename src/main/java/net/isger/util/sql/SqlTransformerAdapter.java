@@ -14,18 +14,26 @@ public class SqlTransformerAdapter implements SqlTransformer {
     private Map<String, Object> parameters;
 
     public SqlTransformerAdapter() {
-        parameters = new HashMap<String, Object>();
+        this.parameters = new HashMap<String, Object>();
+    }
+
+    public boolean hasReady() {
+        return true;
+    }
+
+    public Status getStatus() {
+        return Status.STATELESS;
     }
 
     public void initial() {
     }
 
     protected final Object getParameter(String name) {
-        return parameters.get(name);
+        return this.parameters.get(name);
     }
 
     protected final Map<String, Object> getParameters() {
-        return Collections.unmodifiableMap(parameters);
+        return Collections.unmodifiableMap(this.parameters);
     }
 
     public SqlEntry transform(SqlEntry entry) {
@@ -40,7 +48,7 @@ public class SqlTransformerAdapter implements SqlTransformer {
     }
 
     public void destroy() {
-        parameters.clear();
+        this.parameters.clear();
     }
 
 }

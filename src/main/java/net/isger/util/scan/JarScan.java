@@ -28,13 +28,12 @@ public class JarScan extends AbstractScan {
 
     public List<String> scan(String path, ScanFilter filter) {
         File workPath = null;
-        int index = path.lastIndexOf("jar!/");
+        int index = path.indexOf("jar!/"); // 需要考虑“jar”嵌套问题（“jar”里面还存在“jar”）
         if (index != -1) {
             workPath = new File(path.substring(index + 5));
             path = path.substring(0, index + 3);
         } else if (!path.endsWith(".jar")) {
-            throw new IllegalStateException(
-                    "Have the ability to give " + path + " of jar");
+            throw new IllegalStateException("Have the ability to give " + path + " of jar");
         }
 
         List<String> result = new ArrayList<String>();
@@ -63,8 +62,7 @@ public class JarScan extends AbstractScan {
             // toMatchPath: {
             if (parentPath == null) {
                 isMatch = path == null;
-            } else if (parentPath.getAbsolutePath()
-                    .startsWith(path.getAbsolutePath())) {
+            } else if (parentPath.getAbsolutePath().startsWith(path.getAbsolutePath())) {
                 if (!filter.isDeep(path, parentPath)) {
                     isMatch = parentPath.equals(path);
                 }

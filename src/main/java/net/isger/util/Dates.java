@@ -19,6 +19,7 @@ public class Dates {
 
     public static final int PATTERN_COMMON_MINUTE = 2;
 
+    /** 通用日期格式（yyyy-MM-dd） */
     public static final int PATTERN_COMMON_DATE = 3;
 
     public static final int PATTERN_COMMON_MONTH = 4;

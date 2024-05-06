@@ -30,7 +30,7 @@ public class BaseExtendable implements Extendable {
 
     public void setExtends(Map<String, ? extends Object> values) {
         this.clearExtends();
-        this.values.putAll(values);
+        if (values != null) this.values.putAll(values);
     }
 
     public void clearExtends() {

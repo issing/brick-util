@@ -552,10 +552,10 @@ public class Files {
      * 
      * @param closeable
      */
-    public static void close(Closeable closeable) {
-        if (closeable != null) {
+    public static void close(Object closeable) {
+        if (closeable instanceof Closeable) {
             try {
-                closeable.close();
+                ((Closeable) closeable).close();
             } catch (Exception e) {
             }
         }

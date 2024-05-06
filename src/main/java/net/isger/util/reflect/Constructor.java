@@ -1,12 +1,16 @@
 package net.isger.util.reflect;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.isger.util.Asserts;
+import net.isger.util.Callable;
+import net.isger.util.Helpers;
 import net.isger.util.hitch.Director;
 
 public class Constructor {
@@ -70,11 +74,17 @@ public class Constructor {
                 }
             }
         }
+        final List<Class<?>> paramTypes = new ArrayList<Class<?>>();
+        Helpers.each(true, args, new Callable.Runnable() {
+            public void run(Object... args) {
+                paramTypes.add(args[1].getClass());
+            }
+        });
         try {
-            java.lang.reflect.Constructor<? extends T> cons = rawClass.getDeclaredConstructor();
+            java.lang.reflect.Constructor<? extends T> cons = rawClass.getDeclaredConstructor(paramTypes.toArray(new Class<?>[paramTypes.size()]));
             if (cons != null) {
                 cons.setAccessible(true);
-                return cons.newInstance();
+                return cons.newInstance(args);
             }
         } catch (Exception e) {
         }
