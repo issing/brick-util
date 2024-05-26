@@ -33,11 +33,11 @@ public class DateConversion implements Conversion {
                 source = new String((byte[]) value);
             } else if (value instanceof Number) {
                 source = value.toString();
+            } else if (value instanceof JsonElement) {
+                source = ((JsonElement) value).getAsString();
             } else if (!(value instanceof String)) {
                 source = value.toString();
                 break convert;
-            } else if (value instanceof JsonElement) {
-                source = ((JsonElement) value).getAsString();
             } else {
                 source = (String) value;
             }
@@ -53,9 +53,7 @@ public class DateConversion implements Conversion {
         } catch (Exception e) {
         }
         Date date = Dates.toDate(value);
-        if (date == null) {
-            throw Asserts.argument(source);
-        }
+        if (date == null) throw Asserts.argument(source);
         return date;
     }
 

@@ -56,7 +56,6 @@ public class BrickUtilTest extends TestCase {
         }.getSource();
         testBean.test("test.name", "test.password");
         assertTrue(true);
-
         Map<String, Object> values = new HashMap<String, Object>();
         values.put("value", "a");
         values.put("a.value", "a.a");
@@ -71,7 +70,7 @@ public class BrickUtilTest extends TestCase {
         }
     }
 
-    public static List<String> parseSQLStatements(String sql) {
+    private static List<String> parseSQLStatements(String sql) {
         List<String> statements = new ArrayList<>();
 
         char[] chars = sql.toCharArray();
