@@ -19,6 +19,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.KeySpec;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -798,11 +799,9 @@ public class Securities {
     public static boolean toVerify(String secret, int code, long time) throws Exception {
         Base32 codec = new Base32();
         byte[] key = codec.decode(secret);
-        time /= 1000 * 30;
+        time /= TimeUnit.SECONDS.toMillis(30);
         for (int i = -WINDOW_SIZE; i <= WINDOW_SIZE; i++) {
-            if (toVerify(key, time + i) == code) {
-                return true;
-            }
+            if (toVerify(key, time + i) == code) return true;
         }
         return false;
     }

@@ -553,11 +553,13 @@ public class Files {
      * @param closeable
      */
     public static void close(Object closeable) {
-        if (closeable instanceof Closeable) {
-            try {
+        try {
+            if (closeable instanceof Closeable) {
                 ((Closeable) closeable).close();
-            } catch (Exception e) {
+            } else if (closeable instanceof AutoCloseable) {
+                ((AutoCloseable) closeable).close();
             }
+        } catch (Exception e) {
         }
     }
 }
