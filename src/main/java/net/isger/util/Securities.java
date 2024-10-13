@@ -225,7 +225,7 @@ public class Securities {
      * @throws Exception
      */
     public static KeyStore getKeyStore(String algorithm, InputStream stream, char[] password) throws Exception {
-        KeyStore keyStore = KeyStore.getInstance(algorithm); // , "BC");
+        KeyStore keyStore = KeyStore.getInstance(algorithm);
         try {
             keyStore.load(stream, password);
         } finally {
@@ -324,9 +324,7 @@ public class Securities {
      * @throws Exception
      */
     public static X509Certificate getCertificate(X509CertificateHolder holder) throws Exception {
-        return new JcaX509CertificateConverter()
-                // .setProvider("BC")
-                .getCertificate(holder);
+        return new JcaX509CertificateConverter().getCertificate(holder);
     }
 
     /**
@@ -337,9 +335,7 @@ public class Securities {
      * @throws Exception
      */
     public static X509Certificate getCertificate(byte[] data) throws Exception {
-        return (X509Certificate) CertificateFactory.getInstance("X.509")
-                // , "BC")
-                .generateCertificate(new ByteArrayInputStream(data));
+        return (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(data));
     }
 
     /**
@@ -352,9 +348,7 @@ public class Securities {
     public static Certificate getCertificate(String path) throws Exception {
         InputStream is = Reflects.getResourceAsStream(path);
         try {
-            return (X509Certificate) CertificateFactory.getInstance("X.509")
-                    // , "BC")
-                    .generateCertificate(is);
+            return (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(is);
         } finally {
             Files.close(is);
         }
@@ -393,8 +387,7 @@ public class Securities {
      * @throws Exception
      */
     public static PublicKey createPublicKey(String algorithm, KeySpec keySpec) throws Exception {
-        return KeyFactory.getInstance(algorithm) // , "BC")
-                .generatePublic(keySpec);
+        return KeyFactory.getInstance(algorithm).generatePublic(keySpec);
     }
 
     /**
@@ -406,8 +399,7 @@ public class Securities {
      * @throws Exception
      */
     public static PrivateKey createPrivateKey(String algorithm, KeySpec keySpec) throws Exception {
-        return KeyFactory.getInstance(algorithm) // , "BC")
-                .generatePrivate(keySpec);
+        return KeyFactory.getInstance(algorithm).generatePrivate(keySpec);
     }
 
     /**
@@ -417,9 +409,7 @@ public class Securities {
      * @throws Exception
      */
     public static SecretKey createSecretKey() throws Exception {
-        return KeyGenerator.getInstance("HmacMD5")
-                // , "BC")
-                .generateKey();
+        return KeyGenerator.getInstance("HmacMD5").generateKey();
     }
 
     /**
@@ -430,9 +420,7 @@ public class Securities {
      * @throws Exception
      */
     public static SecretKey createSecretKey(String algorithm) throws Exception {
-        return KeyGenerator.getInstance(algorithm)
-                // , "BC")
-                .generateKey();
+        return KeyGenerator.getInstance(algorithm).generateKey();
     }
 
     /**
@@ -707,7 +695,7 @@ public class Securities {
      * @throws Exception
      */
     public static byte[] toCipher(int mode, Key key, String transformation, byte[] data, Callable<Void> initializer) throws Exception {
-        Cipher cipher = Cipher.getInstance(transformation); // , "BC");
+        Cipher cipher = Cipher.getInstance(transformation);
         if (initializer == null) {
             cipher.init(mode, key);
         } else {
@@ -727,7 +715,7 @@ public class Securities {
      */
     public static byte[] toMac(String algorithm, byte[] key, byte[] data) throws Exception {
         SecretKey secretKey = createSecretKey(algorithm, key);
-        Mac mac = Mac.getInstance(secretKey.getAlgorithm()); // , "BC");
+        Mac mac = Mac.getInstance(secretKey.getAlgorithm());
         mac.init(secretKey);
         return mac.doFinal(data);
     }
@@ -741,7 +729,7 @@ public class Securities {
      * @throws Exception
      */
     public static byte[] toMac(Key key, byte[] data) throws Exception {
-        Mac mac = Mac.getInstance(key.getAlgorithm()); // , "BC");
+        Mac mac = Mac.getInstance(key.getAlgorithm());
         mac.init(key);
         return mac.doFinal(data);
     }
@@ -755,7 +743,7 @@ public class Securities {
      * @throws Exception
      */
     public static byte[] toDigest(String algorithm, byte[] data) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance(algorithm); // , "BC");
+        MessageDigest digest = MessageDigest.getInstance(algorithm);
         digest.update(data);
         return digest.digest();
     }

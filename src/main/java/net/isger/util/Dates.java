@@ -149,11 +149,11 @@ public class Dates {
     }
 
     public static Date getDate(Date startTime, long delay) {
-        return getDate(startTime, delay, 0);
+        return getDate(startTime, delay, UNIT_MILLIS);
     }
 
     public static Date getDate(Date startTime, long delay, int unit) {
-        if (unit < 0 || unit > UNIT_DAY) unit = UNIT_DAY;
+        if (unit < UNIT_MILLIS || unit > UNIT_DAY) unit = UNIT_DAY;
         if (startTime == null) startTime = new Date();
         if (delay != 0) startTime = new Date(startTime.getTime() + delay * UNITS[unit]);
         return startTime;
