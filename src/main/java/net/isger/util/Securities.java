@@ -476,7 +476,7 @@ public class Securities {
      * @throws Exception
      */
     public static KeyPair createKeyPair(String algorithm, int keySize) throws Exception {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm); // "BC");
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(algorithm, "BC");
         kpg.initialize(keySize, new SecureRandom());
         return kpg.generateKeyPair();
     }

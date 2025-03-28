@@ -1415,17 +1415,47 @@ public class Reflects {
      *
      * @param clazz
      * @param values
+     * @param assembler
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> toList(Class<T> clazz, List<Map<String, Object>> values, ClassAssembler assembler) {
+        return toList(clazz, values, new Callable<T>() {
+            public T call(Object... args) {
+                return (T) args[1];
+            }
+        }, assembler);
+    }
+
+    /**
+     * 根据键值对集合转换为目标实例集合
+     *
+     * @param clazz
+     * @param values
      * @param interceptor
      * @return
      */
     public static <T> List<T> toList(Class<T> clazz, List<Map<String, Object>> values, Callable<T> interceptor) {
+        return toList(clazz, values, interceptor, null);
+    }
+
+    /**
+     * 根据键值对集合转换为目标实例集合
+     *
+     * @param clazz
+     * @param values
+     * @param interceptor
+     * @param assembler
+     * @return
+     */
+    public static <T> List<T> toList(Class<T> clazz, List<Map<String, Object>> values, Callable<T> interceptor, ClassAssembler assembler) {
         int size = values == null ? 0 : values.size();
         List<T> result = new ArrayList<T>(size);
         if (size > 0) {
             int step = 0;
             T instance;
             for (Map<String, Object> value : values) {
-                instance = interceptor.call(step++, newInstance(clazz, value), result);
+                instance = interceptor.call(step++, newInstance(clazz, value, assembler), result);
                 if (instance != null) {
                     result.add(instance);
                 }

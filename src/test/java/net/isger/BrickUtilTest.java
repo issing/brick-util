@@ -62,7 +62,7 @@ public class BrickUtilTest extends TestCase {
         System.out.println(Reflects.newInstance(A.class, values).a.value);
     }
 
-    public static void testSql() {
+    public void testSql() {
         String sql = "SELECT * FROM table1; INSERT INTO table2 VALUES ('value1'''';'';;'';;;'''''''';''value2'); UPDATE table3 SET column1 = 'value;3';";
         List<String> statements = parseSQLStatements(sql);
         for (String statement : statements) {

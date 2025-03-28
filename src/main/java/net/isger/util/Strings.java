@@ -47,7 +47,7 @@ public class Strings {
      * @return
      */
     public static boolean isNotEmpty(Object value) {
-        return value != null && !value.toString().matches("^[\\s ]*$");
+        return !isEmpty(value);
     }
 
     /**
@@ -157,6 +157,13 @@ public class Strings {
         return new String(source).equals(new String(target));
     }
 
+    /**
+     * 数据容错判断
+     * 
+     * @param source
+     * @param target
+     * @return
+     */
     public static boolean equalsTolerant(String source, String target) {
         return isEmpty(source) || isEmpty(target) || source.equals(target);
     }
@@ -556,35 +563,38 @@ public class Strings {
             int amount = beginIndex - 1;
             while (++amount < count) {
                 if (Strings.isEmpty(values[amount])) {
-                    if (isCompact) {
-                        continue;
-                    }
+                    if (isCompact) continue;
                     buffer.append("null");
-                } else {
-                    buffer.append(beginSeal).append(values[amount]).append(endSeal);
-                }
+                } else buffer.append(beginSeal).append(values[amount]).append(endSeal);
                 buffer.append(separator);
             }
             if (values[amount] == null) {
                 if (isCompact) {
-                    if (buffer.length() > 0) {
-                        buffer.setLength(buffer.length() - separator.length());
-                    }
-                } else {
-                    buffer.append("null");
-                }
-            } else {
-                buffer.append(beginSeal).append(values[amount]).append(endSeal);
-            }
+                    if (buffer.length() > 0) buffer.setLength(buffer.length() - separator.length());
+                } else buffer.append("null");
+            } else buffer.append(beginSeal).append(values[amount]).append(endSeal);
             return buffer.toString();
         }
         return null;
     }
 
+    /**
+     * 链式数据
+     * 
+     * @param values
+     * @return
+     */
     public static String chain(Map<?, ?> values) {
         return chain(values, false);
     }
 
+    /**
+     * 链式数据
+     * 
+     * @param values
+     * @param sorted
+     * @return
+     */
     public static String chain(Map<?, ?> values, boolean sorted) {
         Set<?> entries = sorted ? new TreeMap<Object, Object>(values).entrySet() : values.entrySet();
         return Strings.join(true, "&", (Object[]) Helpers.each(entries, new Callable<String>() {
@@ -595,6 +605,12 @@ public class Strings {
         }));
     }
 
+    /**
+     * 链式数据
+     * 
+     * @param value
+     * @return
+     */
     public static Map<String, String> chain(String value) {
         Map<String, String> values = new HashMap<String, String>();
         String[] pair;
@@ -605,6 +621,12 @@ public class Strings {
         return values;
     }
 
+    /**
+     * 去头尾空串列表
+     * 
+     * @param values
+     * @return
+     */
     public static String[] trim(String... values) {
         if (values != null) {
             for (int i = 0; i < values.length; i++) {

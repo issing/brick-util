@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -42,21 +43,27 @@ public class Https {
     private Https() {
     }
 
-    public static SSLContext createContext(String version) throws NoSuchAlgorithmException, KeyManagementException {
-        SSLContext context = SSLContext.getInstance(version);
-        /* 实现X509TrustManager接口（用于绕过验证） */
-        X509TrustManager trustManager = new X509TrustManager() {
+    public static TrustManager createTrust() {
+        return new X509TrustManager() {
             public void checkClientTrusted(java.security.cert.X509Certificate[] paramArrayOfX509Certificate, String paramString) throws CertificateException {
             }
 
             public void checkServerTrusted(java.security.cert.X509Certificate[] paramArrayOfX509Certificate, String paramString) throws CertificateException {
             }
 
-            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                return null;
+            public X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[0];
             }
         };
-        context.init(null, new TrustManager[] { trustManager }, null);
+    }
+
+    public static SSLContext createContext(String version) throws NoSuchAlgorithmException, KeyManagementException {
+        return createContext(version, createTrust());
+    }
+
+    public static SSLContext createContext(String version, TrustManager... trusts) throws NoSuchAlgorithmException, KeyManagementException {
+        SSLContext context = SSLContext.getInstance(version);
+        context.init(null, trusts, null);
         return context;
     }
 
