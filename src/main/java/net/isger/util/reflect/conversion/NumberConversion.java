@@ -1,13 +1,12 @@
 package net.isger.util.reflect.conversion;
 
-import java.lang.reflect.Type;
-
 import com.google.gson.JsonElement;
-
 import net.isger.util.Reflects;
 import net.isger.util.Strings;
 import net.isger.util.reflect.ClassAssembler;
 import net.isger.util.reflect.Converter;
+
+import java.lang.reflect.Type;
 
 public class NumberConversion implements Conversion {
 

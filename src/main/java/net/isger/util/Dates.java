@@ -87,7 +87,7 @@ public class Dates {
                 source = LocalDateTime.parse(source).format(DateTimeFormatter.ofPattern(DATE_PATTERNS[PATTERN_COMMON]));
             } catch (Exception e) {
             }
-            source = source.replaceFirst("\\d+([-/]?\\d+)T", " ").replaceAll("[年月日]", "-").replaceAll("[时分]", ":").replaceAll("秒", "");
+            source = source.replaceFirst("(?<=\\d)T(?=\\d)", " ").replaceAll("[年月日]", "-").replaceAll("[时分]", ":").replaceAll("秒", "");
             date = parse(source, Locale.getDefault(Locale.Category.FORMAT));
             if (date == null && Locale.getDefault(Locale.Category.FORMAT) != Locale.ENGLISH) {
                 date = parse(source, Locale.ENGLISH);
